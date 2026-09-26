@@ -65,6 +65,13 @@ class NewerReleaseTest(unittest.TestCase):
         self.assertEqual(status, 2)
         self.assertIn(bumped(1), mac.output)
 
+    def test_explaining_a_saved_report_runs_nothing_and_looks_nothing_up(self):
+        mac = RecordedHost({"recording_version": 1, "files": {"saved.json": None}}, fetches={LATEST_VERSION_URL: HttpResponse(200, bumped(1))})
+
+        main(["--explain", "saved.json"], mac)
+
+        self.assertEqual(mac.gets, [])
+
 
 if __name__ == "__main__":
     unittest.main()

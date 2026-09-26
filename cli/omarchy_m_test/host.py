@@ -19,6 +19,7 @@ Operations:
 
 from __future__ import annotations
 
+import http.client
 import os
 import subprocess
 import sys
@@ -117,7 +118,7 @@ class RealHost:
                 return HttpResponse(response.status, response.read().decode("utf-8", "replace"))
         except urllib.error.HTTPError as error:
             return HttpResponse(error.code, error.read().decode("utf-8", "replace"))
-        except (urllib.error.URLError, OSError) as error:
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error
 
     def get(self, url: str) -> HttpResponse:
@@ -127,5 +128,5 @@ class RealHost:
                 return HttpResponse(response.status, response.read(4096).decode("utf-8", "replace"))
         except urllib.error.HTTPError as error:
             return HttpResponse(error.code, "")
-        except (urllib.error.URLError, OSError, ValueError) as error:
+        except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error

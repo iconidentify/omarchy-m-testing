@@ -1,6 +1,7 @@
 name: Release
 
-# Push a tag v<TOOL_VERSION> on main to publish a signed CLI release. The
+# Push a tag v<TOOL_VERSION> (by convention on main; not enforced) to publish
+# a signed CLI release. The
 # installer downloads releases/latest/download/omarchy-m-test.tar.gz and its
 # .sig, and the CLI's newer-release check reads VERSION.
 

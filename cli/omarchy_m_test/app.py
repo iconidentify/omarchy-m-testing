@@ -65,8 +65,6 @@ def main(argv: Sequence[str], host: Host) -> int:
     except _Exit as done:
         return done.status
 
-    updates.notify(host)
-
     if not args.record:
         return _run(args, host)
 
@@ -92,6 +90,8 @@ def _run(args: argparse.Namespace, host: Host) -> int:
 
     if args.explain:
         return EXIT_OK if explain(host, args.explain, catalogue) else EXIT_BAD_INPUT
+
+    updates.notify(host)
 
     try:
         machine = identify(host)
