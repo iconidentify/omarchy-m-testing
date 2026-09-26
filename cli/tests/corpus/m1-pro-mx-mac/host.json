@@ -245,6 +245,62 @@
       "stdout": "-- No entries --\n",
       "stderr": "",
       "note": "stand-in: no kernel log of the M1 was ever saved, so the firmware and probe-error checks are not tested until the v0.1 dogfood run records one"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n",
+      "note": "stand-in: the M1 evidence doesn't include this; the v0.1 dogfood run records it"
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n",
+      "note": "stand-in: the M1 evidence doesn't include this; the v0.1 dogfood run records it"
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the M1 on 2026-09-12: as mac-check's 'speakersafetyd is active' line"
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n",
+      "note": "stand-in: no kernel log of the M1 was ever saved, so speaker protection can't be confirmed and the tone isn't played"
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j314-convolver\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the M1 on 2026-09-12: as mac-check's default-sink line"
     }
   ],
   "files": {
@@ -346,7 +402,8 @@
       "policy0",
       "policy2",
       "policy6"
-    ]
+    ],
+    "/sys/bus/iio/devices": null
   },
-  "dirs_note": "Directories other than /home are reconstructed (t600x's GPU sits at 406400000, as on the M2 Max); the v0.1 dogfood run records the real ones."
+  "dirs_note": "Directories other than /home are reconstructed (t600x's GPU sits at 406400000, as on the M2 Max); the v0.1 dogfood run records the real ones. /sys/bus/iio/devices is a stand-in (recorded as absent): the M1 evidence doesn't include the ambient light sensor."
 }

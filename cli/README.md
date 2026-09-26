@@ -9,11 +9,21 @@ It refuses non-Apple machines, shows the disclaimer (Enter accepts), runs the ch
 
 ## Automatic checks
 
-A run checks the boot chain and encryption, packages and first-boot hardware setup, GPU driver and Vulkan/OpenGL, displays, audio routing and speaker protection, Wi-Fi and Bluetooth, snapshots, battery and CPU frequency scaling (`ORDER` in `omarchy_m_test/checks.py`; every id is in the catalogue's `checks`).
+A run checks the boot chain and encryption, packages and first-boot hardware setup, GPU driver and Vulkan/OpenGL, displays, audio routing and speaker protection, Wi-Fi and Bluetooth, snapshots, battery and CPU frequency scaling, plus the look-and-listen checks below (`ORDER` in `omarchy_m_test/checks.py`; every id is in the catalogue's `checks`).
 
 Most come from omarchy-mac's own check scripts, wrapped rather than duplicated (`omarchy_m_test/scripts.py`): `mac-check` on every stack, and `apple-audio-check.sh --no-sound` and `apple-display-check.sh --read-only` on the converged image they were written for. Their PASS/FAIL/SKIP lines become results with the lines as evidence. mac-check runs its root-only checks through `sudo -n`, so without passwordless sudo they are skipped, never failed. The CLI only ever asks for a password to install temporary test packages the user agreed to (below). The rest (`omarchy_m_test/hardware.py`) read sysfs, the journal and pacman.
 
 The scripts are vendored, unmodified, in `omarchy_m_test/vendor/omarchy-mac/` (commit and hashes in `ORIGIN`), and a release ships them. No stack installs them: `mac-check` lives in omarchy-mac's `tools/hardware/` and the others in `test/manual/`, so there is no installed copy to call, and a pinned copy keeps the parsed lines stable between releases. Once the tool ships inside the omarchy-mac package (after quattro-upstream lands), the package can carry the scripts and `bundled.py` point at them.
+
+## Look and listen
+
+The Display, Audio and Input sections end with checks the human sees or hears (`omarchy_m_test/display.py`, `omarchy_m_test/audio.py`), answered yes, no or skip:
+
+- **Display.** Is the bar clear of the camera notch (only asked on Macs with one), did the built-in screen step its brightness three times and go back (brightnessctl; put back before the question, and by a restorer if the run stops), is the cursor visible everywhere?
+- **Audio.** The built-in microphone is measured for 3 s (peak and RMS computed on the Mac; the sound is never kept). A 2 s tone plays only once speaker protection is confirmed active: speakersafetyd running, "Speaker volumes unlocked" in this boot's kernel log, and asahi-audio's DSP filter sink (`audio_effect.<board>-convolver`) as the default output. Otherwise nothing plays and the check is skipped with the reason. The volume is set to 30%, never more, and put back. Then the human plugs headphones in and says whether the Mac switched to them.
+- **Input.** With the ambient light sensor and the keyboard light present, the human covers the camera and notch and says whether the keyboard light came on; the sensor and the keys are read before and while covered.
+
+Omarchy-layer questions (the notch bar, the keyboard light) aren't asked on reference runs. Output and input names are kept only when they are the Mac's own.
 
 The report's `system` block records the stack (`converged` for the omarchy-mac or omarchy package, `mx-mac` for the fork's `omarchy-dev`, `legacy-omarchy-mac` for a checkout, or `reference` for another distro, where Omarchy-layer results are skipped), the os-release ID, the boot loader, whether the root filesystem is encrypted, and the versions of the stack, boot and hardware packages. On a candidate image, whose target record (`/var/lib/omarchy/image/target`, retired to `target.booted` by the first boot) is present, it also records the candidate set: the record's `candidate_set`, else the factory seal's (`/var/lib/omarchy/factory-sealed`, on the root after a factory reset). The image builder doesn't write `candidate_set` into the target record yet, so a freshly installed candidate image carries no tag until it does.
 

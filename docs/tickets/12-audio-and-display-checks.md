@@ -8,7 +8,7 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Speaker tone plays only when speaker protection is active; volume capped at 30% and restored
-- [ ] Microphone capture shows signal; headphone jack detection prompt
-- [ ] Notch-bar, brightness, ambient light/keyboard light and cursor checks with human confirmation where needed
-- [ ] Seam A tests with scripted answers, including speaker protection inactive (tone skipped)
+- [x] Speaker tone plays only when speaker protection is active; volume capped at 30% and restored
+- [x] Microphone capture shows signal; headphone jack detection prompt
+- [x] Notch-bar, brightness, ambient light/keyboard light and cursor checks with human confirmation where needed
+- [x] Seam A tests with scripted answers, including speaker protection inactive (tone skipped)

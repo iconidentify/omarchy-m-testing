@@ -37,8 +37,8 @@ class ExportsTest < ActionDispatch::IntegrationTest
     assert_equal DataExport::REPORT_COLUMNS, rows[0]
     assert_equal 3, rows.size
     m2 = DataExport::REPORT_COLUMNS.zip(rows[1]).to_h
-    assert_equal({ "id" => @m2["id"], "board" => "j416c", "stack" => "converged", "omarchy_version" => "4.0.0", "checks" => "36",
-                   "pass" => "31", "fail" => "4", "skip" => "1", "encryption" => "on" },
+    assert_equal({ "id" => @m2["id"], "board" => "j416c", "stack" => "converged", "omarchy_version" => "4.0.0", "checks" => "43",
+                   "pass" => "32", "fail" => "4", "skip" => "7", "encryption" => "on" },
                  m2.slice("id", "board", "stack", "omarchy_version", "checks", "pass", "fail", "skip", "encryption"))
   end
 

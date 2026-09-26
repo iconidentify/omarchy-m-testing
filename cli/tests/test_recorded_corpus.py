@@ -16,7 +16,7 @@ import unittest
 
 from omarchy_m_test import privacy
 from omarchy_m_test.app import main
-from omarchy_m_test.recording import RECORDED_SOURCES, RecordedHost
+from omarchy_m_test.recording import ENDED, RECORDED_SOURCES, RecordedHost
 from tests.corpus import MACHINES, forbidden, raw_host, raw_recording, seeded_recording_path
 from tests.schema_validator import errors
 
@@ -55,7 +55,7 @@ CORPUS_HOLDS = {
 
 def record(machine: str) -> RecordedHost:
     """Run the whole CLI in record mode on a corpus machine."""
-    mac = raw_host(machine, answers=[ENTER])
+    mac = raw_host(machine, answers=[ENTER, ENDED])
     status = main(["--dry-run", "--record", RECORDING_FILE], mac)
     assert status == 0, mac.output
     return mac
@@ -106,7 +106,7 @@ class RecordModeTest(unittest.TestCase):
             with self.subTest(machine=machine):
                 recorded = record(machine)
 
-                replay = RecordedHost(json.loads(recorded.written[RECORDING_FILE]), answers=[ENTER])
+                replay = RecordedHost(json.loads(recorded.written[RECORDING_FILE]), answers=[ENTER, ENDED])
                 status = main(["--dry-run"], replay)
 
                 self.assertEqual(status, 0)

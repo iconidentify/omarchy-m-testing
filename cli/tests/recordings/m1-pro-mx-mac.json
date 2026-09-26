@@ -174,6 +174,57 @@
     },
     {
       "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n"
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n"
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j314-convolver\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "uname",
         "-a"
       ],
@@ -298,6 +349,7 @@
     "/usr/share/vulkan/icd.d": [
       "asahi_icd.aarch64.json"
     ],
+    "/sys/bus/iio/devices": null,
     "/sys/class/power_supply": [
       "macsmc-battery"
     ],

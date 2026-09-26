@@ -20,6 +20,7 @@ CLI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, CLI)
 
 from omarchy_m_test.app import main  # noqa: E402
+from omarchy_m_test.recording import ENDED  # noqa: E402
 from tests.corpus import MACHINES, raw_host, raw_recording, seeded_recording_path  # noqa: E402
 
 OUT = "recording.json"
@@ -28,7 +29,8 @@ GOLDEN = os.path.join(os.path.dirname(CLI), "schema", "golden")
 
 
 def reseed(machine: str) -> str:
-    host = raw_host(machine, answers=[""])
+    # The disclaimer accepted, then no answers: the human checks are asked and recorded as not answered.
+    host = raw_host(machine, answers=["", ENDED])
     status = main(["--dry-run", "--record", OUT], host)
     if status != 0:
         raise SystemExit(f"{machine}: the CLI exited {status}")

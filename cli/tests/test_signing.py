@@ -23,7 +23,8 @@ import unittest
 from omarchy_m_test import signing
 from omarchy_m_test.app import main
 from omarchy_m_test.host import RealHost
-from omarchy_m_test.recording import RecordedHost
+from omarchy_m_test.recording import ENDED, RecordedHost
+from tests.desktop import UNANSWERED
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, RECORDINGS, REPORT_FILE, SCHEMA, SCHEMA_DIR, SITE, created, golden, read
 
@@ -44,7 +45,7 @@ def recording(name: str = "m2-max-image2", kernel: str | None = None) -> dict:
     return rec
 
 
-def signing_mac(state: str, rec: dict | None = None, answers=(ENTER,), responses=()) -> RecordedHost:
+def signing_mac(state: str, rec: dict | None = None, answers=(ENTER, ENDED), responses=()) -> RecordedHost:
     """The recorded Mac, with its state directory at `state` and a real machine key there."""
     rec = copy.deepcopy(rec or recording())
     rec["env"] = {**rec.get("env", {}), "XDG_STATE_HOME": state}
@@ -96,7 +97,7 @@ class MachineKeyTest(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(stat.S_IMODE(os.stat(self.key).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(os.path.dirname(self.key)).st_mode), 0o700)
-        unsigned = RecordedHost(recording(), answers=[ENTER])
+        unsigned = RecordedHost(recording(), answers=[ENTER, ENDED])
         main(["--dry-run"], unsigned)
         self.assertEqual(prompts(mac), prompts(unsigned))
         self.assertNotIn("isn't signed", mac.output)
@@ -152,7 +153,7 @@ class MachineKeyTest(unittest.TestCase):
         self.assertFalse(verifies(swapped))
 
     def test_the_signed_report_is_what_is_shown_and_uploaded(self):
-        status, mac = self.run_cli("--site", SITE, answers=[ENTER, "y"], responses=[created()])
+        status, mac = self.run_cli("--site", SITE, answers=[ENTER, *UNANSWERED, "y"], responses=[created()])
 
         self.assertEqual(status, 0)
         self.assertIn(("show", mac.written[REPORT_FILE]), mac.transcript)
@@ -218,7 +219,7 @@ class UnsignedTest(unittest.TestCase):
         rec = recording()
         rec["env"] = {"HOME": "/home/<user>"}
         rec["files"] = {**rec["files"], "/home/<user>/.local/state/omarchy-m-test/checkpoint.json": None}
-        mac = RecordedHost(rec, answers=[ENTER])
+        mac = RecordedHost(rec, answers=[ENTER, ENDED])
 
         status = main(["--dry-run"], mac)
 
@@ -229,7 +230,7 @@ class UnsignedTest(unittest.TestCase):
                       "The site only accepts signed reports.", mac.output)
 
     def test_without_a_home_directory_there_is_nowhere_to_keep_the_key(self):
-        mac = RecordedHost(recording(), answers=[ENTER])
+        mac = RecordedHost(recording(), answers=[ENTER, ENDED])
 
         main(["--dry-run"], mac)
 
