@@ -5,9 +5,9 @@ class GapsInventoryTest < ActionDispatch::IntegrationTest
   def row(compatible) = %(#unclaimed-hardware tr.unclaimed-row[data-compatible="#{compatible}"])
 
   test "the kernel-gap page lists hardware no driver claims, unknown hardware first" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
-    upload_report golden("m1-pro-mx-mac"), ip: "10.0.0.3"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "b"
+    upload_report golden("m1-pro-mx-mac"), machine: "c"
 
     get "/gaps"
     assert_response :success
