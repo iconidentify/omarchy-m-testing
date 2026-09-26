@@ -1,7 +1,7 @@
 {
   "recording_version": 1,
   "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac",
-  "source": "omarchy-m-test --record against tests/corpus/m1-pro-mx-mac/ (scrubbed). Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them.",
+  "source": "omarchy-m-test --record against tests/corpus/m1-pro-mx-mac/ (scrubbed). Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such.",
   "commands": [
     {
       "argv": [
@@ -20,6 +20,96 @@
       "returncode": 0,
       "stdout": "7.1.13-1-1-ARCH\n",
       "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy-dev 4.0.2.r6879.gaae2586-1\nomarchy-settings-dev 4.0.2.r6879.gaae2586-1\nlinux-asahi 7.1.13.asahi1-1\nm1n1 1.5.2-1\nuboot-asahi 2025.10.asahi1-1\nmesa 1:26.1.4-1\nvulkan-asahi 1:26.1.4-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy' was not found\nerror: package 'omarchy-settings' was not found\nerror: package 'omarchy-mac' was not found\nerror: package 'omarchy-mac-boot' was not found\nerror: package 'omarchy-mac-keyring' was not found\nerror: package 'linux-aurora' was not found\nerror: package 'm1n1-aurora' was not found\nerror: package 'limine' was not found\n"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/nvme0n1p5[/@]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/nvme0n1p5"
+      ],
+      "returncode": 0,
+      "stdout": "part btrfs\ndisk \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 1,
+      "stdout": "INFO  platform         Apple MacBook Pro (14-inch, M1 Pro, 2021) (apple,j314s apple,t6000 apple,arm-platform)\nPASS  kernel           running 7.1.13-1-1-ARCH from linux-asahi 7.1.13.asahi1-1\nINFO  packages         m1n1 1.5.2-1, uboot-asahi 2025.10.asahi1-1, omarchy-dev 4.0.2.r6879.gaae2586-1, omarchy-settings-dev 4.0.2.r6879.gaae2586-1\nPASS  repos            core extra alarm asahi-alarm omarchy\nPASS  kernel-repo      linux-asahi updates from [asahi-alarm]\nPASS  boot-check       running linux-asahi 7.1.13-1-1-ARCH; installed boot files match\nINFO  boot-loader      GRUB, ESP /boot/efi\nINFO  boot-file        <hex>  /boot/vmlinuz-linux-asahi\nINFO  boot-file        <hex>  /boot/grub/grub.cfg\nINFO  boot-file        <hex>  /boot/efi/m1n1/boot.bin\nPASS  units            no failed system or user units\nFAIL  vendor-firmware  omarchy-vendor-firmware.service is not installed\nPASS  speakersafetyd   speakersafetyd is active\nPASS  displays         1 active: eDP-1 3024x1964@120\nPASS  sound-cards      AppleJ314HPAI, AppleJ314\nPASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)\nPASS  wifi             wlan0 is connected\nFAIL  wifi-backend     NetworkManager is not configured with wifi.backend=iwd\nPASS  bluetooth        controller powered\nPASS  snapshots        /.snapshots is a btrfs subvolume holding 4 snapshots\nSKIP  migrations       omarchy-migrate is not installed\nINFO  coredumps        none this boot\n12 passed, 2 failed, 0 warnings, 1 skipped\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "-- No entries --\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "vulkaninfo: command not found\n"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "eglinfo: command not found\n"
     },
     {
       "argv": [
@@ -79,11 +169,91 @@
     "/proc/device-tree/model": {
       "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
     },
+    "/etc/os-release": {
+      "text": "NAME=\"Omarchy\"\nPRETTY_NAME=\"Omarchy\"\nID=omarchy\nID_LIKE=arch\nBUILD_ID=\"4.0.2.r6879.gaae2586\"\nVERSION_ID=\"4.0.2.r6879.gaae2586\"\nHOME_URL=\"https://omarchy.org/\"\n"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/image/target.booted": null,
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Charging\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "87\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2064000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_max_freq": {
+      "text": "3228000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/related_cpus": {
+      "text": "2 3 4 5\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq": {
+      "text": "3228000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/related_cpus": {
+      "text": "6 7 8 9\n"
+    },
     "/proc/sys/kernel/hostname": {
       "text": "<hostname>\n"
     }
   },
   "dirs": {
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "module",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.aarch64.json"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-battery"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "policy0",
+      "policy2",
+      "policy6"
+    ],
     "/home": [
       "<user>"
     ]

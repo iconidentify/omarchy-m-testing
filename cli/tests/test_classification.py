@@ -219,7 +219,7 @@ class ExplainTest(unittest.TestCase):
         status, mac = self.explain(saved_report([{"id": "made.up", "status": "fail"}]))
 
         self.assertEqual(status, 0)
-        self.assertIn("made.up  not in feature catalogue v1", mac.output)
+        self.assertIn(f"made.up  not in feature catalogue v{CATALOGUE['catalogue_version']}", mac.output)
         self.assertEqual(mac.commands_run, [])
         self.assertEqual([e for e in mac.transcript if e[0] == "prompt"], [])
         self.assertEqual(mac.written, {})

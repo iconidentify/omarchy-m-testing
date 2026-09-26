@@ -23,6 +23,114 @@
     },
     {
       "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-settings 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-mac 0.1.0-5.361571887310001\nomarchy-mac-boot 20260925-3\nlinux-aurora 7.1.12.aurora2-2\nm1n1-aurora 1.6.1.aurora1-3\nuboot-asahi 2026.07.asahi2-4\nlimine 12.9.0-1\nmesa 1:26.2.3-1\nvulkan-asahi 1:26.2.3-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy-dev' was not found\nerror: package 'omarchy-settings-dev' was not found\nerror: package 'omarchy-mac-keyring' was not found\nerror: package 'linux-asahi' was not found\nerror: package 'm1n1' was not found\n"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/mapper/root[/@]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/mapper/root"
+      ],
+      "returncode": 0,
+      "stdout": "crypt btrfs\npart crypto_LUKS\ndisk \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 0,
+      "stdout": "INFO  platform         Apple MacBook Pro (16-inch, M2 Max, 2023) (apple,j416c apple,t6021 apple,arm-platform)\nPASS  kernel           running 7.1.12-2-2-ARCH from linux-aurora 7.1.12.aurora2-2\nINFO  packages         m1n1-aurora 1.6.1.aurora1-3, uboot-asahi 2026.07.asahi2-4, limine 12.9.0-1, omarchy 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001, omarchy-settings 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001, omarchy-mac 0.1.0-5.361571887310001, omarchy-mac-boot 20260925-3\nPASS  repos            omarchy asahi-alarm core extra alarm\nPASS  kernel-repo      linux-aurora updates from [omarchy]\nPASS  boot-check       running linux-aurora 7.1.12-2-2-ARCH; installed boot files match\nINFO  boot-loader      Limine, ESP /boot/efi\nINFO  boot-file        <hex>  /boot/efi/EFI/Linux/omarchy_linux-aurora.efi\nINFO  boot-file        <hex>  /boot/efi/limine.conf\nINFO  boot-file        <hex>  /boot/efi/m1n1/boot.bin\nPASS  units            no failed system or user units\nPASS  vendor-firmware  omarchy-vendor-firmware.service finished in this boot\nPASS  speakersafetyd   speakersafetyd is active\nPASS  displays         2 active: eDP-1 3456x2234@120, USB-2 3440x1440@60\nPASS  sound-cards      AppleJ416HPAI, AppleJ416\nPASS  default-sink     MacBook Pro J416 Speakers (audio_effect.j416-convolver)\nPASS  wifi             wlan0 is connected\nPASS  wifi-backend     NetworkManager uses iwd\nPASS  bluetooth        controller powered\nPASS  snapshots        /.snapshots is a btrfs subvolume holding 1 snapshots\nPASS  migrations       no pending migrations\nINFO  coredumps        none this boot\n15 passed, 0 failed, 0 warnings, 0 skipped\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 0,
+      "stdout": "PASS audio stack installed\nPASS speakersafetyd enabled and active\nspeakersafetyd presets: /usr/lib/systemd/system-preset/80-omarchy-apple.preset /usr/lib/systemd/system-preset/80-omarchy-mac-audio.preset /usr/lib/systemd/system-preset/80-omarchy-mac.preset \nspeakersafetyd enable links: /etc/systemd/system/multi-user.target.wants/speakersafetyd.service \nFAIL only omarchy-mac presets speakersafetyd\nPASS speakersafetyd enabled by exactly one link\nPASS speaker amps unlocked this boot\nPASS speaker DSP sink present\nPASS speaker and headphone sinks never suspend\nPASS mic mapper running\ndefault source: omarchy_asahi_mic.monitor\nSep 26 08:49:17 <hostname> systemd[1351]: Starting Reconcile the Asahi microphone stereo mapping...\nSep 26 08:49:17 <hostname> systemd[1351]: Started Reconcile the Asahi microphone stereo mapping.\nSep 26 08:49:17 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\nSep 26 09:41:45 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:apple-display-check",
+        "--read-only"
+      ],
+      "returncode": 0,
+      "stdout": "ok - detector says apple-silicon\nomarchy-mac 0.1.0-5.361571887310001\nok - omarchy-mac is installed\nok - appledrm show_notch=1 is configured\nok - appledrm is showing the notch strip\n  monitor eDP-1 3456x2234 scale 2\n  monitor USB-2 3440x1440 scale 1\n  expect eDP-1 3456x2234 on the 16\" M2 Max (2160 without the strip); check by eye that the bar clears the camera cutout\nok - Hyprland draws the cursor in software\nok - the software cursor was written once\nok - sddm waits for the display controller\nok - the display controller card exists\n  kernel: [   81.120908] <hostname> kernel: apple-drm soc:display-subsystem: bound 389c00000.dcp (ops dcp_comp_ops [appledrm])\n  sddm: [   83.238736] <hostname> systemd[1]: Starting Simple Desktop Display Manager...\n  sddm: [   85.440239] <hostname> systemd[1]: Started Simple Desktop Display Manager.\n  expect sddm Started after the appledrm card; by eye: greeter typing fills dots on the built-in panel with USB-C monitors attached\nok - the panel backlight is apple-panel-bl\n  read-only: skipped the panel and external brightness steps\nok - ALS and keyboard LED are available\nok - the ALS keyboard loop runs\n  lux 733, keys 0/255\n  read-only: skipped the lock-style keyboard blank\n  by eye: dim the keys to off with the keyboard-brightness keys; they stay off until the room light changes a lot\n\n0 failure(s)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-26T08:37:37+10:00 <hostname> omarchy-provision-hardware[12013]: Error: setup failed in /usr/share/omarchy/install/hardware/vulkan.sh (exit code: 1). See /var/log/omarchy-install.log for details.\n2026-09-26T08:37:37+10:00 <hostname> omarchy-provision-hardware[12013]: Error: Deferred hardware step failed: install/hardware/vulkan.sh (see /var/log/omarchy-install.log); the next run resumes here\n2026-09-26T08:37:37+10:00 <hostname> systemd[1]: omarchy-provision-hardware.service: Main process exited, code=exited, status=75/TEMPFAIL\n2026-09-26T08:37:37+10:00 <hostname> systemd[1]: omarchy-provision-hardware.service: Failed with result 'exit-code'.\n2026-09-26T08:40:02+10:00 <hostname> systemd[1]: Reload requested from client PID 33620 ('systemctl') (unit omarchy-provision-owner.service)...\n2026-09-26T08:45:02+10:00 <hostname> sudo[47749]:   <user> : PWD=<home> ; USER=root ; COMMAND=/usr/bin/journalctl -b -u omarchy-provision-hardware.service --no-pager -q\n2026-09-26T08:46:15+10:00 <hostname> sudo[50698]:   <user> : PWD=<home> ; USER=root ; COMMAND=/usr/bin/systemctl start omarchy-provision-hardware.service\n2026-09-26T08:46:29+10:00 <hostname> systemd[1]: Reload requested from client PID 52171 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:38+10:00 <hostname> systemd[1]: Reload requested from client PID 57896 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:38+10:00 <hostname> omarchy-provision-hardware[50707]: Rebuilding the initramfs for the deferred hardware setup\n2026-09-26T08:46:45+10:00 <hostname> systemd[1]: Reload requested from client PID 62563 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:45+10:00 <hostname> omarchy-provision-hardware[50707]: Deferred hardware setup is complete\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "vulkaninfo: command not found\n"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "eglinfo: command not found\n"
+    },
+    {
+      "argv": [
         "nmcli",
         "--get-values",
         "NAME",
@@ -60,17 +168,6 @@
     {
       "argv": [
         "journalctl",
-        "--unit=omarchy-provision-hardware.service",
-        "--output=short-iso",
-        "--no-pager"
-      ],
-      "returncode": 0,
-      "stdout": "2026-09-26T08:37:37+10:00 <hostname> omarchy-provision-hardware[12013]: Error: setup failed in /usr/share/omarchy/install/hardware/vulkan.sh (exit code: 1). See /var/log/omarchy-install.log for details.\n2026-09-26T08:37:37+10:00 <hostname> omarchy-provision-hardware[12013]: Error: Deferred hardware step failed: install/hardware/vulkan.sh (see /var/log/omarchy-install.log); the next run resumes here\n2026-09-26T08:37:37+10:00 <hostname> systemd[1]: omarchy-provision-hardware.service: Main process exited, code=exited, status=75/TEMPFAIL\n2026-09-26T08:37:37+10:00 <hostname> systemd[1]: omarchy-provision-hardware.service: Failed with result 'exit-code'.\n2026-09-26T08:40:02+10:00 <hostname> systemd[1]: Reload requested from client PID 33620 ('systemctl') (unit omarchy-provision-owner.service)...\n2026-09-26T08:45:02+10:00 <hostname> sudo[47749]:   <user> : PWD=<home> ; USER=root ; COMMAND=/usr/bin/journalctl -b -u omarchy-provision-hardware.service --no-pager -q\n2026-09-26T08:46:15+10:00 <hostname> sudo[50698]:   <user> : PWD=<home> ; USER=root ; COMMAND=/usr/bin/systemctl start omarchy-provision-hardware.service\n2026-09-26T08:46:29+10:00 <hostname> systemd[1]: Reload requested from client PID 52171 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:38+10:00 <hostname> systemd[1]: Reload requested from client PID 57896 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:38+10:00 <hostname> omarchy-provision-hardware[50707]: Rebuilding the initramfs for the deferred hardware setup\n2026-09-26T08:46:45+10:00 <hostname> systemd[1]: Reload requested from client PID 62563 ('systemctl') (unit omarchy-provision-hardware.service)...\n2026-09-26T08:46:45+10:00 <hostname> omarchy-provision-hardware[50707]: Deferred hardware setup is complete\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "journalctl",
         "--boot=0",
         "--unit=NetworkManager.service",
         "--unit=iwd.service",
@@ -100,11 +197,94 @@
     "/proc/device-tree/model": {
       "text": "Apple MacBook Pro (16-inch, M2 Max, 2023)\u0000"
     },
+    "/etc/os-release": {
+      "text": "NAME=\"Omarchy\"\nPRETTY_NAME=\"Omarchy\"\nID=omarchy\nID_LIKE=arch\nBUILD_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nVERSION_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nANSI_COLOR=\"38;2;158;206;106\"\nHOME_URL=\"https://omarchy.org/\"\n"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/image/target.booted": {
+      "text": "format=1\nplatform=apple-silicon\n"
+    },
+    "/var/lib/omarchy/factory-sealed": null,
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Full\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "100\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2424000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1 2 3\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq": {
+      "text": "660000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq": {
+      "text": "3504000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/related_cpus": {
+      "text": "4 5 6 7\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_min_freq": {
+      "text": "660000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_max_freq": {
+      "text": "3504000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/related_cpus": {
+      "text": "8 9 10 11\n"
+    },
     "/proc/sys/kernel/hostname": {
       "text": "<hostname>\n"
     }
   },
   "dirs": {
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "module",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.aarch64.json"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-battery"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "policy0",
+      "policy4",
+      "policy8"
+    ],
     "/home": [
       "<user>"
     ]

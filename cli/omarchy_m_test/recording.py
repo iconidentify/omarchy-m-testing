@@ -18,6 +18,9 @@ A recording is a JSON file (recording_version 1):
     "dirs": {"/proc/device-tree": ["compatible", "model"]}
   }
 
+A bundled script's run (Host.run_bundled) is a command whose argv starts with
+"bundled:<name>", e.g. ["bundled:mac-check"].
+
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A binary file the recorder could not scrub is kept only as its size and
 replays as that many zero bytes.
@@ -45,7 +48,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
-from .host import CommandResult, Host, HttpResponse
+from .host import CommandResult, Host, HttpResponse, bundled_argv
 from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
@@ -119,6 +122,9 @@ class RecordedHost:
             if entry["argv"] == argv:
                 return CommandResult(entry["returncode"], entry.get("stdout", ""), entry.get("stderr", ""))
         raise RecordingMiss(f"command not in recording: {argv}")
+
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        return self.run(bundled_argv(name, args))
 
     def read_file(self, path: str) -> bytes:
         files = self.recording.get("files", {})
@@ -194,6 +200,13 @@ class RecordingHost:
     def run(self, argv: Sequence[str]) -> CommandResult:
         argv = list(argv)
         result = self.inner.run(argv)
+        if not any(entry["argv"] == argv for entry in self.commands):
+            self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
+        return result
+
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        argv = bundled_argv(name, args)
+        result = self.inner.run_bundled(name, args)
         if not any(entry["argv"] == argv for entry in self.commands):
             self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
         return result

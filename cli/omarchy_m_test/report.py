@@ -10,7 +10,7 @@ from .consent import CONSENT_VERSION
 from .machine import Machine
 
 
-def build(machine: Machine, checks: list[dict], catalogue: Catalogue) -> dict:
+def build(machine: Machine, system: dict, checks: list[dict], catalogue: Catalogue) -> dict:
     """The report, with every check result explained against the catalogue."""
     classified = [{**check, "classification": catalogue.classify(check, machine.soc, machine.board)} for check in checks]
     return {
@@ -26,6 +26,7 @@ def build(machine: Machine, checks: list[dict], catalogue: Catalogue) -> dict:
             "arch": machine.arch,
             "kernel": machine.kernel,
         },
+        "system": system,
         "checks": classified,
     }
 

@@ -6,7 +6,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report
+from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report, system
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -109,8 +109,11 @@ def _run(args: argparse.Namespace, host: Host) -> int:
         host.show("Cancelled. Nothing was run.")
         return EXIT_CANCELLED
 
-    host.show(f"Checking {machine.model}...")
-    built = report.build(machine, [checks.system_identity(machine)], catalogue)
+    found = system.detect(host)
+    host.show(f"Checking {machine.model} ({found.describe()})...")
+    host.show("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
+    results, system_block = checks.run(host, machine, found, catalogue)
+    built = report.build(machine, system_block, results, catalogue)
     for result in built["checks"]:
         host.show(line(result, result["classification"], catalogue))
 
