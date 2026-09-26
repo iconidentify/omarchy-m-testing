@@ -2,7 +2,7 @@
 
 The omarchy-m-testing.org site and upload API (Rails 8, Postgres).
 
-- `POST /api/v1/reports`: upload a report; it must validate against `../schema/report-v1.schema.json` and use only check ids the feature catalogue knows. Returns `201` with `report_url` and `deletion_url`, `422` with `details` when it doesn't match the schema, uses an outdated schema version or has unknown check ids (both with upgrade instructions), `400` when the body isn't JSON, `429` past `UPLOADS_PER_HOUR` (default 30) uploads an hour from one IP address.
+- `POST /api/v1/reports`: upload a report; it must validate against `../schema/report-v1.schema.json` and use only check ids the feature catalogue knows. Returns `201` with `report_url` and `deletion_url`, `422` with `details` when it doesn't match the schema, uses an outdated schema version or has unknown check ids (both with upgrade instructions), `422` when it isn't signed by its machine's key or its signature doesn't match it, `400` when the body isn't JSON, `429` past `UPLOADS_PER_HOUR` (default 30) uploads an hour from one IP address or `UPLOADS_PER_HOUR_PER_MACHINE` (default 10) from one machine key.
 - Pages: `/` (install and the matrix), `/matrix` (model × stack/version, `?stack=` filters), `/models/:board`, `/features/:id`, `/gaps` (kernel gaps), `/reports`, `/reports/:id` (terminal-style), `/data`.
 - Exports, CC0, visible reports only: `/api/v1/reports.json` (every report as uploaded), `/api/v1/reports.csv` (one row per report), `/api/v1/checks.csv` (one row per check), `/api/v1/matrix.json`.
 - `GET /install`: the one-line installer, `../installer/install.sh` (override with `INSTALLER_PATH`).
@@ -10,7 +10,9 @@ The omarchy-m-testing.org site and upload API (Rails 8, Postgres).
 - `GET /reports/:id/deletion?token=...`: the deletion link; deleting removes the report row and with it all its evidence.
 - `/admin`: sign in with the secret `ADMIN_TOKEN` to hide, show again or delete any report. Without `ADMIN_TOKEN` there is no admin. Changing it signs the admin out.
 
-Aggregation: community reports show up at once; a matrix cell takes a colour only when two or more distinct machines agree (each machine counted once, with the latest state it tested). Until reports carry machine keys (ticket 09), a machine is a keyed digest of the uploader's IP address (`reports.machine_id`, never shown or exported). Behind Railway's edge the client address is read from `X-Real-IP` (`CLIENT_IP_HEADER` overrides it in any environment).
+Aggregation: community reports show up at once; a matrix cell takes a colour only when two or more distinct machines agree (each machine counted once, with the latest state it tested). A machine is its signing key: every report is signed by a per-machine ed25519 key the CLI creates on its first run (`ssh-keygen -Y sign`, verified with Ruby's OpenSSL in `app/models/machine_signature.rb`), and `reports.machine_id` is `key:` and a keyed digest of the public key. The key and the signature are not stored, shown or exported. Reports uploaded before machine keys keep `ip:` ids, a keyed digest of the uploader's network.
+
+The per-network limit reads the client address from `X-Real-IP` behind Railway's edge (`CLIENT_IP_HEADER` overrides it in any environment). Railway's edge overwrites a client-sent `X-Real-IP` (checked against production: uploads each claiming a different `X-Real-IP` still shared one limit); `X-Forwarded-For` isn't used, since Railway doesn't document whether it strips or appends a client-sent one. Keep Railway's CDN off for the site: behind it `X-Real-IP` is the CDN's address.
 
 The schema is read from `../schema` (override with `REPORT_SCHEMA_DIR`) and the feature catalogue from `../catalogue/catalogue.json` (override with `CATALOGUE_PATH`).
 

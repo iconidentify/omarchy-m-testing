@@ -43,11 +43,15 @@ Tests replace the real host with a `RecordedHost` (`omarchy_m_test/recording.py`
 
 Every report passes `omarchy_m_test/privacy.py` before it is written, shown or uploaded: only the allowlisted fields (the same tree as `schema/report-v1.schema.json`) reach it, and every evidence line is scrubbed of MAC and IP addresses, Wi-Fi network names, home paths, hostnames, usernames, e-mail addresses, serial numbers, UUIDs and long hex identifiers. Evidence is text only and at most 64 KiB per report; the site refuses reports that break either rule.
 
+## Machine key
+
+On its first run the CLI creates an ed25519 key for this Mac at `$XDG_STATE_HOME/omarchy-m-test/machine-key` (`~/.local/state/...`; 0600, in a 0700 directory) with `ssh-keygen`, asking nothing, and reuses it on every later run. Every report carries its public key and a signature (`ssh-keygen -Y sign`, namespace `omarchy-m-test-report`) over its canonical form: the report without `signature`, as JSON with keys sorted, no whitespace and non-ASCII as UTF-8 (`omarchy_m_test/signing.py`). The private key never leaves the Mac, and record mode never records the key. The site refuses unsigned or tampered reports, groups reports by a keyed digest of the public key and never shows or exports the key. Without `ssh-keygen` the report is written unsigned and the run says the site won't take it.
+
 ## Recording a Mac
 
     bin/omarchy-m-test --dry-run --record my-mac.json
 
-Record mode runs as usual and also saves what the Mac answered at the host boundary: every command, file and directory the CLI read, plus the sources later checks need (`RECORDED_SOURCES` in `recording.py`: kernel log, device tree, first-boot, Wi-Fi and lid journals, uname, PCI, input devices, addresses). The recording is scrubbed before it is saved. Prompts, answers and uploads are not recorded. Check a new recording by eye before committing it, then add it to `tests/recordings/`.
+Record mode runs as usual and also saves what the Mac answered at the host boundary: every command, file and directory the CLI read, plus the sources later checks need (`RECORDED_SOURCES` in `recording.py`: kernel log, device tree, first-boot, Wi-Fi and lid journals, uname, PCI, input devices, addresses). The recording is scrubbed before it is saved. Prompts, answers, uploads and the machine key are not recorded. Check a new recording by eye before committing it, then add it to `tests/recordings/`.
 
 `tests/corpus/` holds the real M1 and M2 evidence the seeded recordings came from, pseudonymized (every identifier swapped for a same-shape decoy) because this repository is public. Answers never captured on a Mac (most of the M1's, and the M2's mac-check output) are reconstructed from what is known of the install and say so in their `note`; the v0.1 dogfood run replaces them. `scripts/reseed_recordings.py` reruns record mode over the corpus and rewrites `tests/recordings/` and the golden reports.
 

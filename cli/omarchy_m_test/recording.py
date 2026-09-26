@@ -48,6 +48,11 @@ CommandResult, a string (its stdout, exit 0), EOF or INTERRUPT. The host is
 not at a terminal unless the test gives one (`terminal`). A file the CLI wrote
 reads back what it wrote, until it removes it. Everything shown, prompted,
 written and posted is kept for assertions.
+
+The machine key is never recorded. A RecordedHost has none unless the test
+hands it a `signer` (a machine_sign function, e.g. a RealHost's with the
+key in a temporary directory); without one, signing fails as on a machine
+without ssh-keygen. Record mode passes signing straight through.
 """
 
 from __future__ import annotations
@@ -55,9 +60,9 @@ from __future__ import annotations
 import base64
 import json
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
-from .host import CommandResult, Host, HttpResponse, NetworkError, Terminal, bundled_argv
+from .host import CommandResult, Host, HttpResponse, MachineSignature, NetworkError, SigningError, Terminal, bundled_argv
 from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
@@ -114,6 +119,7 @@ class RecordedHost:
     responses: list[HttpResponse] = field(default_factory=list)
     fetches: dict[str, HttpResponse] = field(default_factory=dict)
     terminal_size: Terminal | None = None
+    signer: Callable[[str, str, bytes], MachineSignature] | None = None
     # What happened, in order: ("show", text) / ("prompt", message, answer) / ("tty", argv, answer)
     transcript: list[tuple] = field(default_factory=list)
     commands_run: list[list[str]] = field(default_factory=list)
@@ -122,6 +128,8 @@ class RecordedHost:
     gets: list[str] = field(default_factory=list)
     removed: set[str] = field(default_factory=set)
     private: set[str] = field(default_factory=set)
+    # (key_path, namespace, message) per machine_sign call
+    signed: list[tuple[str, str, bytes]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         version = self.recording.get("recording_version")
@@ -220,6 +228,12 @@ class RecordedHost:
         self.written.pop(path, None)
         self.removed.add(path)
 
+    def machine_sign(self, key_path: str, namespace: str, message: bytes) -> MachineSignature:
+        self.signed.append((key_path, namespace, message))
+        if self.signer is None:
+            raise SigningError("ssh-keygen isn't installed (it comes with openssh)")
+        return self.signer(key_path, namespace, message)
+
     def post_json(self, url: str, body: str) -> HttpResponse:
         self.posts.append(Post(url, body))
         if not self.responses:
@@ -311,6 +325,9 @@ class RecordingHost:
 
     def write_file(self, path: str, text: str, private: bool = False) -> None:
         self.inner.write_file(path, text, private)
+
+    def machine_sign(self, key_path: str, namespace: str, message: bytes) -> MachineSignature:
+        return self.inner.machine_sign(key_path, namespace, message)
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         return self.inner.post_json(url, body)

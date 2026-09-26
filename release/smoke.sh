@@ -32,7 +32,7 @@ fi
 grep -q "^Uploaded\. Your report" "$t/run.log" && fail "--dry-run uploaded something"
 
 echo "== upload a golden report"
-golden="${GOLDEN:-$repo/schema/golden/m2-max-image2.json}"
+golden="${GOLDEN:-$repo/schema/golden/signed/m2-max-image2.json}"
 code="$(curl -sS -o "$t/upload.json" -w '%{http_code}' -H 'Content-Type: application/json' -H 'Accept: application/json' \
   --data-binary "@$golden" "$site/api/v1/reports")"
 [[ $code == 201 ]] || fail "upload answered $code: $(cat "$t/upload.json")"

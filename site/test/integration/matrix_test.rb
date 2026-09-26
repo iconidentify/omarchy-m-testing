@@ -28,7 +28,7 @@ class MatrixTest < ActionDispatch::IntegrationTest
   end
 
   test "two reports from the same machine don't confirm each other" do
-    2.times { upload_report golden("m2-max-image2"), ip: "10.0.0.1" }
+    2.times { upload_report golden("m2-max-image2"), machine: "a" }
 
     get "/matrix"
     assert_equal "unconfirmed", state(M2, "gpu")
@@ -36,8 +36,8 @@ class MatrixTest < ActionDispatch::IntegrationTest
   end
 
   test "two distinct machines agreeing colour the cell" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "b"
 
     get "/matrix"
     assert_equal "works", state(M2, "gpu")
@@ -52,8 +52,8 @@ class MatrixTest < ActionDispatch::IntegrationTest
   test "agreeing failures are red, missing support blue and unknown hardware magenta" do
     outcomes = { "display.backlight" => "fails", "input.ambient-light" => "not-in-aurora", "power.battery" => "unknown-hardware",
                  "network.bluetooth" => "not-applicable" }
-    upload_report golden_with("m2-max-image2", outcomes), ip: "10.0.0.1"
-    upload_report golden_with("m2-max-image2", outcomes), ip: "10.0.0.2"
+    upload_report golden_with("m2-max-image2", outcomes), machine: "a"
+    upload_report golden_with("m2-max-image2", outcomes), machine: "b"
 
     get "/matrix"
     assert_equal "regression", state(M2, "brightness")
@@ -66,36 +66,36 @@ class MatrixTest < ActionDispatch::IntegrationTest
   end
 
   test "machines that disagree leave the cell unconfirmed, until each side has two machines: partial" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), ip: "10.0.0.2"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), machine: "b"
 
     get "/matrix"
     assert_equal "unconfirmed", state(M2, "brightness")
     assert_match "1 machine works, 1 machine regression", cell(M2, "brightness")["title"]
     assert_includes cell(M2, "brightness")["class"], "cell-hint-partial", "a tie hints partial, not the better state"
 
-    upload_report golden("m2-max-image2"), ip: "10.0.0.3"
+    upload_report golden("m2-max-image2"), machine: "c"
     get "/matrix"
     assert_equal "works", state(M2, "brightness")
 
-    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), ip: "10.0.0.4"
+    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), machine: "d"
     get "/matrix"
     assert_equal "partial", state(M2, "brightness")
   end
 
   test "each machine counts with the latest state it tested" do
-    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden_with("m2-max-image2", "display.backlight" => "not-tested"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    upload_report golden_with("m2-max-image2", "display.backlight" => "fails"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden_with("m2-max-image2", "display.backlight" => "not-tested"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "b"
 
     get "/matrix"
     assert_equal "works", state(M2, "brightness")
   end
 
   test "features no machine tested are grey" do
-    upload_report golden("m1-pro-mx-mac"), ip: "10.0.0.1"
-    upload_report golden("m1-pro-mx-mac"), ip: "10.0.0.2"
+    upload_report golden("m1-pro-mx-mac"), machine: "a"
+    upload_report golden("m1-pro-mx-mac"), machine: "b"
 
     get "/matrix"
     assert_equal "not-tested", state(M1, "dcp")

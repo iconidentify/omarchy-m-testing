@@ -1,7 +1,7 @@
 require "test_helper"
 
 # Seam B: what the upload API refuses beyond the schema: outdated clients and
-# too many uploads from one address.
+# too many uploads from one network or one machine.
 class UploadRulesTest < ActionDispatch::IntegrationTest
   test "a report in an outdated schema is refused with an upgrade message" do
     [ 0, -1 ].each do |version|
@@ -22,50 +22,60 @@ class UploadRulesTest < ActionDispatch::IntegrationTest
     assert_match "(curl -fsSL http://www.example.com/install | bash)", body["error"]
   end
 
-  test "uploads are rate-limited per IP address" do
+  test "uploads are rate-limited per IP address, whichever machines they come from" do
     limit = Api::V1::ReportsController::UPLOADS_PER_HOUR
-    limit.times { upload_report golden("m2-max-image2"), ip: "10.0.0.1" }
+    limit.times { |n| upload_report golden("m2-max-image2"), machine: "m#{n}", ip: "10.0.0.1" }
     assert_response :created
 
-    body = upload_report golden("m2-max-image2"), ip: "10.0.0.1"
+    body = upload_report golden("m2-max-image2"), machine: "another", ip: "10.0.0.1"
     assert_response :too_many_requests
     assert_match "Too many uploads from your network: at most #{limit} an hour", body["error"]
     # refused uploads count too, so a flood of junk is limited as well
     upload_report "not json", ip: "10.0.0.1"
     assert_response :too_many_requests
 
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    upload_report golden("m2-max-image2"), machine: "another", ip: "10.0.0.2"
     assert_response :created
     assert_equal limit + 1, Report.count
   end
 
-  test "behind a proxy the client address comes from the configured header" do
+  test "uploads are rate-limited per machine key, from any network" do
+    limit = Api::V1::ReportsController::UPLOADS_PER_HOUR_PER_MACHINE
+    limit.times { |n| upload_report golden("m2-max-image2"), machine: "a", ip: "10.0.1.#{n}" }
+    assert_response :created
+
+    body = upload_report golden("m2-max-image2"), machine: "a", ip: "10.0.2.1"
+    assert_response :too_many_requests
+    assert_equal "Too many uploads from this Mac: at most #{limit} an hour. Try again later; the report is saved on your Mac.", body["error"]
+
+    upload_report golden("m2-max-image2"), machine: "b", ip: "10.0.2.1"
+    assert_response :created
+    assert_equal limit + 1, Report.count
+  end
+
+  test "reports with a forged signature don't use up the real machine's uploads" do
+    limit = Api::V1::ReportsController::UPLOADS_PER_HOUR_PER_MACHINE
+    forged = TestMachines.sign(golden("m2-max-image2"), "mallory")
+    forged["signature"]["public_key"] = TestMachines.public_key("a")
+    (limit + 1).times { |n| upload_report forged.to_json, ip: "10.0.1.#{n}" }
+    assert_response :unprocessable_content
+
+    upload_report golden("m2-max-image2"), machine: "a", ip: "10.0.2.1"
+    assert_response :created
+  end
+
+  test "behind a proxy the client address comes from the configured header, never from X-Forwarded-For" do
     ENV["CLIENT_IP_HEADER"] = "X-Real-IP"
     limit = Api::V1::ReportsController::UPLOADS_PER_HOUR
-    upload = ->(real_ip) { post "/api/v1/reports", params: GoldenReports.text("m2-max-image2"), headers: { "Content-Type" => "application/json", "X-Real-IP" => real_ip } }
+    upload = lambda do |real_ip, n|
+      post "/api/v1/reports", params: TestMachines.sign(golden("m2-max-image2"), "m#{n}").to_json,
+                              headers: { "Content-Type" => "application/json", "X-Real-IP" => real_ip, "X-Forwarded-For" => "198.51.100.#{n}" }
+    end
 
-    limit.times { upload.call("203.0.113.9") }
-    upload.call("203.0.113.9")
+    limit.times { |n| upload.call("203.0.113.9", n) }
+    upload.call("203.0.113.9", limit)
     assert_response :too_many_requests
-    upload.call("203.0.113.10")
+    upload.call("203.0.113.10", limit)
     assert_response :created
-    assert_equal [ 1, limit ], Report.group(:machine_id).count.values.sort
-  end
-
-  test "an IPv6 address counts as one machine per /64, so rotating privacy addresses don't multiply a Mac" do
-    upload_report golden("m2-max-image2"), ip: "2001:db8:1:2::a"
-    upload_report golden("m2-max-image2"), ip: "2001:db8:1:2:dead:beef:0:1"
-    upload_report golden("m2-max-image2"), ip: "2001:db8:1:3::a"
-
-    assert_equal [ 1, 2 ], Report.group(:machine_id).count.values.sort
-  end
-
-  test "the machine id is a keyed digest, never the address itself" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.7"
-
-    machine_id = Report.sole.machine_id
-    assert_match(/\Aip:\h{20}\z/, machine_id)
-    assert_not_includes machine_id, "10.0.0.7"
-    assert_not_equal machine_id, Report.machine_id_for_ip("10.0.0.8")
   end
 end

@@ -9,8 +9,8 @@ class AdminTest < ActionDispatch::IntegrationTest
 
   setup do
     ENV["ADMIN_TOKEN"] = TOKEN
-    @m2 = upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    @other = upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    @m2 = upload_report golden("m2-max-image2"), machine: "a"
+    @other = upload_report golden("m2-max-image2"), machine: "b"
   end
 
   test "without ADMIN_TOKEN there is no admin" do
