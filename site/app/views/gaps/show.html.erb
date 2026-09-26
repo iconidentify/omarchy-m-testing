@@ -1,0 +1,42 @@
+<% content_for :title, "Kernel gaps" %>
+<h1>Kernel gaps</h1>
+<p class="subtitle">What to work on next: features Asahi supports that Aurora lacks, and what real Macs found missing or unclaimed.</p>
+
+<%= card "found on real macs", id: "reported" do %>
+  <% { "not-in-aurora" => "Not yet in Aurora", "not-in-asahi" => "Not yet in Asahi", "unknown-hardware" => "Unknown hardware" }.each do |outcome, title| %>
+    <% gaps = @gaps.reported(outcome) %>
+    <h3 id="reported-<%= outcome %>"><%= title %></h3>
+    <% if gaps.empty? %>
+      <p class="dim">None reported.</p>
+    <% else %>
+      <table class="list">
+        <thead><tr><th>Feature</th><th>Chip</th><th>Macs</th><th>Reports</th></tr></thead>
+        <tbody>
+          <% gaps.each do |gap| %>
+            <tr class="gap-row" data-outcome="<%= outcome %>" data-feature="<%= gap.feature_id %>">
+              <td><a href="<%= feature_path(gap.feature_id) %>"><%= Catalogue.feature_name(gap.feature_id) %></a></td>
+              <td><%= gap.chip %> <span class="dim">(<%= gap.soc %>)</span></td>
+              <td><%= gap.models.join(", ") %></td>
+              <td><%= safe_join(gap.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report)) }, " ") %><%= " +#{gap.reports.size - 5}" if gap.reports.size > 5 %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  <% end %>
+  <p class="dim">Hardware that no driver claims is listed here once reports carry the hardware inventory.</p>
+<% end %>
+
+<%= card "asahi has it, aurora doesn't", id: "missing-in-aurora" do %>
+  <% if @gaps.missing_in_aurora.empty? %>
+    <p class="dim">The catalogue lists nothing Asahi supports that Aurora is known to lack.</p>
+  <% else %>
+    <%= render "gaps/catalogue_gaps", gaps: @gaps.missing_in_aurora %>
+  <% end %>
+<% end %>
+
+<%= card "asahi has it, not verified in aurora", id: "unverified-in-aurora" do %>
+  <p class="dim">Asahi supports these on the chips listed; Aurora hasn't been qualified on them yet.</p>
+  <%= render "gaps/catalogue_gaps", gaps: @gaps.unverified_in_aurora %>
+  <p class="credit dim"><%= Catalogue.asahi_credit %></p>
+<% end %>

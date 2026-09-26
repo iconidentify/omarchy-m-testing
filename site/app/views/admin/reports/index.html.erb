@@ -1,0 +1,28 @@
+<% content_for :title, "Admin" %>
+<h1>Admin</h1>
+<p class="subtitle"><%= button_to "Sign out", admin_session_path, method: :delete, class: "button button-small" %></p>
+<%= card "all reports (#{@reports.size})" do %>
+  <table class="list">
+    <thead><tr><th>Uploaded</th><th>Report</th><th>Mac</th><th>Stack / version</th><th>State</th><th></th></tr></thead>
+    <tbody>
+      <% @reports.each do |report| %>
+        <tr class="admin-row" id="admin-report-<%= report.public_id %>">
+          <td class="nowrap"><%= uploaded_at(report) %></td>
+          <td><a href="<%= report_path(report) %>"><%= report.public_id.first(8) %></a></td>
+          <td><%= report.short_model_name %></td>
+          <td><%= report.configuration.label %></td>
+          <td><%= report.hidden? ? tag.span("hidden", class: "badge badge-regression") : tag.span("visible", class: "badge badge-works") %></td>
+          <td class="actions">
+            <% if report.hidden? %>
+              <%= button_to "Show", unhide_admin_report_path(report), method: :patch, class: "button button-small" %>
+            <% else %>
+              <%= button_to "Hide", hide_admin_report_path(report), method: :patch, class: "button button-small" %>
+            <% end %>
+            <%= button_to "Delete", admin_report_path(report), method: :delete, class: "button button-small button-danger",
+                  form: { onsubmit: "return confirm('Delete this report and its evidence for good?')" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

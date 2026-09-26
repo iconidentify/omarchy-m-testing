@@ -1,7 +1,34 @@
 <% content_for :title, "Omarchy on Apple Silicon" %>
-<h1>omarchy-m-testing</h1>
-<p>Test every hardware feature of your Apple Silicon Mac under Omarchy, and share the results.</p>
-<h2>Install</h2>
-<pre id="install"><code>curl -fsSL <%= install_url %> | bash</code></pre>
-<p>The installer downloads the latest release of <code>omarchy-m-test</code>, verifies its signature and installs it for your user. Then run <code>omarchy-m-test</code>.</p>
-<p><a href="https://github.com/maralcbr/omarchy-m-testing">Source, releases and the release signing key</a></p>
+<section class="hero">
+  <%= image_tag "omarchy-logo.svg", alt: "Omarchy", class: "hero-logo", width: 96, height: 96 %>
+  <div>
+    <h1>omarchy-m-testing</h1>
+    <p class="tagline">What works on each Apple Silicon Mac under Omarchy, tested on real machines.</p>
+  </div>
+</section>
+
+<%= render "shared/install" %>
+
+<%= card "compatibility matrix" do %>
+  <% if @matrix.empty? %>
+    <p class="dim">No reports yet. Run <code>omarchy-m-test</code> on your Mac to add the first.</p>
+  <% else %>
+    <%= render "shared/matrix", rows: @matrix.rows, features: @matrix.features %>
+  <% end %>
+  <%= render "shared/legend" %>
+<% end %>
+
+<div class="grid">
+  <%= card "explore" do %>
+    <ul class="links">
+      <li><a href="<%= models_path %>">Models</a>: every Mac with reports, what its chip is expected to do.</li>
+      <li><a href="<%= features_path %>">Features</a>: every feature in the catalogue, per chip and per Mac.</li>
+      <li><a href="<%= gaps_path %>">Kernel gaps</a>: what Asahi has that Aurora lacks, and hardware nobody drives yet.</li>
+      <li><a href="<%= reports_path %>">Reports</a>: every run, as the terminal showed it.</li>
+      <li><a href="<%= data_path %>">Data</a>: all of it as JSON and CSV, CC0.</li>
+    </ul>
+  <% end %>
+  <%= card "privacy" do %>
+    <p>Reports never carry serial numbers, MAC addresses, hostnames, user names, Wi-Fi network names, IP addresses or disk identifiers. Every upload comes with a deletion link that removes it for good.</p>
+  <% end %>
+</div>

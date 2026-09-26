@@ -3,6 +3,8 @@
   <head>
     <title><%= [content_for(:title), "omarchy-m-testing"].compact.join(" · ") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="What works on each Apple Silicon Mac under Omarchy, tested by omarchy-m-test.">
+    <meta name="theme-color" content="#1a1b26">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="omarchy-m-testing">
     <meta name="mobile-web-app-capable" content="yes">
@@ -14,12 +16,45 @@
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="preload" href="<%= asset_path("JetBrainsMono-Regular.woff2") %>" as="font" type="font/woff2" crossorigin>
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app %>
   </head>
 
   <body>
-    <%= yield %>
+    <header class="site-header">
+      <a class="brand" href="<%= root_path %>">
+        <%= image_tag "omarchy-logo.svg", alt: "", class: "brand-logo", width: 24, height: 24 %>
+        <span class="brand-name">omarchy<span class="brand-suffix">-m-testing</span></span>
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <%= nav_link "Matrix", matrix_path %>
+        <%= nav_link "Models", models_path %>
+        <%= nav_link "Features", features_path %>
+        <%= nav_link "Kernel gaps", gaps_path %>
+        <%= nav_link "Reports", reports_path %>
+        <%= nav_link "Data", data_path %>
+        <% if admin? %><%= nav_link "Admin", admin_root_path %><% end %>
+      </nav>
+      <a class="button button-install" href="<%= root_path(anchor: "install") %>">Install</a>
+    </header>
+
+    <% if notice.present? || alert.present? %>
+      <p class="flash <%= alert.present? ? "flash-alert" : "flash-notice" %>" role="status"><%= alert.presence || notice %></p>
+    <% end %>
+
+    <main class="site-main">
+      <%= yield %>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Published data: <a href="<%= data_path %>">CC0</a>.
+        Asahi hardware states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0.
+        <a href="https://github.com/maralcbr/omarchy-m-testing">Source</a>.
+      </p>
+      <p class="dim">The Omarchy name and logo belong to the Omarchy project and are used with permission. JetBrains Mono is under the SIL Open Font License.</p>
+    </footer>
   </body>
 </html>
