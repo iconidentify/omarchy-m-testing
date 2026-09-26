@@ -24,7 +24,36 @@
       </table>
     <% end %>
   <% end %>
-  <p class="dim">Hardware that no driver claims is listed here once reports carry the hardware inventory.</p>
+<% end %>
+
+<%= card "hardware no driver claims", id: "unclaimed-hardware" do %>
+  <p class="dim">Enabled device-tree nodes whose device no driver claimed, from the reports' hardware inventory. Unknown hardware is what the feature catalogue doesn't know yet.</p>
+  <% unclaimed = @gaps.unclaimed_hardware %>
+  <% if unclaimed.empty? %>
+    <p class="dim">None reported.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Hardware</th><th>What it is</th><th>Chip</th><th>Macs</th><th>Machines</th><th>Reports</th></tr></thead>
+      <tbody>
+        <% unclaimed.each do |hardware| %>
+          <tr class="unclaimed-row" data-compatible="<%= hardware.compatible %>" data-outcome="<%= hardware.outcome %>">
+            <td><code><%= hardware.compatible %></code></td>
+            <td>
+              <% if hardware.feature_id %>
+                <a href="<%= feature_path(hardware.feature_id) %>"><%= Catalogue.feature_name(hardware.feature_id) %></a>: <%= Catalogue.outcome_words(hardware.outcome) %>
+              <% else %>
+                <%= Catalogue.outcome_words(hardware.outcome.to_s) %>
+              <% end %>
+            </td>
+            <td><%= safe_join(hardware.chips.map { |chip, soc| "#{chip} (#{soc})" }, ", ") %></td>
+            <td><%= hardware.models.join(", ") %></td>
+            <td class="machines"><%= hardware.machines %></td>
+            <td><%= safe_join(hardware.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report)) }, " ") %><%= " +#{hardware.reports.size - 5}" if hardware.reports.size > 5 %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
 <% end %>
 
 <%= card "asahi has it, aurora doesn't", id: "missing-in-aurora" do %>
