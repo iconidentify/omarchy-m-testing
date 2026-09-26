@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Uses the installed Omarchy logo, logo font, theme colours and gum styling when present; Tokyo Night fallback otherwise
-- [ ] Installer-style live progress feed during automatic checks
-- [ ] Sections listed up front; any section can be skipped
-- [ ] Checkpointing: an interrupted run resumes where it stopped
-- [ ] Restorer registry: every registered change is undone on normal exit, error or interrupt (tested by simulated interruption at Seam A)
+- [x] Uses the installed Omarchy logo, logo font, theme colours and gum styling when present; Tokyo Night fallback otherwise
+- [x] Installer-style live progress feed during automatic checks
+- [x] Sections listed up front; any section can be skipped
+- [x] Checkpointing: an interrupted run resumes where it stopped
+- [x] Restorer registry: every registered change is undone on normal exit, error or interrupt (tested by simulated interruption at Seam A)

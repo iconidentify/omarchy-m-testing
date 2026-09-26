@@ -15,12 +15,14 @@ A recording is a JSON file (recording_version 1):
       "/some/redacted/binary": {"redacted_bytes": 6},
       "/proc/device-tree/compatible": null
     },
-    "dirs": {"/proc/device-tree": ["compatible", "model"]}
+    "dirs": {"/proc/device-tree": ["compatible", "model"]},
+    "env": {"HOME": "/home/<user>"}
   }
 
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A binary file the recorder could not scrub is kept only as its size and
-replays as that many zero bytes.
+replays as that many zero bytes. An environment variable the recording
+doesn't list is unset; "env" is only saved when a run read one that was set.
 
 Record mode (`omarchy-m-test --record FILE`) wraps the real host in a
 RecordingHost: every command, file and directory the CLI asks for is kept,
@@ -36,8 +38,13 @@ pass by silently reading this machine. The human side is scripted: `answers`
 are returned by prompt() in order (EOF ends input like Ctrl-D). Uploads get
 the scripted `responses` in order. GETs (the latest-release lookup) get
 the scripted `fetches` by URL; a URL that isn't scripted behaves like a
-machine with no network (NetworkError). Everything shown, prompted, written and
-posted is kept for assertions.
+machine with no network (NetworkError). The answer INTERRUPT at a prompt or an
+interactive command is Ctrl-C there (KeyboardInterrupt). Interactive commands
+(run_tty, gum) also take their scripted result from `answers`: a
+CommandResult, a string (its stdout, exit 0), EOF or INTERRUPT. The host is
+not at a terminal unless the test gives one (`terminal`). A file the CLI wrote
+reads back what it wrote, until it removes it. Everything shown, prompted,
+written and posted is kept for assertions.
 """
 
 from __future__ import annotations
@@ -47,7 +54,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
-from .host import CommandResult, Host, HttpResponse, NetworkError
+from .host import CommandResult, Host, HttpResponse, NetworkError, Terminal
 from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
@@ -83,6 +90,14 @@ class _Eof:
 EOF = _Eof()
 
 
+class _Interrupt:
+    def __repr__(self) -> str:
+        return "INTERRUPT"
+
+
+INTERRUPT = _Interrupt()
+
+
 @dataclass(frozen=True)
 class Post:
     url: str
@@ -95,12 +110,14 @@ class RecordedHost:
     answers: list[Any] = field(default_factory=list)
     responses: list[HttpResponse] = field(default_factory=list)
     fetches: dict[str, HttpResponse] = field(default_factory=dict)
-    # What happened, in order: ("show", text) / ("prompt", message, answer)
+    terminal_size: Terminal | None = None
+    # What happened, in order: ("show", text) / ("prompt", message, answer) / ("tty", argv, answer)
     transcript: list[tuple] = field(default_factory=list)
     commands_run: list[list[str]] = field(default_factory=list)
     written: dict[str, str] = field(default_factory=dict)
     posts: list[Post] = field(default_factory=list)
     gets: list[str] = field(default_factory=list)
+    removed: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         version = self.recording.get("recording_version")
@@ -125,6 +142,10 @@ class RecordedHost:
         raise RecordingMiss(f"command not in recording: {argv}")
 
     def read_file(self, path: str) -> bytes:
+        if path in self.written:
+            return self.written[path].encode("utf-8")
+        if path in self.removed:
+            raise FileNotFoundError(path)
         files = self.recording.get("files", {})
         if path not in files:
             raise RecordingMiss(f"file not in recording: {path}")
@@ -145,7 +166,13 @@ class RecordedHost:
             raise FileNotFoundError(path)
         return sorted(dirs[path])
 
+    def env(self, name: str) -> str | None:
+        return self.recording.get("env", {}).get(name)
+
     # -- human ---------------------------------------------------------
+
+    def terminal(self) -> Terminal | None:
+        return self.terminal_size
 
     def prompt(self, message: str) -> str:
         if not self.answers:
@@ -154,6 +181,21 @@ class RecordedHost:
         self.transcript.append(("prompt", message, answer))
         if answer is EOF:
             raise EOFError
+        if answer is INTERRUPT:
+            raise KeyboardInterrupt
+        return answer
+
+    def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
+        if not self.answers:
+            raise RecordingMiss(f"no scripted answer left for interactive command: {list(argv)}")
+        answer = self.answers.pop(0)
+        self.transcript.append(("tty", list(argv), answer))
+        if answer is INTERRUPT:
+            raise KeyboardInterrupt
+        if answer is EOF:
+            return CommandResult(130, "", "")
+        if isinstance(answer, str):
+            return CommandResult(0, answer + "\n" if answer else "", "")
         return answer
 
     def show(self, text: str) -> None:
@@ -163,6 +205,11 @@ class RecordedHost:
 
     def write_file(self, path: str, text: str) -> None:
         self.written[path] = text
+        self.removed.discard(path)
+
+    def remove_file(self, path: str) -> None:
+        self.written.pop(path, None)
+        self.removed.add(path)
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         self.posts.append(Post(url, body))
@@ -181,10 +228,7 @@ class RecordedHost:
     @property
     def output(self) -> str:
         """Everything the human saw, prompts included, as one text."""
-        parts = []
-        for event in self.transcript:
-            parts.append(event[1])
-        return "\n".join(parts)
+        return "\n".join(event[1] for event in self.transcript if isinstance(event[1], str))
 
     def unused_script(self) -> list[Any]:
         return self.answers + self.responses
@@ -198,6 +242,7 @@ class RecordingHost:
         self.commands: list[dict[str, Any]] = []
         self.files: dict[str, Any] = {}
         self.dirs: dict[str, Any] = {}
+        self.env_read: dict[str, str | None] = {}
 
     # -- machine (recorded) ---------------------------------------------
 
@@ -226,10 +271,24 @@ class RecordingHost:
         self.dirs.setdefault(path, list(names))
         return names
 
+    def env(self, name: str) -> str | None:
+        value = self.inner.env(name)
+        self.env_read.setdefault(name, value)
+        return value
+
     # -- human and outputs (passed through, not recorded) -----------------
+
+    def terminal(self) -> Terminal | None:
+        return self.inner.terminal()
 
     def prompt(self, message: str) -> str:
         return self.inner.prompt(message)
+
+    def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
+        return self.inner.run_tty(argv, env)
+
+    def remove_file(self, path: str) -> None:
+        self.inner.remove_file(path)
 
     def show(self, text: str) -> None:
         self.inner.show(text)
@@ -255,7 +314,7 @@ class RecordingHost:
 
     def recording(self, scrubber: Scrubber) -> dict[str, Any]:
         """The scrubbed recording of everything captured so far."""
-        return {
+        recording = {
             "recording_version": RECORDING_VERSION,
             "description": "Recorded by omarchy-m-test --record",
             "source": "omarchy-m-test --record",
@@ -271,6 +330,10 @@ class RecordingHost:
             "files": {scrubber.scrub(path): _file_entry(path, data, scrubber) for path, data in self.files.items()},
             "dirs": {scrubber.scrub(path): _dir_entry(path, names, scrubber) for path, names in self.dirs.items()},
         }
+        env = {name: scrubber.scrub(value) for name, value in self.env_read.items() if value is not None}
+        if env:
+            recording["env"] = env
+        return recording
 
     def save(self, path: str, learn: bool = True) -> None:
         """Scrub what was captured, then write it through the inner host.

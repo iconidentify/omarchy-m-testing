@@ -2,7 +2,7 @@
 
 The `omarchy-m-test` command. Python 3 standard library only.
 
-    bin/omarchy-m-test [--dry-run] [--output FILE] [--site URL] [--catalogue FILE] [--record FILE]
+    bin/omarchy-m-test [--dry-run] [--output FILE] [--site URL] [--catalogue FILE] [--record FILE] [--skip SECTION]
     bin/omarchy-m-test --explain REPORT [--catalogue FILE]
 
 It refuses non-Apple machines, shows the disclaimer (Enter accepts), runs the checks, writes the report, shows it and asks before uploading it to the site (`--site http://localhost:3000` for a local site).
@@ -11,9 +11,21 @@ Every result is explained against the feature catalogue (`../catalogue/catalogue
 
 Before each run it looks up the latest release's version (`releases/latest/download/VERSION` on GitHub, 5 s timeout) and says so when a newer one exists, with the command to upgrade. Offline or any odd answer: it says nothing and carries on.
 
+## The run: sections, resume, restore
+
+A run is a list of sections (`omarchy_m_test/sections.py`), listed up front after the disclaimer. Any can be skipped: untick it in the picker at a terminal, or `--skip NAME` (repeatable, or comma-separated) anywhere. A skipped section's checks are reported as skipped.
+
+After each section the run's state is checkpointed to `$XDG_STATE_HOME/omarchy-m-test/checkpoint.json` (`~/.local/state/...`). A run interrupted by Ctrl-C, a closed terminal or a crash offers to resume on the next start with the same tool, catalogue, Mac and kernel: finished sections aren't run again. The checkpoint is removed once the report is written. Record mode never checkpoints.
+
+A check that changes the machine does it through the restorer registry (`omarchy_m_test/session.py`: `Context.change(description, change, restore)`), which records the undo command before making the change. Restorers run newest first when the section ends, on an error and on Ctrl-C, SIGTERM or SIGHUP; they are also kept in the checkpoint, so a run killed outright has them run by the next run before anything else. A restorer that fails is reported with the command to run by hand.
+
+## The look
+
+At a terminal the run looks like Omarchy's installer (`omarchy_m_test/theme.py`, `ui.py`): the screen cleared, the installed `logo.txt` (`$OMARCHY_PATH`, `/usr/share/omarchy` or `~/.local/share/omarchy`) centred in the current theme's green, section titles drawn by `omarchy-ascii` in the logo's font, the theme's colours from `~/.local/state/omarchy/current/theme/colors.toml` (resolved by `omarchy-theme-color`; older installs: `~/.config/omarchy/current/theme/`), gum prompts with the installer's styling unless the user sets their own `GUM_*`, and during a section a live feed of the last lines of what it runs, in grey, prefixed `  → `. Without Omarchy's files (another Asahi distro) it uses Tokyo Night and a plain title. Off a terminal (a pipe, the tests unless they give one) the output is plain text with no escape sequences.
+
 ## The host boundary
 
-Every interaction with the machine, the human and the network goes through a `Host` (`omarchy_m_test/host.py`): run a command, read a file, list a directory, prompt, show, write the report, post it, GET the latest version. `scripts/check_boundary.py` fails CI if any other module does I/O or imports outside the standard library.
+Every interaction with the machine, the human and the network goes through a `Host` (`omarchy_m_test/host.py`): run a command, read a file, list a directory, read an environment variable, prompt, show, run an interactive command (gum) on the terminal, ask for the terminal's size, write and remove files, post the report, GET the latest version. `scripts/check_boundary.py` fails CI if any other module does I/O or imports outside the standard library.
 
 Tests replace the real host with a `RecordedHost` (`omarchy_m_test/recording.py`) that replays a recording from `tests/recordings/` and scripted answers. Anything the CLI asks for that isn't recorded raises `RecordingMiss`.
 
