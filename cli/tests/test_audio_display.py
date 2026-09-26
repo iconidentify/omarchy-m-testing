@@ -14,12 +14,13 @@ import json
 import os
 import unittest
 
-from omarchy_m_test import audio, display
+from omarchy_m_test import audio, display, network
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.inventory import KERNEL_LOG
 from omarchy_m_test.recording import ENDED, EOF, INTERRUPT
 from omarchy_m_test.sections import APPLE
+from tests.desktop import at_the_seat
 from tests.live_mac import NODE, LiveMac, MacState, live_recording
 from tests.schema_validator import errors
 from tests.test_core_checks import reference
@@ -367,12 +368,12 @@ class KeyboardLightTest(unittest.TestCase):
 
 class WholeRunTest(unittest.TestCase):
     def test_the_m2_asks_its_questions_in_section_order_and_leaves_everything_as_it_was(self):
-        host = LiveMac(live_recording(), answers=[ENTER, *[EOF] * 6])
+        host = LiveMac(live_recording(), answers=[ENTER, *at_the_seat("m2-max-image2")])
 
         self.assertEqual(main(ARGS, host), 0)
 
         self.assertEqual([p for p in prompts(host) if p.endswith("[y/n/s] ")], [
-            NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, KEYBOARD_PROMPT,
+            NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, network.PAIRING_QUESTION + " [y/n/s] ", KEYBOARD_PROMPT,
         ])
         self.assertEqual(host.state.volume, "0.45")
         self.assertEqual([argv for argv in host.commands_run if argv[:1] == ["brightnessctl"] and "set" in argv][-1], PANEL_BACK)

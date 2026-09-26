@@ -225,6 +225,29 @@
     },
     {
       "argv": [
+        "sh",
+        "-c",
+        "timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c \"^Device \""
+      ],
+      "returncode": 1,
+      "stdout": "0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "auto",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Remote=yes\nSeat=\nActive=yes\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "uname",
         "-a"
       ],

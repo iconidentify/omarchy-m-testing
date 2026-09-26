@@ -120,7 +120,7 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     if not ui.confirm(f"Install {len(plan)} package(s) now?", default=False):
         return Temporary(skipped=f"you chose not to install {' '.join(missing)}", already=kept)
 
-    if not _sudo(ctx):
+    if not sudo_ready(ctx):
         return Temporary(skipped="installing test packages needs sudo, and it wasn't given", already=kept)
 
     restorer = ctx.changes.register(f"the temporary packages {' '.join(plan)}", REMOVE, sudo=True, packages=plan)
@@ -135,8 +135,8 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     return Temporary(installed=actual, already=kept)
 
 
-def _sudo(ctx: Context) -> bool:
-    """sudo works without a prompt now: cached, or the human just typed the password at the terminal."""
+def sudo_ready(ctx: Context) -> bool:
+    """sudo works without a prompt now: cached, or the human just typed the password at the terminal (also changes.py)."""
     if ctx.host.run(SUDO_CACHED).returncode == 0:
         return True
     if ctx.host.terminal() is None:
