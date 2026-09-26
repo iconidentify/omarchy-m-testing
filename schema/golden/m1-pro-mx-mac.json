@@ -5,7 +5,7 @@
     "version": "0.1.2"
   },
   "consent_version": 2,
-  "catalogue_version": 6,
+  "catalogue_version": 7,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -501,7 +501,9 @@
       {
         "compatible": "apple,t6000-dpaudio",
         "count": 1,
-        "outcome": "unknown-hardware"
+        "outcome": "not-in-asahi",
+        "feature": "dp-audio",
+        "layer": "asahi"
       }
     ],
     "kernel_config": {
@@ -812,7 +814,7 @@
       "status": "fail",
       "evidence": [
         "339 hardware nodes: 294 claimed by a driver, 17 with no device of their own, 3 bus or register containers with no driver of their own, 24 disabled, 1 unclaimed",
-        "unclaimed: apple,t6000-dpaudio (1 node): unknown hardware"
+        "unclaimed: apple,t6000-dpaudio (1 node): not yet supported by Asahi (DisplayPort audio)"
       ],
       "classification": {
         "outcome": "not-in-aurora",
@@ -1397,6 +1399,186 @@
           "asahi": "upstream",
           "aurora": "asahi",
           "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.function-keys",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "built-in keyboard (Hyprland): apple-spi-keyboard",
+        "asked: On the built-in keyboard, press the brightness keys (F1, F2) and the volume keys (F10, F11, F12), with Fn if they need it: did each do what its key shows?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "keyboard",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "input.trackpad-gestures",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "built-in trackpad (Hyprland): apple-spi-trackpad",
+        "asked: On the built-in trackpad, try a click, a tap, a two-finger click (right-click), two-finger scrolling both ways and a three-finger swipe between workspaces: did each work smoothly?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "touchpad",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "camera.isp",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "camera: /dev/video0, from the ISP driver (apple-isp)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "camera.frames",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "asked ffmpeg for 30 frames from /dev/video0 (read and discarded, none kept)",
+        "stream: 1920x1080, nv12",
+        "frames: 30 of 30"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "camera.image",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the camera in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.usb-c",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "USB-C ports: 3 (USB-PD controller, /sys/class/typec), 0 with something plugged in",
+        "USB controllers: 6 root hubs (480 Mbps, 10000 Mbps)",
+        "USB devices: none"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "usb3-tb-ports",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "ports.thunderbolt",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "Thunderbolt/USB4 controllers: 3 (domains registered by thunderbolt-apple-nhi)",
+        "linked: nothing"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "thunderbolt",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.external-displays",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "USB-C display connectors: 3 (USB-1, USB-2, USB-3)",
+        "skipped: no display plugged into a USB-C port"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "usb4-displays",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.devices-work",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: nothing plugged into the USB-C ports"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "usb3-tb-ports",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "ports.external-display-picture",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: no display in use on a USB-C port"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "usb4-displays",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
         }
       }
     },

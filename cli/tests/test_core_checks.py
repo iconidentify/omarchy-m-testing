@@ -91,11 +91,12 @@ class GoldenRunsTest(unittest.TestCase):
         _, _, report = run(M2_MAX)
 
         prefixes = {check["id"].split(".")[0] for check in report["checks"]}
-        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "input", "power", "cpu"})
+        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "input", "camera", "ports", "power", "cpu"})
         humans = {check["id"] for check in report["checks"] if check["kind"] == "human"}
         self.assertEqual(humans, {"display.notch-bar", "display.brightness-steps", "display.cursor",
                                   "audio.speaker-tone", "audio.headphone-detection", "network.bluetooth-pairing",
-                                  "input.keyboard-light-follows-room"})
+                                  "input.keyboard-light-follows-room", "input.function-keys", "input.trackpad-gestures",
+                                  "camera.image", "ports.devices-work", "ports.external-display-picture"})
 
     def test_the_offline_first_boot_failure_on_the_m2_is_a_failure_even_after_the_rerun(self):
         _, mac, report = run(M2_MAX)

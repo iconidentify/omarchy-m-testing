@@ -5,7 +5,7 @@
     "version": "0.1.2"
   },
   "consent_version": 2,
-  "catalogue_version": 6,
+  "catalogue_version": 7,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -556,7 +556,9 @@
       {
         "compatible": "apple,t6020-dpaudio",
         "count": 2,
-        "outcome": "unknown-hardware"
+        "outcome": "not-in-asahi",
+        "feature": "dp-audio",
+        "layer": "asahi"
       }
     ],
     "kernel_config": {
@@ -895,7 +897,7 @@
       "evidence": [
         "424 hardware nodes: 366 claimed by a driver, 27 with no device of their own, 5 bus or register containers with no driver of their own, 23 disabled, 3 unclaimed",
         "unclaimed: apple,t6020-avd (1 node): doesn't work, but should on this Mac (Video decoder)",
-        "unclaimed: apple,t6020-dpaudio (2 nodes): unknown hardware"
+        "unclaimed: apple,t6020-dpaudio (2 nodes): not yet supported by Asahi (DisplayPort audio)"
       ],
       "classification": {
         "outcome": "not-in-aurora",
@@ -1502,6 +1504,193 @@
       }
     },
     {
+      "id": "input.function-keys",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "Hyprland couldn't list the input devices (run from the desktop to see them)",
+        "asked: On the built-in keyboard, press the brightness keys (F1, F2) and the volume keys (F10, F11, F12), with Fn if they need it: did each do what its key shows?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "keyboard",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "input.trackpad-gestures",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "Hyprland couldn't list the input devices (run from the desktop to see them)",
+        "asked: On the built-in trackpad, try a click, a tap, a two-finger click (right-click), two-finger scrolling both ways and a three-finger swipe between workspaces: did each work smoothly?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "touchpad",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "camera.isp",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "camera: /dev/video0, from the ISP driver (apple-isp)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "camera.frames",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "asked ffmpeg for 30 frames from /dev/video0 (read and discarded, none kept)",
+        "stream: 1920x1080, nv12",
+        "frames: 30 of 30"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "camera.image",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the camera in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "isp-camera",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.usb-c",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "USB-C ports: 3 (USB-PD controller, /sys/class/typec), 2 with something plugged in",
+        "port 0: plugged in (data host, power source)",
+        "port 1: plugged in (data host, power source)",
+        "USB controllers: 6 root hubs (480 Mbps, 10000 Mbps)",
+        "USB devices: none"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "usb3-tb-ports",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "ports.thunderbolt",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "Thunderbolt/USB4 controllers: 3 (domains registered by thunderbolt-apple-nhi)",
+        "linked: another computer, host-to-host (10.0 Gb/s, 2 lanes)",
+        "retimers: 1"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "thunderbolt",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.external-displays",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "USB-C display connectors: 3 (USB-1, USB-2, USB-3)",
+        "USB-2: in use, 3440x1440 preferred"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "usb4-displays",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "ports.devices-work",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "listed: 2 USB-C port(s) in use, 0 USB device(s), 1 Thunderbolt/USB4 link(s)",
+        "asked: Is everything you plugged into the USB-C ports listed above, and does it work (a stick's files open, a hub's or dock's ports work, a charger charges)?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "usb3-tb-ports",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "ports.external-display-picture",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "display on USB-C: USB-2 at 3440x1440",
+        "asked: Look at the display on USB-C: is the picture sharp and steady at its full resolution, and does the pointer move onto it?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "usb4-displays",
+        "layer": "aurora",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
+        }
+      }
+    },
+    {
       "id": "power.battery",
       "kind": "automatic",
       "status": "pass",
@@ -1540,6 +1729,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFLGLY+iuZqG9/Mp/ysfjhd3E2Ld1pLL3jPO6Ahmxh\nvo/b3djAIUzBnMF4Xn2+6bd7/2tiHXAVbxadDA2dfr8QE=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQOYn8OK7FTg/fIaLrHPXRs+7NXSKo36qoN+cMZwt8A\nalDgBTa5JhVRAi43cR9l7YAdTOXTf5Z0KgEXcIuNll8w4=\n-----END SSH SIGNATURE-----"
   }
 }

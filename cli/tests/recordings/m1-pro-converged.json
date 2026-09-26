@@ -1,7 +1,7 @@
 {
   "recording_version": 1,
   "description": "MacBook Pro (14-inch, M1 Pro, 2021) on the converged image, over SSH",
-  "source": "omarchy-m-test --record against tests/corpus/m1-pro-converged/ (scrubbed). Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave; nothing is reconstructed.",
+  "source": "omarchy-m-test --record against tests/corpus/m1-pro-converged/ (scrubbed). Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave, except the camera, function-key and ports answers (checks added after this run): those are stand-ins, noted on each entry, until the next dogfood run records them.",
   "commands": [
     {
       "argv": [
@@ -344,6 +344,77 @@
     },
     {
       "argv": [
+        "hyprctl",
+        "devices",
+        "-j"
+      ],
+      "returncode": 1,
+      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for d in /sys/class/video4linux/video*; do [ -e \"$d\" ] || continue; drv=$(readlink \"$d/device/driver\"); echo \"${d##*/} ${drv##*/}\"; done"
+      ],
+      "returncode": 0,
+      "stdout": "video0 apple-isp\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "timeout",
+        "20",
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-i",
+        "/dev/video0",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, video4linux2,v4l2, from '/dev/video0':\n  Duration: N/A, start: 0.000000, bitrate: 746496 kb/s\n  Stream #0:0: Video: rawvideo (NV12 / 0x3231564E), nv12, 1920x1080, 746496 kb/s, 30 fps, 30 tbr, 1000k tbn\nStream mapping:\n  Stream #0:0 -> #0:0 (rawvideo (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Stream #0:0: Video: wrapped_avframe, nv12(progressive), 1920x1080, q=2-31, 200 kb/s, 30 fps, 30 tbn\n[out#0/null @ 0xaaaacafe0000] video:13KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=   30 fps= 29 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.98x\n"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for p in /sys/class/typec/port*; do\n  n=${p##*/port}\n  case $n in ''|*[!0-9]*) continue;; esac\n  if [ -e \"/sys/class/typec/port$n-partner\" ]; then partner=yes; else partner=no; fi\n  data=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/data_role\" 2>/dev/null)\n  power=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/power_role\" 2>/dev/null)\n  echo \"typec $n partner=$partner data=$data power=$power\"\ndone\nfor d in /sys/bus/usb/devices/*; do\n  [ -r \"$d/speed\" ] || continue\n  case ${d##*/} in *:*) continue;; usb*) kind=root;; *) kind=device;; esac\n  class=$(cat \"$d/bDeviceClass\" 2>/dev/null)\n  if [ \"$class\" = 00 ]; then class=$(cat \"$d\"/*:*/bInterfaceClass 2>/dev/null | head -n 1); fi\n  echo \"usb $kind speed=$(cat \"$d/speed\") class=$class\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "typec 0 partner=no data=device power=sink\ntypec 1 partner=no data=device power=sink\ntypec 2 partner=no data=device power=sink\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "if [ ! -d /sys/bus/thunderbolt/devices ]; then echo nobus; exit 0; fi\nfor d in /sys/bus/thunderbolt/devices/*; do\n  [ -r \"$d/uevent\" ] || continue\n  line=\"thunderbolt ${d##*/} $(sed -n 's/^DEVTYPE=//p' \"$d/uevent\")\"\n  for f in generation rx_speed rx_lanes authorized; do\n    if [ -r \"$d/$f\" ]; then line=\"$line $f=$(tr -d ' \\n' < \"$d/$f\")\"; fi\n  done\n  echo \"$line\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "thunderbolt 0-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 1-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 2-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt domain0 thunderbolt_domain\nthunderbolt domain1 thunderbolt_domain\nthunderbolt domain2 thunderbolt_domain\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card1-eDP-1 connected enabled 3024x1964\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "dtc",
         "-I",
         "fs",
@@ -399,16 +470,6 @@
     },
     {
       "argv": [
-        "hyprctl",
-        "devices",
-        "-j"
-      ],
-      "returncode": 1,
-      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
         "ip",
         "-brief",
         "address"
@@ -437,6 +498,7 @@
     "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
       "text": "20\n"
     },
+    "/sys/module/hid_apple/parameters/fnmode": null,
     "/sys/class/power_supply/macsmc-ac/type": {
       "text": "Mains\n"
     },

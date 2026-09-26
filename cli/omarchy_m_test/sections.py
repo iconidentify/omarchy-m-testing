@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import checks, video
+from . import camera, checks, ports, video
 from .session import Context, Section
 
 
@@ -45,9 +45,14 @@ APPLE: tuple[Section, ...] = (
     _section("network", "Network", "Wi-Fi, its backend and Bluetooth; then you pair a Bluetooth device, and (at the Mac, not over SSH, with your agreement) the Wi-Fi driver is reloaded to time the first join to a 5 GHz network.", (
         "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
     ), checks.network, ("network.bluetooth-pairing",)),
-    _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light.", (
+    _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light, press the function keys and try the trackpad's gestures.", (
         "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
-    ), checks.input_devices, ("input.keyboard-light-follows-room",)),
+        "input.function-keys", "input.trackpad-gestures",
+    ), checks.input_devices, ("input.keyboard-light-follows-room", "input.function-keys", "input.trackpad-gestures")),
+    _section("camera", "Camera", "The camera's image processor and a few frames from it; then (at the Mac) you look at its picture.",
+             camera.CHECK_IDS, camera.run, (camera.IMAGE,)),
+    _section("ports", "Ports", "USB-C ports, Thunderbolt and USB4 links and displays on USB-C: plug in what you have; then you say whether they work.",
+             ports.CHECK_IDS, ports.run, (ports.DEVICES_WORK, ports.PICTURE)),
     _section("power", "Power", "The battery.", ("power.battery",), checks.power),
     _section("cpu", "CPU", "CPU frequency scaling.", ("cpu.frequency-scaling",), checks.cpu),
 )
