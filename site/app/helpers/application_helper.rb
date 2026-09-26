@@ -19,11 +19,11 @@ module ApplicationHelper
     tag.span(Catalogue.outcome_words(outcome), class: "badge badge-#{ResultState.for_outcome(outcome)} outcome outcome-#{outcome}")
   end
 
-  # One matrix cell: a coloured square once machines agree, an outlined hint while unconfirmed.
+  # One matrix cell: a coloured square once machines agree or a tester confirms, an outlined hint while unconfirmed.
   def matrix_cell(cell, feature_id:, link: nil)
     glyph = ResultState.glyph(cell.display_state)
     content = link && cell.reports.any? ? link_to(glyph, link, "aria-label": cell.summary) : glyph
-    tag.td(content, class: cell.css_class, title: cell.summary, data: { feature: feature_id, state: cell.state || "unconfirmed" })
+    tag.td(content, class: cell.css_class, title: cell.summary, data: { feature: feature_id, state: cell.state || "unconfirmed", verified: ("tester" if cell.tester?) })
   end
 
   # A catalogue state ("upstream 6.2", "linux-asahi", "supported 7.1.12") for one layer.
@@ -42,6 +42,17 @@ module ApplicationHelper
     return "expected expected-none" if status.nil? || status == "absent"
 
     good ? "expected expected-yes" : "expected expected-no"
+  end
+
+  # A report's origin: a tester run (a signed-in, allowlisted tester's machine) or a community report.
+  def run_badge(report, long: false)
+    if report.tester?
+      tag.span(long ? "tester run" : "tester", class: "badge badge-tester",
+               title: "From a tester's machine: it signed in with GitHub and the tester is on the allowlist. Tester runs colour the matrix on their own.")
+    else
+      tag.span(long ? "community report" : "community", class: "badge badge-community",
+               title: "Uploaded anonymously. It shows here right away, and counts toward the matrix once another machine agrees or a tester confirms.")
+    end
   end
 
   def uploaded_at(report) = report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC")

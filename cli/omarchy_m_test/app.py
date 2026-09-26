@@ -13,7 +13,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, signing, system, updates
+from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, signing, system, tester, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -68,6 +68,7 @@ def _parse(argv: Sequence[str], host: Host) -> argparse.Namespace:
     parser.add_argument("--explain", metavar="REPORT", help="explain a saved report's results against the catalogue; runs no checks")
     parser.add_argument("--record", metavar="FILE", help="also save what this Mac answered, scrubbed, as a test recording")
     parser.add_argument("--skip", metavar="SECTION", action="append", default=[], help="skip a section (repeat, or separate with commas); the run lists them")
+    parser.add_argument("--sign-in", action="store_true", help="testers: sign this Mac in with GitHub, once; its runs then count as tester runs. Runs no checks")
     parser.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
     return parser.parse_args(list(argv))
 
@@ -78,6 +79,9 @@ def main(argv: Sequence[str], host: Host, sections: Sequence[Section] = APPLE) -
         args = _parse(argv, host)
     except _Exit as done:
         return done.status
+
+    if args.sign_in:
+        return tester.sign_in(Guarded(host), args.site.rstrip("/"))
 
     if not args.record:
         return _interruptible(args, Guarded(host), sections)
@@ -312,6 +316,8 @@ def _upload(host: Host, site: str, text: str) -> int:
     if response.status == 201 and body.get("report_url") and body.get("deletion_url"):
         host.show(f"Uploaded. Your report: {body['report_url']}")
         host.show(f"Keep this link to delete it later: {body['deletion_url']}")
+        if body.get("tester") is True:
+            host.show("It counts as a tester run.")
         return EXIT_OK
 
     message = body.get("error") or f"the site answered HTTP {response.status}"

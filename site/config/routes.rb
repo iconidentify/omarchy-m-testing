@@ -13,10 +13,13 @@ Rails.application.routes.draw do
   get "data" => "pages#data", as: :data
   resources :models, only: %i[index show], param: :board
   resources :features, only: %i[index show]
+  resources :candidates, only: %i[index show], format: false, constraints: { id: /#{CandidateSet::NAME.source}/ }
+  get "auth/github/callback" => "admin/sessions#callback", as: :auth_github_callback
 
   namespace :api do
     namespace :v1 do
       resources :reports, only: %i[index create]
+      resources :tester_bindings, only: :create
       get "checks" => "exports#checks", as: :checks
       get "matrix" => "exports#matrix", as: :matrix
     end
@@ -29,6 +32,8 @@ Rails.application.routes.draw do
   namespace :admin do
     root "reports#index"
     resource :session, only: %i[create destroy]
+    resources :testers, only: %i[index create destroy], constraints: { id: /[A-Za-z0-9-]+/ }
+    resources :tester_bindings, only: :destroy
     resources :reports, only: :destroy do
       member do
         patch :hide

@@ -41,7 +41,8 @@ pass by silently reading this machine. The human side is scripted: `answers`
 are returned by prompt() in order (EOF ends input like Ctrl-D; ENDED, left
 last, is input that stays closed: every later prompt gets end of input and
 every later interactive command exits 1, as gum does with no answer). Uploads get
-the scripted `responses` in order. GETs (the latest-release lookup) get
+the scripted `responses` in order; form POSTs (GitHub's device flow) get the
+scripted `forms` in order, and sleeps return at once (kept in `slept`). GETs (the latest-release lookup) get
 the scripted `fetches` by URL; a URL that isn't scripted behaves like a
 machine with no network (NetworkError). The answer INTERRUPT at a prompt or an
 interactive command is Ctrl-C there (KeyboardInterrupt). Interactive commands
@@ -127,6 +128,7 @@ class RecordedHost:
     recording: dict[str, Any]
     answers: list[Any] = field(default_factory=list)
     responses: list[HttpResponse] = field(default_factory=list)
+    forms: list[HttpResponse] = field(default_factory=list)
     fetches: dict[str, HttpResponse] = field(default_factory=dict)
     terminal_size: Terminal | None = None
     signer: Callable[[str, str, bytes], MachineSignature] | None = None
@@ -135,6 +137,9 @@ class RecordedHost:
     commands_run: list[list[str]] = field(default_factory=list)
     written: dict[str, str] = field(default_factory=dict)
     posts: list[Post] = field(default_factory=list)
+    # (url, fields) per post_form call
+    form_posts: list[tuple[str, dict[str, str]]] = field(default_factory=list)
+    slept: list[float] = field(default_factory=list)
     gets: list[str] = field(default_factory=list)
     removed: set[str] = field(default_factory=set)
     private: set[str] = field(default_factory=set)
@@ -147,6 +152,7 @@ class RecordedHost:
             raise ValueError(f"unsupported recording_version {version!r}")
         self.answers = list(self.answers)
         self.responses = list(self.responses)
+        self.forms = list(self.forms)
 
     @classmethod
     def load(cls, path: str, **kwargs: Any) -> "RecordedHost":
@@ -256,6 +262,18 @@ class RecordedHost:
             raise RecordingMiss(f"no scripted response left for POST {url}")
         return self.responses.pop(0)
 
+    def post_form(self, url: str, fields: dict[str, str]) -> HttpResponse:
+        self.form_posts.append((url, dict(fields)))
+        if not self.forms:
+            raise RecordingMiss(f"no scripted response left for form POST {url}")
+        answer = self.forms.pop(0)
+        if isinstance(answer, NetworkError):
+            raise answer
+        return answer
+
+    def sleep(self, seconds: float) -> None:
+        self.slept.append(seconds)
+
     def get(self, url: str) -> HttpResponse:
         self.gets.append(url)
         if url not in self.fetches:
@@ -270,7 +288,7 @@ class RecordedHost:
         return "\n".join(event[1] for event in self.transcript if isinstance(event[1], str))
 
     def unused_script(self) -> list[Any]:
-        return [answer for answer in self.answers if answer is not ENDED] + self.responses
+        return [answer for answer in self.answers if answer is not ENDED] + self.responses + self.forms
 
 
 class RecordingHost:
@@ -347,6 +365,12 @@ class RecordingHost:
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         return self.inner.post_json(url, body)
+
+    def post_form(self, url: str, fields: dict[str, str]) -> HttpResponse:
+        return self.inner.post_form(url, fields)
+
+    def sleep(self, seconds: float) -> None:
+        self.inner.sleep(seconds)
 
     def get(self, url: str) -> HttpResponse:
         return self.inner.get(url)

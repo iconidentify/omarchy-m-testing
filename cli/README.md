@@ -4,6 +4,7 @@ The `omarchy-m-test` command. Python 3 standard library only.
 
     bin/omarchy-m-test [--dry-run] [--output FILE] [--site URL] [--catalogue FILE] [--record FILE] [--skip SECTION]
     bin/omarchy-m-test --explain REPORT [--catalogue FILE]
+    bin/omarchy-m-test --sign-in [--site URL]
 
 It refuses non-Apple machines, shows the disclaimer (Enter accepts), runs the checks, writes the report, shows it and asks before uploading it to the site (`--site http://localhost:3000` for a local site).
 
@@ -76,7 +77,7 @@ At a terminal the run looks like Omarchy's installer (`omarchy_m_test/theme.py`,
 
 ## The host boundary
 
-Every interaction with the machine, the human and the network goes through a `Host` (`omarchy_m_test/host.py`): run a command, read a file, list a directory, read an environment variable, prompt, show, run an interactive command (gum) on the terminal, ask for the terminal's size, write and remove files, post the report, GET the latest version. `scripts/check_boundary.py` fails CI if any other module does I/O or imports outside the standard library.
+Every interaction with the machine, the human and the network goes through a `Host` (`omarchy_m_test/host.py`): run a command, read a file, list a directory, read an environment variable, prompt, show, run an interactive command (gum) on the terminal, ask for the terminal's size, write and remove files, post the report, post a form (GitHub's device flow), wait, GET the latest version. `scripts/check_boundary.py` fails CI if any other module does I/O or imports outside the standard library.
 
 Tests replace the real host with a `RecordedHost` (`omarchy_m_test/recording.py`) that replays a recording from `tests/recordings/` and scripted answers. Anything the CLI asks for that isn't recorded raises `RecordingMiss`.
 
@@ -87,6 +88,12 @@ Every report passes `omarchy_m_test/privacy.py` before it is written, shown or u
 ## Machine key
 
 On its first run the CLI creates an ed25519 key for this Mac at `$XDG_STATE_HOME/omarchy-m-test/machine-key` (`~/.local/state/...`; 0600, in a 0700 directory) with `ssh-keygen`, asking nothing, and reuses it on every later run. Every report carries its public key and a signature (`ssh-keygen -Y sign`, namespace `omarchy-m-test-report`) over its canonical form: the report without `signature`, as JSON with keys sorted, no whitespace and non-ASCII as UTF-8 (`omarchy_m_test/signing.py`). The private key never leaves the Mac, and record mode never records the key. The site refuses unsigned or tampered reports, groups reports by a keyed digest of the public key and never shows or exports the key. Without `ssh-keygen` the report is written unsigned and the run says the site won't take it.
+
+## Tester sign-in
+
+    bin/omarchy-m-test --sign-in [--site URL]
+
+Once per Mac, a tester signs in with GitHub's device flow (`omarchy_m_test/tester.py`): the CLI asks GitHub for a short code with only the `omarchy-m-testing` OAuth app's client ID (no secret ships in the tool), shows it with github.com/login/device, and polls at GitHub's interval (slower on `slow_down`) until the code is entered, cancelled or expires. It then sends the site the token in a small document signed by the machine key under the namespace `omarchy-m-test-tester` (so it can't pass for a report). The site checks the token with GitHub, binds the GitHub handle to the machine key and revokes the token; the CLI never writes the token anywhere. From then on nothing changes in a run: the site counts every report that machine signs as a tester run while the handle is on its tester allowlist, and says so after the upload. It runs no checks.
 
 ## Recording a Mac
 

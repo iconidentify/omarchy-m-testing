@@ -1,0 +1,24 @@
+<% content_for :title, "Candidate sets" %>
+<h1>Candidate sets</h1>
+<p class="subtitle">Runs on candidate images, grouped by the candidate set they were built from. Only tester runs count toward promotion.</p>
+<%= card "candidate sets" do %>
+  <% if @sets.empty? %>
+    <p class="dim">No runs on candidate images yet.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Candidate set</th><th>Latest run</th><th>Runs</th><th>Tester runs</th><th>Models</th><th>Promotion</th></tr></thead>
+      <tbody>
+        <% @sets.each do |set| %>
+          <tr class="candidate-row" id="candidate-<%= set.name %>" data-verdict="<%= set.verdict %>">
+            <td><a href="<%= candidate_path(set) %>"><%= set.name %></a></td>
+            <td class="nowrap"><%= uploaded_at(set.latest) %></td>
+            <td><%= set.reports.size %></td>
+            <td><%= set.tester_reports.size %></td>
+            <td><%= set.reports.map(&:short_model_name).uniq.sort.join(", ") %></td>
+            <td><span class="verdict verdict-<%= set.verdict %>"><%= set.verdict_words %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>

@@ -69,12 +69,79 @@ module Uploads
   def path_of(url) = URI(url).request_uri
 end
 
+# GitHub, as the site sees it (Github::HttpClient's interface): tokens this
+# OAuth app issued, other apps' tokens, and web-flow codes.
+class FakeGithub
+  attr_reader :app_tokens, :other_tokens, :codes, :revoked, :exchanges
+
+  def initialize
+    @app_tokens = {}
+    @other_tokens = {}
+    @codes = {}
+    @revoked = []
+    @exchanges = []
+  end
+
+  # A token this app issued to `login`.
+  def issue(token, login, id: login.sum)
+    app_tokens[token] = Github::Identity.new(login:, id:)
+    token
+  end
+
+  def exchange_code(code:, redirect_uri:)
+    exchanges << redirect_uri
+    codes.delete(code) or raise Github::Error, "The code passed is incorrect or expired."
+  end
+
+  def user(token) = app_tokens[token] || other_tokens[token] || raise(Github::Error, "GitHub answered HTTP 401")
+  def app_token_user(token) = app_tokens[token] || raise(Github::Error, "GitHub answered HTTP 404")
+  def revoke(token) = revoked << token
+end
+
+# The golden tester sign-in the CLI sends (schema/golden/sign-in/), signed by
+# the CLI's fixture key, the same key as the signed golden reports.
+module GoldenSignIn
+  TOKEN = "gho_goldenTesterToken0123456789"
+
+  def self.text = ReportSchema.dir.join("golden", "sign-in", "tester-sign-in.json").read
+  def self.json = JSON.parse(text)
+end
+
+module TesterSignIns
+  def github = Github.client
+
+  def configure_github(admins: "maralcbr")
+    ENV["GITHUB_CLIENT_ID"] = "Ov23test"
+    ENV["GITHUB_CLIENT_SECRET"] = "test-secret"
+    ENV["ADMIN_GITHUB_LOGINS"] = admins
+  end
+
+  def sign_in_tester(body = GoldenSignIn.text, ip: "10.0.0.1")
+    body = body.to_json unless body.is_a?(String)
+    post "/api/v1/tester_bindings", params: body, headers: { "Content-Type" => "application/json", "Accept" => "application/json" },
+                                     env: { "REMOTE_ADDR" => ip }
+    response.parsed_body
+  end
+
+  # A test machine (TestMachines) bound to `login`, as a sign-in on it would.
+  def bind_machine(name, login) = TesterBinding.bind!(machine_id: TestMachines.machine_id(name), identity: Github::Identity.new(login:, id: login.sum))
+
+  # Signs in to /admin through the (fake) GitHub web flow as `login`.
+  def sign_in_admin_with_github(login = "maralcbr")
+    post "/admin/session"
+    state = Rack::Utils.parse_query(URI(response.location).query).fetch("state")
+    github.codes["code-#{login}"] = github.issue("token-#{login}", login)
+    get "/auth/github/callback", params: { code: "code-#{login}", state: }
+  end
+end
+
 class ActionDispatch::IntegrationTest
   include Uploads
+  include TesterSignIns
 
   setup do
     Api::V1::ReportsController::RATE_LIMITS.clear
-    ENV.delete("ADMIN_TOKEN")
-    ENV.delete("CLIENT_IP_HEADER")
+    %w[ADMIN_TOKEN CLIENT_IP_HEADER GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET ADMIN_GITHUB_LOGINS].each { |name| ENV.delete(name) }
+    Github.client = FakeGithub.new
   end
 end

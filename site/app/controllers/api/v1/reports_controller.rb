@@ -57,11 +57,13 @@ module Api
                  status: :too_many_requests
         else
           # The key and signature only prove where the report came from; they're not kept.
-          report = Report.create!(body: payload.except("signature"), schema_version: payload.fetch("schema_version"), machine_id: signature.machine_id)
+          report = Report.create!(body: payload.except("signature"), schema_version: payload.fetch("schema_version"), machine_id: signature.machine_id,
+                                  tester_login: TesterBinding.login_for(signature.machine_id))
           render json: {
             id: report.public_id,
             report_url: report_url(report),
-            deletion_url: deletion_report_url(report, token: report.deletion_token)
+            deletion_url: deletion_report_url(report, token: report.deletion_token),
+            tester: report.tester?
           }, status: :created
         end
       end
