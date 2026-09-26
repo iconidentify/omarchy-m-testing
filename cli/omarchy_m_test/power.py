@@ -108,6 +108,8 @@ READING_SCRIPT = (
     f'for f in {" ".join(READING_FIELDS)}; do echo "$f $(tr -d \' \\n\' < "$d/$f" 2>/dev/null)"; done'
 )
 
+# The lid watch's budget of awake polls with the lid closed: brief wake-ups over ten minutes asleep mustn't end it.
+DRAIN_CLOSED_SECONDS = 120
 DRAIN_MIN_SECONDS = 300  # asleep for less says too little: the battery's levels move too slowly
 # A Mac that loses more than this an hour asleep would be flat in about half a day asleep: it isn't sleeping properly.
 DRAIN_FAIL_PERCENT_PER_HOUR = 8.0
@@ -251,8 +253,13 @@ def charge_limit(ctx: Context, battery: str) -> tuple[dict, dict]:
 
     if not packages.sudo_ready(ctx):
         why = "skipped: setting the charge limit needs sudo, and it wasn't given"
-        kept_why = f"skipped: {kept_skip}" if kept_skip else why
-        return _result(CHARGE_LIMIT, "skip", [before, why]), _result(CHARGE_LIMIT_KEPT, "skip", [*kept, *kept_problems, kept_why])
+        if kept_skip:
+            kept_result = _result(CHARGE_LIMIT_KEPT, "skip", [f"skipped: {kept_skip}"])
+        elif kept_problems:  # what's missing is known without changing anything
+            kept_result = _result(CHARGE_LIMIT_KEPT, "fail", [*kept, *kept_problems])
+        else:
+            kept_result = _result(CHARGE_LIMIT_KEPT, "skip", [*kept, why])
+        return _result(CHARGE_LIMIT, "skip", [before, why]), kept_result
 
     restorer = ctx.changes.register(f"the battery charge limit (back to {end}%)", restore_argv(end, saved), sudo=True)
     evidence, problems = [before], []
@@ -415,6 +422,10 @@ def judge_idle(samples: list[Sample]) -> dict:
 
 # -- drain while asleep ------------------------------------------------------------------
 
+def drain_watch_argv() -> list[str]:
+    return sleep.lid_watch_argv(closed=DRAIN_CLOSED_SECONDS)
+
+
 def reading_argv(battery_dir: str) -> list[str]:
     return ["sh", "-c", READING_SCRIPT, "sh", battery_dir]
 
@@ -469,7 +480,7 @@ def sleep_drain(ctx: Context, battery: str, progress: dict) -> tuple[dict, bool]
     since = (before.time or 1) - 1
     progress["drain"] = {"since": since, "boot": sleep.boot_id(ctx), "battery": battery, "before": before.to_json()}
     ctx.changes.persist()
-    lid = sleep.parse_lid(ctx.host.run(sleep.lid_watch_argv()).stdout)
+    lid = sleep.parse_lid(ctx.host.run(drain_watch_argv()).stdout)
     after = _reading(ctx, battery)
     result = judge_drain(lid, sleep.read_journal(ctx, since), before, after)
     progress.pop("drain", None)

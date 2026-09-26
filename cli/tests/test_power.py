@@ -27,7 +27,7 @@ from tests.test_interactive import ARGS, ENTER, check, prompts
 SAVED_80 = f"{power.SAVED_KEY}=80\n"
 UNPLUG_PROMPT = power.UNPLUG_QUESTION + " [y/N] "
 DRAIN_PROMPT = power.DRAIN_QUESTION + " [y/N] "
-WATCH = sleep.lid_watch_argv()
+WATCH = power.drain_watch_argv()
 
 
 def power_run(answers=(), state: MacState | None = None, **kwargs) -> LiveMac:
@@ -138,6 +138,13 @@ class ChargeLimitTest(unittest.TestCase):
                       "/usr/lib/omarchy-mac/battery-charge-limit-restore missing)", kept["evidence"])
         self.assertEqual(check(host, power.CHARGE_LIMIT)["status"], "pass")
         self.assertNotIn(power.command_argv(80), host.commands_run)
+
+    def test_without_sudo_a_missing_command_still_fails_the_kept_check(self):
+        host = power_run(rec=live_recording(base=recording("m1-pro-mx-mac")), state=MacState(sudo_cached=False))
+
+        self.assertEqual(root_commands(host), [])
+        self.assertEqual(check(host, power.CHARGE_LIMIT)["status"], "skip")
+        self.assertEqual(check(host, power.CHARGE_LIMIT_KEPT)["status"], "fail")
 
     def test_ctrl_c_mid_change_puts_the_limit_and_the_saved_file_back(self):
         class Interrupted(LiveMac):

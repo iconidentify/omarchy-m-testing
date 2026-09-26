@@ -1689,15 +1689,14 @@
     {
       "id": "power.charge-limit-kept",
       "kind": "automatic",
-      "status": "skip",
+      "status": "fail",
       "evidence": [
         "nothing saved in /etc/udev/macsmc-battery.conf",
         "omarchy-battery-charge-limit isn't installed (omarchy-mac's `omarchy battery charge limit`)",
-        "nothing of omarchy-mac's restores a saved limit at boot (/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules, /usr/lib/omarchy-mac/battery-charge-limit-restore missing)",
-        "skipped: setting the charge limit needs sudo, and it wasn't given"
+        "nothing of omarchy-mac's restores a saved limit at boot (/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules, /usr/lib/omarchy-mac/battery-charge-limit-restore missing)"
       ],
       "classification": {
-        "outcome": "not-tested",
+        "outcome": "fails",
         "feature": "battery-charge-limit",
         "layer": "omarchy",
         "expected": {
