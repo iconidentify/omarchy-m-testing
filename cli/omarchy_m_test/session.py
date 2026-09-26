@@ -231,6 +231,15 @@ def run_key(machine: Machine, catalogue: Catalogue, version: str) -> dict[str, A
     return {"tool_version": version, "catalogue_version": catalogue.version, "board": machine.board, "kernel": machine.kernel}
 
 
+def state_dir(host: Host) -> str | None:
+    """$XDG_STATE_HOME (~/.local/state), where the checkpoint and the machine key live; None without a home."""
+    base = host.env("XDG_STATE_HOME")
+    if not base:
+        home = host.env("HOME")
+        base = f"{home}/.local/state" if home else None
+    return base
+
+
 class Checkpoint:
     def __init__(self, host: Host, path: str | None):
         self.host = host
@@ -240,10 +249,7 @@ class Checkpoint:
     def for_host(cls, host: Host, enabled: bool = True) -> "Checkpoint":
         if not enabled:
             return cls(host, None)
-        base = host.env("XDG_STATE_HOME")
-        if not base:
-            home = host.env("HOME")
-            base = f"{home}/.local/state" if home else None
+        base = state_dir(host)
         return cls(host, f"{base}/{CHECKPOINT_NAME}" if base else None)
 
     def load(self) -> State | None:

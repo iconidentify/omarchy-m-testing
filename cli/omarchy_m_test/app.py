@@ -13,7 +13,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, system, updates
+from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, signing, system, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -218,12 +218,18 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
             results += skipped(section, blocked.get(section.id))
     built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue, shared.get("inventory"))
 
-    text = report.to_text(privacy.enforce(built, scrubber))
+    signed, unsigned_because = signing.sign(host, privacy.enforce(built, scrubber))
+    text = report.to_text(signed)
     host.write_file(args.output, text)
     checkpoint.clear()
     args.resumable = False
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)
+    if unsigned_because:
+        host.show(
+            f"This report isn't signed with this Mac's key: {unsigned_because}. "
+            "The site only accepts signed reports."
+        )
 
     if args.dry_run:
         host.show("Dry run: the report was not uploaded.")

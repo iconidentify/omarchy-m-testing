@@ -25,6 +25,11 @@ Operations:
   run_tty(argv, env)         run an interactive command on the terminal (gum): it draws on
                              the terminal and reads keys; only its stdout is captured
   remove_file(path)          remove a file the CLI wrote itself (the checkpoint); no error if absent
+  machine_sign(key_path, namespace, message)
+                             sign bytes with this machine's ed25519 key at key_path (ssh-keygen -Y
+                             sign), creating it silently on first use: 0600, in a 0700 directory.
+                             Returns the public key and the signature; SigningError if it can't.
+                             Only the public key and signatures ever leave the machine.
 """
 
 from __future__ import annotations
@@ -80,6 +85,16 @@ class NetworkError(Exception):
     """The request never got an HTTP response (DNS, TLS, refused, timeout)."""
 
 
+@dataclass(frozen=True)
+class MachineSignature:
+    public_key: str  # "ssh-ed25519 AAAA...", without a comment
+    signature: str  # the armored SSH signature ssh-keygen -Y sign prints
+
+
+class SigningError(Exception):
+    """The machine key couldn't be created or used (no ssh-keygen, no home directory)."""
+
+
 class Host(Protocol):
     def run(self, argv: Sequence[str]) -> CommandResult: ...
 
@@ -106,6 +121,8 @@ class Host(Protocol):
     def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult: ...
 
     def remove_file(self, path: str) -> None: ...
+
+    def machine_sign(self, key_path: str, namespace: str, message: bytes) -> MachineSignature: ...
 
 
 def _changes_packages(argv: list[str]) -> bool:
@@ -220,6 +237,37 @@ class RealHost:
             return HttpResponse(error.code, error.read().decode("utf-8", "replace"))
         except (urllib.error.URLError, OSError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error
+
+    def machine_sign(self, key_path: str, namespace: str, message: bytes) -> MachineSignature:
+        directory = os.path.dirname(key_path)
+        try:
+            os.makedirs(directory, mode=0o700, exist_ok=True)
+            os.chmod(directory, 0o700)
+            if not os.path.exists(key_path):
+                # No passphrase: the key only ever signs reports, and a run must never prompt for it.
+                self._ssh_keygen(["-q", "-t", "ed25519", "-N", "", "-C", "", "-f", key_path])
+            os.chmod(key_path, 0o600)  # ssh-keygen refuses a key others can read
+            public_key_path = key_path + ".pub"
+            if not os.path.exists(public_key_path):  # only the private half survived: derive it again
+                self.write_file(public_key_path, self._ssh_keygen(["-y", "-f", key_path]))
+            with open(public_key_path, encoding="utf-8") as f:
+                public_key = " ".join(f.read().split()[:2])
+        except OSError as error:
+            raise SigningError(f"couldn't keep the machine key in {directory} ({error.strerror or error})") from error
+        signature = self._ssh_keygen(["-Y", "sign", "-f", key_path, "-n", namespace], message)
+        return MachineSignature(public_key, signature.strip())
+
+    def _ssh_keygen(self, args: list[str], message: bytes = b"") -> str:
+        try:
+            done = subprocess.run(["ssh-keygen", *args], input=message, capture_output=True, timeout=COMMAND_TIMEOUT_SECONDS)
+        except FileNotFoundError as error:
+            raise SigningError("ssh-keygen isn't installed (it comes with openssh)") from error
+        except subprocess.TimeoutExpired as error:
+            raise SigningError(f"ssh-keygen timed out after {COMMAND_TIMEOUT_SECONDS}s") from error
+        if done.returncode != 0:
+            reason = done.stderr.decode("utf-8", "replace").strip().splitlines()
+            raise SigningError(f"ssh-keygen failed ({reason[-1] if reason else f'exit {done.returncode}'})")
+        return done.stdout.decode("utf-8", "replace")
 
     def get(self, url: str) -> HttpResponse:
         request = urllib.request.Request(url, headers={"Accept": "text/plain"})

@@ -8,8 +8,8 @@ class ExportsTest < ActionDispatch::IntegrationTest
   end
 
   setup do
-    @m2 = upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    @m1 = upload_report golden("m1-pro-mx-mac"), ip: "10.0.0.2"
+    @m2 = upload_report golden("m2-max-image2"), machine: "a"
+    @m1 = upload_report golden("m1-pro-mx-mac"), machine: "b"
   end
 
   test "reports.json has every report exactly as uploaded, under CC0" do
@@ -23,6 +23,8 @@ class ExportsTest < ActionDispatch::IntegrationTest
     assert_equal golden("m2-max-image2"), body["reports"][0]["report"]
     assert_equal @m2["report_url"], body["reports"][0]["url"]
     assert_not_includes response.body, Report.first.machine_id
+    assert_not_includes response.body, TestMachines.public_key("a").split.last
+    assert_not_includes response.body, "SSH SIGNATURE"
     assert_not_includes response.body, "deletion"
   end
 
@@ -61,7 +63,7 @@ class ExportsTest < ActionDispatch::IntegrationTest
   end
 
   test "matrix.json has each cell's state and per-machine agreement" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.3"
+    upload_report golden("m2-max-image2"), machine: "c"
     get "/api/v1/matrix.json"
 
     assert_response :success

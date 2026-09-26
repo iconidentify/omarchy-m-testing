@@ -3,14 +3,8 @@ require "test_helper"
 # Seam B: post reports to the upload API, then assert on the API responses,
 # what is stored and the pages.
 class ReportUploadTest < ActionDispatch::IntegrationTest
-  def upload(text)
-    post "/api/v1/reports", params: text, headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
-  end
-
-  def path_of(url) = URI(url).request_uri
-
   test "posting the golden report stores it and returns report and deletion links" do
-    upload GoldenReports.text("m2-max-image2")
+    upload_report golden("m2-max-image2")
 
     assert_response :created
     links = response.parsed_body
@@ -23,7 +17,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "the report page shows the machine and each check" do
-    upload GoldenReports.text("m2-max-image2")
+    upload_report golden("m2-max-image2")
     get path_of(response.parsed_body["report_url"])
 
     assert_response :success
@@ -37,7 +31,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   test "every golden report is accepted" do
     assert GoldenReports.paths.any?
     GoldenReports.paths.each do |path|
-      upload File.read(path)
+      upload_report JSON.parse(File.read(path))
       assert_response :created, "#{File.basename(path)}: #{response.body}"
     end
   end
@@ -51,7 +45,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
     not_an_object = []
 
     [ with_serial, bad_check_id, unclassified, no_catalogue_version, newer, not_an_object ].each do |report|
-      upload report.to_json
+      upload_report report
       assert_response :unprocessable_content
       assert_match "does not match report schema v1", response.parsed_body["error"]
       assert response.parsed_body["details"].any?
@@ -62,7 +56,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   test "check ids the feature catalogue doesn't know are rejected with an upgrade message" do
     report = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0]["id"] = "made.up" }
 
-    upload report.to_json
+    upload_report report
 
     assert_response :unprocessable_content
     assert_match "Update omarchy-m-test", response.parsed_body["error"]
@@ -77,7 +71,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "the report page explains each result in plain words, with its layer and catalogue version" do
-    upload GoldenReports.text("m2-max-image2")
+    upload_report golden("m2-max-image2")
     get path_of(response.parsed_body["report_url"])
 
     assert_select "li#check-system\\.identity .outcome.outcome-works", "works"
@@ -90,28 +84,28 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
     report = GoldenReports.json("m2-max-image2")
     report["checks"][0].merge!("status" => "fail", "classification" => report["checks"][0]["classification"].merge("outcome" => "not-in-aurora"))
 
-    upload report.to_json
+    upload_report report
     get path_of(response.parsed_body["report_url"])
 
     assert_select "li#check-system\\.identity .outcome.outcome-not-in-aurora", "not yet supported by Aurora"
   end
 
   test "a body that isn't JSON is a bad request" do
-    upload "not json"
+    upload_report "not json"
 
     assert_response :bad_request
     assert_equal 0, Report.count
   end
 
   test "oversized reports are refused before parsing" do
-    upload GoldenReports.json("m2-max-image2").merge("padding" => "x" * 300.kilobytes).to_json
+    upload_report TestMachines.sign(GoldenReports.json("m2-max-image2")).merge("padding" => "x" * 300.kilobytes).to_json
 
     assert_response :content_too_large
     assert_equal 0, Report.count
   end
 
   test "the deletion link deletes the report" do
-    upload GoldenReports.text("m2-max-image2")
+    upload_report golden("m2-max-image2")
     links = response.parsed_body
 
     get path_of(links["deletion_url"])
@@ -128,7 +122,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "deleting removes the report and its evidence completely, hidden or not" do
-    links = JSON.parse(upload(GoldenReports.text("m2-max-image2")) && response.body)
+    links = upload_report(golden("m2-max-image2"))
     Report.sole.update!(hidden_at: Time.current)
     evidence = GoldenReports.json("m2-max-image2")["checks"].find { |check| check["id"] == "setup.first-boot-hardware" }["evidence"].first
 
@@ -146,7 +140,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
   end
 
   test "a wrong deletion token deletes nothing" do
-    upload GoldenReports.text("m2-max-image2")
+    upload_report golden("m2-max-image2")
     report_path = path_of(response.parsed_body["report_url"])
 
     get "#{report_path}/deletion", params: { token: "wrong" }

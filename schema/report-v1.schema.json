@@ -176,6 +176,16 @@
           }
         }
       }
+    },
+    "signature": {
+      "description": "The machine key's signature, which the site requires. The CLI creates an ed25519 key on the Mac's first run and signs every report with it (ssh-keygen -Y sign, namespace omarchy-m-test-report) over the report's canonical form: the report without this member, as JSON with keys sorted, no whitespace and non-ASCII characters as UTF-8. The site verifies it and groups reports by a keyed digest of the public key; neither the key nor the signature is shown or exported.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public_key", "signature"],
+      "properties": {
+        "public_key": { "description": "The OpenSSH public key, without a comment.", "type": "string", "pattern": "^ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI[A-Za-z0-9+/]{43}$" },
+        "signature": { "description": "The armored SSH signature, as ssh-keygen -Y sign prints it.", "type": "string", "pattern": "^-----BEGIN SSH SIGNATURE-----\\n[A-Za-z0-9+/=\\n]+\\n-----END SSH SIGNATURE-----$", "maxLength": 1000 }
+      }
     }
   }
 }

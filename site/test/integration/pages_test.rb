@@ -14,8 +14,8 @@ class PagesTest < ActionDispatch::IntegrationTest
   end
 
   test "a model page shows what its chip is expected to do and each stack's results" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "b"
 
     get "/models/j416c"
     assert_response :success
@@ -47,8 +47,8 @@ class PagesTest < ActionDispatch::IntegrationTest
   end
 
   test "a feature page shows per-chip expectations and results per Mac" do
-    upload_report golden("m2-max-image2"), ip: "10.0.0.1"
-    upload_report golden("m2-max-image2"), ip: "10.0.0.2"
+    upload_report golden("m2-max-image2"), machine: "a"
+    upload_report golden("m2-max-image2"), machine: "b"
     upload_report golden("m1-pro-mx-mac")
 
     get "/features/first-boot-hardware-setup"
