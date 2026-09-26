@@ -1,6 +1,6 @@
 """The disclaimer. Bump CONSENT_VERSION whenever its meaning changes."""
 
-CONSENT_VERSION = 2
+CONSENT_VERSION = 3
 
 DISCLAIMER = """\
 omarchy-m-test checks how well Omarchy supports this Mac's hardware.
@@ -18,6 +18,8 @@ What it does:
 
 What it never does:
   - Reboot your Mac, or touch disk encryption or boot files.
+  - Put your Mac to sleep by itself: only you do, by closing the lid when
+    it asks (never over SSH).
   - Collect serial numbers, MAC or IP addresses, hostnames, usernames,
     Wi-Fi network names, disk identifiers or anything in your home directory.
 """

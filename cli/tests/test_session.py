@@ -71,7 +71,7 @@ class RestorerTest(unittest.TestCase):
         self.assertNotIn(REPORT_FILE, mac.written)
         saved = json.loads(mac.written[CHECKPOINT])
         self.assertEqual(saved["restorers"], [])
-        self.assertEqual(list(saved["done"]), [s.id for s in SECTIONS[:-1]])
+        self.assertEqual(list(saved["done"]), [s.id for s in SECTIONS[:-1] if not s.disruptive])  # over SSH: no Sleep
 
     def test_an_error_mid_section_undoes_every_change_then_surfaces(self):
         class Broken(RecordedHost):
@@ -249,7 +249,8 @@ class CheckpointPrivacyTest(unittest.TestCase):
 
                 self.assertIn(CHECKPOINT, mac.private)
                 text = mac.written[CHECKPOINT]
-                self.assertEqual(len(json.loads(text)["done"]), len(SECTIONS) - 1)
+                # Over SSH the disruptive sections (Sleep) aren't run, so they aren't done either.
+                self.assertEqual(len(json.loads(text)["done"]), len([s for s in SECTIONS if not s.disruptive]) - 1)
                 for identifier in forbidden(machine):
                     self.assertNotIn(identifier, text)
 

@@ -25,12 +25,25 @@
       "argv": [
         "nmcli",
         "--get-values",
-        "NAME",
+        "NAME,TYPE",
         "connection",
         "show"
       ],
       "returncode": 0,
-      "stdout": "<ssid>\n<ssid>\n",
+      "stdout": "<ssid>:802-11-wireless\n<ssid>:802-11-wireless\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "auto",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Remote=yes\nSeat=\nActive=yes\n",
       "stderr": ""
     },
     {
@@ -361,19 +374,6 @@
       ],
       "returncode": 1,
       "stdout": "0\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "loginctl",
-        "show-session",
-        "auto",
-        "--property=Remote",
-        "--property=Seat",
-        "--property=Active"
-      ],
-      "returncode": 0,
-      "stdout": "Remote=yes\nSeat=\nActive=yes\n",
       "stderr": ""
     },
     {

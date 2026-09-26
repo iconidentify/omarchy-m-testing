@@ -25,12 +25,25 @@
       "argv": [
         "nmcli",
         "--get-values",
-        "NAME",
+        "NAME,TYPE",
         "connection",
         "show"
       ],
       "returncode": 0,
-      "stdout": "<ssid>\nWired connection 1\n<ssid>\nlo\n<ssid>\n",
+      "stdout": "<ssid>:802-11-wireless\nWired connection 1:802-3-ethernet\nGalah-Bridge:bridge\nlo:loopback\nIbis-Tun:tun\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "19",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
       "stderr": ""
     },
     {
@@ -338,19 +351,6 @@
       ],
       "returncode": 1,
       "stdout": "0\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "loginctl",
-        "show-session",
-        "19",
-        "--property=Remote",
-        "--property=Seat",
-        "--property=Active"
-      ],
-      "returncode": 0,
-      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
       "stderr": ""
     },
     {

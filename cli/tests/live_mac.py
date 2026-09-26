@@ -12,6 +12,8 @@ from the recording:
   loginctl show-session                          the run's login session
   modprobe brcmfmac, nmcli, the join watch       the Wi-Fi driver, the connection and its first join
   bluetoothctl's paired-device count             when the test gives one
+  the lid watch, the system log, the links,      the Sleep section's lid steps (sleep.py), as the
+  Hyprland's monitors, logind, the boot id       fixtures below give them
 
 Tests assert on the model's state at the end (was everything put back?) and
 on the commands the Mac was sent. Nothing here ever asks for a password:
@@ -26,7 +28,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-from omarchy_m_test import changes, network
+from omarchy_m_test import changes, network, sleep
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import RecordedHost
 from tests.desktop import command, recording, with_home
@@ -52,6 +54,86 @@ GOOD_JOIN = "up 212\naddress 260\nfreq 5240\nconnection same\n"
 # first join after the firmware loads lands on the network's 6 GHz radio (6135 MHz), reports connected and gets
 # no DHCP lease; the reload's association time is reconstructed.
 FAILED_JOIN = "up 187\ntimeout 4500\nfreq 6135\nconnection same\n"
+
+# -- the Sleep section's lid steps -------------------------------------------------
+# Times are Unix times on the Mac's clock. The watch prints hundredths of a second since it started.
+
+def ns(t: float) -> int:
+    return int(round(t * 1e9))
+
+
+def links(time: float, wifi: int | None = 1, tbnet: bool | None = None, tbdevices: int = 0) -> str:
+    """What LINKS_SCRIPT prints: wlan0 up with `wifi` addresses (down when 0, absent when None), thunderbolt0."""
+    lines = [f"time {ns(time)}"]
+    if wifi is not None:
+        lines.append(f"wifi {WLAN} {'up' if wifi else 'down'} {wifi}")
+    if tbnet is not None:
+        lines.append(f"tbnet thunderbolt0 {'up' if tbnet else 'down'}")
+    lines.append(f"tbdevices {tbdevices}")
+    return "\n".join(lines) + "\n"
+
+
+def watch(start: float, *events: tuple[float, str], end: str = "end") -> str:
+    """What LID_WATCH_SCRIPT prints: (seconds after start, "closed" / "open" / "monitors eDP-1=on ...")."""
+    lines = [f"start {ns(start)}"]
+    for t, event in events:
+        word, _, rest = event.partition(" ")
+        lines.append(f"{word} {int(round(t * 100))}" + (f" {rest} " if rest else ""))
+    last = int(round(events[-1][0] * 100)) + 100 if events else 0
+    return "\n".join(lines) + f"\n{end} {last}\n"
+
+
+def journal(*events: tuple[str, float] | tuple[str, float, str], lines: int = 120) -> str:
+    """What JOURNAL_SCRIPT prints: event words and Unix times, and how many log lines it read."""
+    return "".join(" ".join(str(part) for part in event) + "\n" for event in events) + f"lines {lines}\n"
+
+
+BOOT = "0e7c2b9a-4f1d-4a36-8c5e-1b9d7f3a6c20"  # made up
+# logind with no external display (the suspend step) and with an HDMI display it counts (a good clamshell).
+LOGIND_UNDOCKED = 'b false\ns "suspend"\ns "ignore"\n'
+LOGIND_DOCKED = 'b true\ns "suspend"\ns "ignore"\n'
+
+# A good suspend: the lid closes 3 s after the prompt, the Mac sleeps (s2idle) 0.7 s later, for 12 s,
+# wakes when the lid opens and Wi-Fi has its address 3 s later.
+T = 1790384038.0  # 2026-09-26 10:53:58 AEST, when the recorded M2 failure's clamshell step began
+SUSPEND_AT = T - 120
+GOOD_SUSPEND_WATCH = watch(SUSPEND_AT + 0.5, (0, "monitors eDP-1=on"), (3.0, "closed"), (16.2, "open"))
+GOOD_SUSPEND_JOURNAL = journal(
+    ("lid-closed", SUSPEND_AT + 3.6), ("logind-suspend", SUSPEND_AT + 3.62), ("suspend-entry", SUSPEND_AT + 4.3, "s2idle"),
+    ("suspend-exit", SUSPEND_AT + 16.4), ("lid-opened", SUSPEND_AT + 16.5),
+)
+BEFORE_SUSPEND = links(SUSPEND_AT)
+AWAKE_AGAIN = links(SUSPEND_AT + 19.4)  # 3 s after the wake-up: Wi-Fi has its address
+# A good clamshell: an HDMI display logind counts; the built-in screen goes off, the Mac stays awake 11 s.
+CLAMSHELL_AT = T
+GOOD_CLAMSHELL_WATCH = watch(
+    CLAMSHELL_AT + 0.5, (0, "monitors eDP-1=on HDMI-A-1=on"), (3.0, "closed"), (3.5, "monitors eDP-1=off HDMI-A-1=on"),
+    (14.0, "open"), (14.5, "monitors eDP-1=on HDMI-A-1=on"),
+)
+GOOD_CLAMSHELL_JOURNAL = journal(("lid-closed", CLAMSHELL_AT + 3.6), ("lid-opened", CLAMSHELL_AT + 14.6))
+BEFORE_CLAMSHELL = links(CLAMSHELL_AT)
+
+# The recorded lid-sleep failure: the M2 Max on 2026-09-26 (omarchy-mac issue 77, the corpus's lid.log) with a
+# USB-C display (DRM connector USB-2) and Thunderbolt networking to another Mac. Hyprland turned eDP-1 off and
+# kept USB-2 on, but logind wasn't Docked (it doesn't count connector type USB) and suspended: PM: suspend entry
+# (s2idle) at 10:54:03.84, awake again when the lid opened at 10:54:35; thunderbolt0 stayed down after resume
+# (issue 80: link errors, "SBX disconnected!", a pipe command timeout). Those times and states are the M2's; the
+# watch's poll times and the moment the lid closed are reconstructed from the watcher's notes.
+USB_C_DISPLAY = "eDP-1=on USB-2=on "
+FAILED_CLAMSHELL_WATCH = watch(
+    T + 0.5, (0, "monitors eDP-1=on USB-2=on"), (4.5, "closed"), (5.0, "monitors eDP-1=off USB-2=on"),
+    (37.1, "open"), (37.6, "monitors eDP-1=on USB-2=on"),
+)
+FAILED_CLAMSHELL_JOURNAL = journal(
+    ("lid-closed", T + 5.1), ("logind-suspend", T + 5.12), ("suspend-entry", T + 5.84, "s2idle"),
+    ("thunderbolt-error", T + 37.1), ("thunderbolt-error", T + 37.2), ("thunderbolt-error", T + 37.3),
+    ("suspend-exit", T + 37.4), ("lid-opened", T + 37.5),
+)
+BEFORE_FAILED_CLAMSHELL = links(T, tbnet=True, tbdevices=1)
+FAILED_AFTER = [links(T + 38.4 + i, wifi=0 if i < 4 else 1, tbnet=False, tbdevices=0) for i in range(31)]
+
+WHOLE_JOURNAL = GOOD_SUSPEND_JOURNAL.replace("lines 120\n", "") + GOOD_CLAMSHELL_JOURNAL
+
 
 # Check ids the test sections report, added to a copy of the bundled catalogue.
 TEST_CHECKS = {
@@ -97,6 +179,13 @@ class MacState:
     reconnects: bool = True  # nmcli connection up works
     driver_loads: bool = True  # modprobe brcmfmac works
     paired: list[int] | None = None  # the paired-device counts BlueZ gives, in turn (the last one stays); None: as recorded
+    # The Sleep section: what the lid watches print, in turn; the system log; the links, in turn (the last one stays).
+    lid_watches: list[str] = field(default_factory=lambda: [GOOD_SUSPEND_WATCH, GOOD_CLAMSHELL_WATCH])
+    journal: str = WHOLE_JOURNAL
+    links: list[str] = field(default_factory=lambda: [BEFORE_SUSPEND, AWAKE_AGAIN, BEFORE_CLAMSHELL])
+    monitors: str = "eDP-1=on HDMI-A-1=on "  # Hyprland's, when the clamshell step looks for an external display
+    logind: list[str] = field(default_factory=lambda: [LOGIND_UNDOCKED, LOGIND_DOCKED])  # in turn
+    boot_id: str | None = BOOT
 
     def copy(self) -> "MacState":
         return copy.deepcopy(self)
@@ -130,6 +219,10 @@ class LiveMac(RecordedHost):
         self.state = state or MacState()
 
     def read_file(self, path: str) -> bytes:
+        if path == sleep.BOOT_ID:
+            if self.state.boot_id is None:
+                raise FileNotFoundError(path)
+            return f"{self.state.boot_id}\n".encode()
         if path == f"/sys/class/net/{WLAN}/operstate":
             return b"up\n" if self.state.wifi_up and not self.state.wifi_blocked else b"down\n"
         if path == "/sys/class/net/lo/operstate":
@@ -228,6 +321,18 @@ class LiveMac(RecordedHost):
         if argv == network.PAIRED and s.paired is not None:
             count = s.paired.pop(0) if len(s.paired) > 1 else s.paired[0]
             return CommandResult(0 if count else 1, f"{count}\n", "")
+        if argv[:3] == sleep.lid_watch_argv()[:3]:
+            return CommandResult(0, _take(s.lid_watches), "")
+        if argv[:3] == ["sh", "-c", sleep.JOURNAL_SCRIPT]:
+            return CommandResult(0, s.journal, "")
+        if argv == sleep.LINKS:
+            return CommandResult(0, _take(s.links), "")
+        if argv == sleep.MONITORS:
+            return CommandResult(0, s.monitors, "")
+        if argv == sleep.LOGIND:
+            return CommandResult(0, _take(s.logind), "")
+        if argv == sleep.SLEEP_ONE:
+            return ok
         if argv[:2] == ["loginctl", "show-session"]:
             if s.session is None or argv[2] not in s.session_ids:
                 return CommandResult(1, "", "Failed to get session: No session\n")
@@ -239,6 +344,11 @@ class LiveMac(RecordedHost):
         if list(argv) == ["sudo", "-v"] and result.returncode == 0:
             self.state.sudo_cached = True
         return result
+
+
+def _take(outputs: list[str]) -> str:
+    """The next of `outputs`; the last one stays."""
+    return outputs.pop(0) if len(outputs) > 1 else (outputs[0] if outputs else "")
 
 
 def ascii_titles(rec: dict[str, Any], titles: list[str], art: str) -> dict[str, Any]:

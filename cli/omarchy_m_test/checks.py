@@ -36,6 +36,7 @@ ORDER = (
     "audio.speaker-amps-unlocked", "audio.microphone-mapping",
     "audio.microphone-signal", "audio.speaker-tone", "audio.headphone-detection",
     "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
+    "sleep.lid-suspend", "sleep.clamshell", "sleep.wifi-after-resume", "sleep.thunderbolt-after-resume",
     "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
     "power.battery",
     "cpu.frequency-scaling",

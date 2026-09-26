@@ -91,7 +91,7 @@ class GoldenRunsTest(unittest.TestCase):
         _, _, report = run(M2_MAX)
 
         prefixes = {check["id"].split(".")[0] for check in report["checks"]}
-        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "input", "power", "cpu"})
+        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "sleep", "input", "power", "cpu"})
         humans = {check["id"] for check in report["checks"] if check["kind"] == "human"}
         self.assertEqual(humans, {"display.notch-bar", "display.brightness-steps", "display.cursor",
                                   "audio.speaker-tone", "audio.headphone-detection", "network.bluetooth-pairing",
@@ -265,7 +265,10 @@ class StackDetectionTest(unittest.TestCase):
         for check in report["checks"]:
             if check["classification"]["layer"] == "omarchy":
                 self.assertEqual(check["status"], "skip", check["id"])
-                self.assertEqual(check["evidence"], ["reference run on fedora: Omarchy integration isn't checked"])
+                # The recorded run is over SSH, so the Sleep section isn't run at all and says why.
+                why = "skipped: running over SSH, where it could cut the connection" if check["id"].startswith("sleep.") else \
+                    "reference run on fedora: Omarchy integration isn't checked"
+                self.assertEqual(check["evidence"], [why])
         self.assertEqual(found["network.wifi"]["classification"]["outcome"], "works")
         self.assertEqual(found["cpu.frequency-scaling"]["classification"]["outcome"], "works")
         self.assertEqual(found["packages.hardware"]["status"], "skip")

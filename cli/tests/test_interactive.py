@@ -12,7 +12,7 @@ import json
 import os
 import unittest
 
-from omarchy_m_test import changes, human, packages
+from omarchy_m_test import changes, human, packages, sleep
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import EOF, INTERRUPT
@@ -645,12 +645,13 @@ class NeverRebootsOrTouchesBootTest(unittest.TestCase):
     def test_whole_runs_never_send_such_a_command(self):
         for name in ("m2-max-image2", "m1-pro-mx-mac"):
             with self.subTest(recording=name):
-                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, *at_the_seat(name, reload="y"), "y", "y", "y", "y"])
+                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, *at_the_seat(name, reload="y", sleep=("y", "y", "y")), "y", "y", "y", "y"])
 
                 main(ARGS, host, sections=(*_apple(), SPEAKER, WIFI, BENCH))
 
                 self.assertIn(REPORT_FILE, host.written)
                 self.assertIn(UNLOAD, host.commands_run)  # the Wi-Fi driver reload ran, and passed the guard
+                self.assertEqual(sum(argv[:3] == sleep.lid_watch_argv()[:3] for argv in host.commands_run), 2)  # both lid steps ran
                 self.assertEqual([argv for argv in host.commands_run if touches_what_it_never_may(argv)], [])
                 self.assertEqual([p for p in host.written if p.startswith(("/boot", "/efi", "/dev/"))], [])
 

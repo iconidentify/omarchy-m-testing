@@ -1,14 +1,12 @@
 {
   "description": "MacBook Pro (14-inch, M1 Pro, 2021) on the converged image, over SSH: raw host answers for record mode",
   "source": "Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave; nothing is reconstructed.",
-  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a tunnel and a bridge). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are a Wi-Fi decoy and NetworkManager's own for the tailscale0 tunnel, the docker0 bridge and lo, restored to their interface names (record mode used to scrub them as <ssid>). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname.",
   "forbidden": [
     "omarchy-m1-pro",
     "kestrel",
     "/home/kestrel",
     "Bellbird7C21-5G",
-    "Currawong-Tun",
-    "Magpie-Bridge",
     "10.61.23.147",
     "10.61.23.1",
     "10.200.4.9",
@@ -47,12 +45,12 @@
       "argv": [
         "nmcli",
         "--get-values",
-        "NAME",
+        "NAME,TYPE",
         "connection",
         "show"
       ],
       "returncode": 0,
-      "stdout": "Bellbird7C21-5G\nCurrawong-Tun\nMagpie-Bridge\nlo\n",
+      "stdout": "Bellbird7C21-5G:802-11-wireless\ntailscale0:tun\ndocker0:bridge\nlo:loopback\n",
       "stderr": ""
     },
     {
@@ -466,7 +464,7 @@
         "address"
       ],
       "returncode": 0,
-      "stdout": "lo               UNKNOWN        10.61.23.1/8 10.200.4.9/128 \nwlan0            UP             10.88.0.12/24 10.61.23.147/64 \nBellbird7C21-5G       UNKNOWN        10.61.23.1/32 10.200.4.9/128 10.88.0.12/64 \nBellbird7C21-5G          DOWN           10.61.23.147/16 10.61.23.1/64 \n",
+      "stdout": "lo               UNKNOWN        10.61.23.1/8 10.200.4.9/128 \nwlan0            UP             10.88.0.12/24 10.61.23.147/64 \ntailscale0       UNKNOWN        10.61.23.1/32 10.200.4.9/128 10.88.0.12/64 \ndocker0          DOWN           10.61.23.147/16 10.61.23.1/64 \n",
       "stderr": ""
     }
   ],

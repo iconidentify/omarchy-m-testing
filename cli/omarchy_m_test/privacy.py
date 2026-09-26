@@ -18,7 +18,8 @@ Recordings (recording.py) pass the same Scrubber before they are saved.
 
 The Scrubber works from patterns plus what this machine tells it about
 itself (Scrubber.for_host): its hostname, the accounts under /home and the
-names of saved network connections, so those are removed wherever they appear.
+names of saved network connections (not those NetworkManager keeps for virtual
+interfaces such as docker0 or tailscale0), so those are removed wherever they appear.
 """
 
 from __future__ import annotations
@@ -37,7 +38,12 @@ TRUNCATED_NOTE = "[evidence truncated: 64 KiB report limit]"
 
 HOSTNAME_PATH = "/proc/sys/kernel/hostname"
 HOME_DIR = "/home"
-SAVED_CONNECTIONS = ["nmcli", "--get-values", "NAME", "connection", "show"]
+SAVED_CONNECTIONS = ["nmcli", "--get-values", "NAME,TYPE", "connection", "show"]
+# Connections NetworkManager keeps for virtual interfaces are named after the
+# interface (docker0, tailscale0, lo): not personal, and learning them would
+# turn every mention of the interface into <ssid>. Wi-Fi, VPN, Ethernet and
+# the rest are learned.
+_INTERFACE_CONNECTION_TYPES = {"loopback", "bridge", "tun", "dummy", "veth", "macvlan", "vxlan", "ip-tunnel"}
 
 # Only these fields reach a report. A dict lists allowed keys (True: keep the
 # value as is); a one-item list means "a list of these".
@@ -281,7 +287,7 @@ class Scrubber:
         except OSError:
             users = []
         saved = host.run(SAVED_CONNECTIONS)
-        networks = saved.stdout.splitlines() if saved.returncode == 0 else []
+        networks = saved_connection_names(saved.stdout) if saved.returncode == 0 else []
         return cls(hostnames=hostnames, users=users, networks=networks)
 
     def learn(self, text: str) -> None:
@@ -353,6 +359,19 @@ class Scrubber:
         for pattern, placeholder in self._hints:
             body = pattern.sub(placeholder, body)
         return body + end
+
+
+def saved_connection_names(stdout: str) -> list[str]:
+    """The names to learn from `nmcli --get-values NAME,TYPE connection show` (NAME:TYPE, a colon in NAME as \\:)."""
+    names = []
+    for line in stdout.splitlines():
+        name, colon, kind = line.rpartition(":")
+        if not colon:
+            name, kind = line, ""
+        name = re.sub(r"\\(.)", r"\1", name)
+        if kind.strip() not in _INTERFACE_CONNECTION_TYPES:
+            names.append(name)
+    return names
 
 
 def _device_names(text: str) -> list[str]:
