@@ -22,7 +22,8 @@ reproduces a first join the way a boot does, by reloading the driver
   - only after the human agrees (Wi-Fi drops for up to a minute) and sudo
     works (modprobe);
   - a few lines of shell on the Mac (WATCH_SCRIPT) then poll every 0.2 s
-    for WATCH_SECONDS from the moment the driver is loaded again: each time
+    for WATCH_SECONDS (NetworkManager's DHCP timeout) from the moment the
+    driver is loaded again: each time
     the interface associates or drops (operstate up/down), and the first
     IPv4 address (not link-local). They print only times, the channel's
     frequency and whether the connection is the original one: never an
@@ -33,8 +34,9 @@ It passes when the first association after the reload carries an address
 evidence records when it associated, when the address arrived, the band
 and how many joins it took. No association, or no address before that first
 association dropped or the time ran out, fails. NetworkManager joining a
-different saved network is skipped: it says nothing about this one's first
-join. The restorers put the driver and the original connection back when
+different saved network on its first association is skipped: it says
+nothing about this one's first join (a first join that stalled and dropped
+still fails, whatever NetworkManager joined next). The restorers put the driver and the original connection back when
 the section ends, also after Ctrl-C.
 """
 
@@ -48,7 +50,7 @@ from .ui import Ui
 
 FIRST_JOIN = "network.wifi-first-join"
 PAIRING = "network.bluetooth-pairing"
-WATCH_SECONDS = 50  # NetworkManager's DHCP timeout is 45 s; and under the host's 60 s per command
+WATCH_SECONDS = 45  # NetworkManager's DHCP timeout; with the tail's 5 s timeouts, under the host's 60 s per command
 
 # Run as `sh -c SCRIPT sh INTERFACE UUID SECONDS`. Times are hundredths of a second since it started.
 WATCH_SCRIPT = r"""iface=$1 uuid=$2 limit=$3
@@ -64,9 +66,9 @@ while :; do
   elif [ "$state" = up ]; then echo "down $t"; state=down; fi
   sleep 0.2
 done
-freq=$(iw dev "$iface" link 2>/dev/null | awk '/freq:/ { print int($2); exit }')
+freq=$(timeout 5 iw dev "$iface" link 2>/dev/null | awk '/freq:/ { print int($2); exit }')
 if [ -n "$freq" ]; then echo "freq $freq"; fi
-if [ "$(nmcli -g GENERAL.CON-UUID device show "$iface" 2>/dev/null)" = "$uuid" ]; then echo "connection same"; else echo "connection other"; fi"""
+if [ "$(timeout 5 nmcli -g GENERAL.CON-UUID device show "$iface" 2>/dev/null)" = "$uuid" ]; then echo "connection same"; else echo "connection other"; fi"""
 
 # Run as `sh -c SCRIPT`: how many devices BlueZ has paired; never their names or addresses.
 PAIRED_SCRIPT = 'timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c "^Device "'
@@ -74,7 +76,8 @@ PAIRED = ["sh", "-c", PAIRED_SCRIPT]
 
 RELOAD_WARNING = (
     "The first-join check reloads the Wi-Fi driver, as a boot does, and times how the Mac joins this network again: "
-    f"Wi-Fi drops now for up to {WATCH_SECONDS} s. It comes back by itself, and the connection is put back if it doesn't."
+    f"Wi-Fi drops now and is watched for {WATCH_SECONDS} s; it should come back by itself, and if it doesn't, "
+    "the connection is brought back up afterwards (up to about two minutes without Wi-Fi in all)."
 )
 RELOAD_QUESTION = "Reload the Wi-Fi driver now?"
 PAIRING_QUESTION = (
@@ -169,7 +172,7 @@ def _judge(watched: Watched, evidence: list[str]) -> tuple[str, list[str]]:
     first = watched.ups[0]
     evidence.append(f"first join: associated {first:.2f} s after the driver loaded")
     dropped = next((t for t in watched.downs if t > first), None)
-    if watched.address is not None and not watched.same_connection:
+    if watched.address is not None and dropped is None and not watched.same_connection:
         return "skip", [*evidence, "skipped: NetworkManager joined another saved network, so this one's first join wasn't seen"]
     if watched.address is not None and dropped is None:
         evidence += [

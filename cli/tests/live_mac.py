@@ -51,7 +51,7 @@ GOOD_JOIN = "up 212\naddress 260\nfreq 5240\nconnection same\n"
 # The recorded first-join failure (boot-1-failure.log, before-6ghz-auto.txt, manual-check-repro.txt): the
 # first join after the firmware loads lands on the network's 6 GHz radio (6135 MHz), reports connected and gets
 # no DHCP lease; the reload's association time is reconstructed.
-FAILED_JOIN = "up 187\ntimeout 5000\nfreq 6135\nconnection same\n"
+FAILED_JOIN = "up 187\ntimeout 4500\nfreq 6135\nconnection same\n"
 
 # Check ids the test sections report, added to a copy of the bundled catalogue.
 TEST_CHECKS = {
@@ -110,10 +110,12 @@ def live_recording(env: dict[str, str] | None = None, checkpoint: str | None = N
         "/sys/class/net": ["lo", WLAN],
         "/sys/class/net/lo": ["operstate"],
         f"/sys/class/net/{WLAN}": ["device", "operstate", "wireless"],
-        "/sys/module/brcmfmac": ["parameters", "refcnt"],
-        "/sys/module/brcmfmac_wcc": ["refcnt"],
     })
-    rec["files"][UEVENT] = {"text": "DRIVER=brcmfmac\nPCI_CLASS=28000\nPCI_ID=14E4:4433\n"}
+    rec["files"].update({
+        UEVENT: {"text": "DRIVER=brcmfmac\nPCI_CLASS=28000\nPCI_ID=14E4:4433\n"},
+        "/sys/module/brcmfmac/initstate": {"text": "live\n"},
+        "/sys/module/brcmfmac_wcc/initstate": {"text": "live\n"},
+    })
     rec["commands"] += [
         command(["nmcli", "-g", "connection.autoconnect", "connection", "show", CONNECTION], "yes\n"),
         command(changes.addresses_argv(WLAN), "1\n"),

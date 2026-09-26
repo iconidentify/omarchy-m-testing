@@ -58,7 +58,7 @@ class FirstJoinTest(unittest.TestCase):
         self.assertEqual((result["classification"]["feature"], result["classification"]["layer"]), ("wifi-5ghz-first-join", "omarchy"))
         self.assertEqual(result["evidence"], [
             "before: associated on 5 GHz (5240 MHz) with an address, on a NetworkManager connection that connects automatically",
-            "reloaded the Wi-Fi driver (brcmfmac); watched the rejoin for 50 s",
+            "reloaded the Wi-Fi driver (brcmfmac); watched the rejoin for 45 s",
             "first join: associated 2.12 s after the driver loaded",
             "first join: an address (traffic) arrived 2.60 s after the driver loaded, 0.48 s after associating",
             "band: 5 GHz (5240 MHz)",
@@ -76,7 +76,7 @@ class FirstJoinTest(unittest.TestCase):
         self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
         self.assertEqual(result["evidence"][2:], [
             "first join: associated 1.87 s after the driver loaded",
-            "first join: associated but no address (no traffic) in the 48.13 s it stayed associated",
+            "first join: associated but no address (no traffic) in the 43.13 s it stayed associated",
             "band at the end: 6 GHz (6135 MHz)",
             "joins: 1",
         ])
@@ -93,11 +93,27 @@ class FirstJoinTest(unittest.TestCase):
         self.assertIn("join 2: an address arrived 14.00 s after the driver loaded", result["evidence"])
         self.assertIn("joins: 2", result["evidence"])
 
-    def test_no_join_at_all_fails(self):
-        host, result = first_join(state=MacState(join="timeout 5000\nconnection other\n"))
+    def test_a_stalled_first_join_still_fails_when_networkmanager_then_joins_another_network(self):
+        # boot-1-failure.log's shape: connected, 43 s without a lease, then another saved network got one.
+        join = "up 20\ndown 4300\nup 4310\naddress 4360\nfreq 2412\nconnection other\n"
+        host, result = first_join(state=MacState(join=join))
 
         self.assertEqual(result["status"], "fail")
-        self.assertIn("no join: Wi-Fi didn't associate within 50 s of the driver loading", result["evidence"][-1])
+        self.assertIn("first join: no address (no traffic) before it dropped 43.00 s after the driver loaded", result["evidence"])
+        self.assertIn("band at the end: 2.4 GHz (2412 MHz)", result["evidence"])
+
+    def test_a_built_in_driver_isnt_reloaded(self):
+        rec = live_recording()
+        rec["files"]["/sys/module/brcmfmac/initstate"] = None
+        host, result = first_join(rec=rec)
+
+        self.assert_not_reloaded(host, result, "brcmfmac isn't loaded as a module", asked=True)
+
+    def test_no_join_at_all_fails(self):
+        host, result = first_join(state=MacState(join="timeout 4500\nconnection other\n"))
+
+        self.assertEqual(result["status"], "fail")
+        self.assertIn("no join: Wi-Fi didn't associate within 45 s of the driver loading", result["evidence"][-1])
         self.assert_put_back(host)
 
     def test_joining_another_saved_network_is_skipped_and_the_original_brought_back(self):

@@ -217,9 +217,9 @@ def reload_wifi_driver(ctx: Context, link: WifiLink) -> tuple[str | None, bool]:
         return "reloading the Wi-Fi driver needs sudo, and it wasn't given", False
     modules = []
     for module in WIFI_DRIVER_MODULES:
-        try:
-            ctx.host.list_dir(f"/sys/module/{module}")
-            modules.append(module)
+        try:  # a loaded module says "live"; a built-in one has no initstate and can't be unloaded
+            if ctx.host.read_file(f"/sys/module/{module}/initstate").decode("ascii", "replace").strip() == "live":
+                modules.append(module)
         except OSError:
             continue
     if WIFI_DRIVER not in modules:
