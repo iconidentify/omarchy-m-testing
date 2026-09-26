@@ -26,6 +26,9 @@ APPLE: tuple[Section, ...] = (
         "setup.first-boot-hardware", "setup.vendor-firmware",
         "system.failed-units", "system.snapshots",
     ), checks.boot),
+    _section("hardware", "Hardware", "Every hardware node and whether a driver claimed it, firmware and probe errors, and the kernel's build options against Asahi's.", (
+        "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
+    ), checks.hardware_inventory),
     _section("graphics", "Graphics", "The GPU driver, Vulkan and OpenGL.", ("gpu.driver", "gpu.vulkan", "gpu.opengl"), checks.graphics),
     _section("display", "Display", "Outputs, the display controller, the backlight and the notch strip.", (
         "display.outputs", "display.controller", "display.backlight", "display.notch-strip",

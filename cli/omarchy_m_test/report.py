@@ -10,10 +10,14 @@ from .consent import CONSENT_VERSION
 from .machine import Machine
 
 
-def build(machine: Machine, system: dict, checks: list[dict], catalogue: Catalogue) -> dict:
-    """The report, with every check result explained against the catalogue."""
+def build(machine: Machine, system: dict, checks: list[dict], catalogue: Catalogue, inventory: dict | None = None) -> dict:
+    """The report, with every check result explained against the catalogue.
+
+    `inventory` is the hardware inventory's block (inventory.py); a run that
+    skipped the Hardware section has none.
+    """
     classified = [{**check, "classification": catalogue.classify(check, machine.soc, machine.board)} for check in checks]
-    return {
+    built = {
         "schema_version": SCHEMA_VERSION,
         "tool": {"name": TOOL_NAME, "version": TOOL_VERSION},
         "consent_version": CONSENT_VERSION,
@@ -29,6 +33,9 @@ def build(machine: Machine, system: dict, checks: list[dict], catalogue: Catalog
         "system": system,
         "checks": classified,
     }
+    if inventory:
+        built = {**{k: v for k, v in built.items() if k != "checks"}, "inventory": inventory, "checks": classified}
+    return built
 
 
 def to_text(report: dict) -> str:

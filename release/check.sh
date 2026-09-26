@@ -2,7 +2,8 @@
 # Build the release tarball and check what it ships: release/check.sh
 #
 # Fails unless the tarball holds the launcher, every module of the package,
-# the bundled feature catalogue and every vendored omarchy-mac check script
+# the bundled feature catalogue, Asahi's reference kernel config and every
+# vendored omarchy-mac check script
 # byte for byte (executable where the source is), and unless the unpacked
 # CLI finds its catalogue and scripts from where it was unpacked.
 set -euo pipefail
@@ -20,6 +21,9 @@ pkg="$root/omarchy_m_test"
 
 [[ -x $root/bin/omarchy-m-test ]] || fail "no executable bin/omarchy-m-test"
 cmp -s "$repo/catalogue/catalogue.json" "$pkg/catalogue.json" || fail "catalogue.json missing or different"
+for f in source.json config; do
+  cmp -s "$repo/catalogue/asahi-kernel/$f" "$pkg/asahi-kernel/$f" || fail "asahi-kernel/$f missing or different"
+done
 for f in "$repo"/cli/omarchy_m_test/*.py; do
   cmp -s "$f" "$pkg/$(basename "$f")" || fail "module $(basename "$f") missing or different"
 done
@@ -37,8 +41,10 @@ import os, sys
 sys.path.insert(0, sys.argv[1])
 from omarchy_m_test import bundled
 assert bundled.catalogue_text()
+assert all(bundled.asahi_kernel_config())
+assert bundled.ASAHI_KERNEL_DIRS[0].startswith(sys.argv[1]) and os.path.isdir(bundled.ASAHI_KERNEL_DIRS[0])
 for name in bundled.SCRIPTS:
     path = bundled.script_path(name)
     assert path.startswith(os.path.realpath(sys.argv[1])) or path.startswith(sys.argv[1]), path
 PY
-echo "release ok: launcher, $(ls "$pkg"/*.py | wc -l | tr -d ' ') modules, catalogue and $count vendored files"
+echo "release ok: launcher, $(ls "$pkg"/*.py | wc -l | tr -d ' ') modules, catalogue, Asahi kernel config and $count vendored files"

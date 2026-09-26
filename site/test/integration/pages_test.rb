@@ -85,7 +85,8 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_select %(#reported tr.gap-row[data-outcome="not-in-aurora"][data-feature="aop"] td), /M2 Max/
     assert_select %(#reported tr.gap-row[data-outcome="not-in-asahi"][data-feature="main-display"])
     assert_select %(#reported tr.gap-row[data-outcome="unknown-hardware"][data-feature="battery-info"] a[href^="/reports/"])
-    assert_select "#reported tr.gap-row", 3
+    assert_select %(#reported tr.gap-row[data-outcome="not-in-aurora"][data-feature="hardware-drivers"]), 2 # both Macs' unclaimed hardware
+    assert_select "#reported tr.gap-row", 5
     assert_select %(#unverified-in-aurora tr.gap-row[data-feature="video-decoder"] td), /M3/
     assert_select "#missing-in-aurora", /nothing Asahi supports that Aurora is known to lack/
     assert_select ".credit", /CC BY 3\.0/
@@ -99,7 +100,7 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal [ second["id"], first["id"] ].map { |id| "report-#{id}" }, css_select("tr.report-row").map { |row| row["id"] }
     assert_select "tr#report-#{second["id"]} td", "converged 4.0.0"
-    assert_select "tr#report-#{second["id"]} td", /30 pass 1 fail 1 skip/
+    assert_select "tr#report-#{second["id"]} td", /31 pass 4 fail 1 skip/
   end
 
   test "the report page reads like terminal output, grouped by section" do
@@ -108,7 +109,8 @@ class PagesTest < ActionDispatch::IntegrationTest
 
     assert_select ".terminal .terminal-bar", /omarchy-m-test/
     assert_select ".terminal .badge-community", "community report"
-    assert_select "h2.section-title", %w[system boot packages setup gpu display audio network input power cpu].size
+    # One title per check-id prefix, plus the hardware inventory.
+    assert_select "h2.section-title", %w[system boot packages setup hardware gpu display audio network input power cpu].size + 1
     assert_select "dd", "converged 4.0.0"
     assert_select "dd", "omarchy, limine, encryption on"
     assert_select "li#check-setup\\.first-boot-hardware .status.status-fail", "FAIL"

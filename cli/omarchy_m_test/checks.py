@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import hardware, scripts
+from . import hardware, inventory, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -18,6 +18,7 @@ from .system import System
 MAC_CHECK_RESULTS = "mac_check"
 DISPLAY_CHECK_RESULTS = "display_check"
 BOOT_LOADER = "boot_loader"
+INVENTORY = "inventory"
 
 # Every automatic check id, in report order (the sections' order). Each is in the catalogue's checks.
 ORDER = (
@@ -26,6 +27,7 @@ ORDER = (
     "packages.repositories", "packages.kernel-updates", "packages.hardware",
     "setup.first-boot-hardware", "setup.vendor-firmware",
     "system.failed-units", "system.snapshots",
+    "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     "gpu.driver", "gpu.vulkan", "gpu.opengl",
     "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
     "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
@@ -83,6 +85,13 @@ def boot(ctx: Context) -> list[dict]:
         hardware.hardware_packages(system),
         hardware.first_boot_setup(ctx.host),
     ]
+
+
+def hardware_inventory(ctx: Context) -> list[dict]:
+    """The inventory and gap map; its report block goes in `shared`, so a resumed run still has it."""
+    found = inventory.take(ctx.host, ctx.catalogue, ctx.machine)
+    ctx.shared[INVENTORY] = found.report()
+    return found.results(ctx.catalogue)
 
 
 def graphics(ctx: Context) -> list[dict]:

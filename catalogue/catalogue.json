@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 2,
+  "catalogue_version": 3,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -70,7 +70,66 @@
     "input.ambient-light": "aop",
     "input.auto-keyboard-light": "auto-keyboard-light",
     "power.battery": "battery-info",
-    "cpu.frequency-scaling": "cpufreq"
+    "cpu.frequency-scaling": "cpufreq",
+    "hardware.drivers": "hardware-drivers",
+    "hardware.firmware": "firmware-loading",
+    "hardware.probe-errors": "hardware-drivers",
+    "hardware.kernel-config": "kernel-config"
+  },
+  "hardware": {
+    "apple,agx-*": "gpu",
+    "apple,t*-avd": "video-decoder",
+    "apple,t*-prores": "prores-codec",
+    "apple,t*-ane": "neural-engine",
+    "apple,isp": "isp-camera",
+    "apple,t*-aop": "aop",
+    "apple,aop-als": "aop",
+    "apple,aop-las": "aop",
+    "apple,aop-audio": "microphones",
+    "apple,sep": "sep",
+    "apple,dcp": "dcp",
+    "apple,dcpext": "dcp",
+    "apple,display-subsystem": "dcp",
+    "apple,panel": "main-display",
+    "apple,dptx-phy": "hdmi-out",
+    "apple,nvme-ans2": "nvme",
+    "apple,pcie": "pcie",
+    "apple,t*-pcie": "pcie",
+    "apple,t*-pciec": "thunderbolt",
+    "apple,t8103-usb4-acio": "thunderbolt",
+    "apple,t8103-usb4-nhi": "thunderbolt",
+    "apple,t*-cio-reset": "thunderbolt",
+    "apple,t8103-atcphy": "usb3-tb-ports",
+    "apple,t8103-dwc3": "usb3-tb-ports",
+    "apple,cd321x": "usb-pd",
+    "apple,mca": "mca",
+    "apple,admac": "mca",
+    "apple,macaudio": "speakers",
+    "ti,tas2764": "speakers",
+    "cirrus,cs42l84": "headphone-jack",
+    "apple,smc": "smc",
+    "apple,smc-*": "smc",
+    "apple,i2c": "i2c",
+    "apple,spi": "spi",
+    "jedec,spi-nor": "spi-nor",
+    "apple,spmi": "spmi",
+    "apple,spmi-nvmem": "spmi",
+    "apple,wdt": "watchdog",
+    "apple,s5l-uart": "uart",
+    "apple,pinctrl": "gpio",
+    "apple,aic": "aic",
+    "apple,aic2": "aic",
+    "apple,dart": "dart",
+    "apple,t*-dart": "dart",
+    "apple,cluster-cpufreq": "cpufreq",
+    "apple,t*-cluster-cpufreq": "cpufreq",
+    "apple,*-pmu": "pmu",
+    "apple,dockchannel-hid": "keyboard",
+    "apple,spi-hid-transport": "keyboard",
+    "apple,s5l-fpwm": "kb-backlight",
+    "pci14e4,44*": "wifi",
+    "pci14e4,5f*": "bluetooth",
+    "pci17a0,9755": "sd-card-slot"
   },
   "features": [
     {
@@ -1380,6 +1439,42 @@
       "note": "Not confirmed on the base M1 (t8103)."
     },
     {
+      "id": "hardware-drivers",
+      "name": "A driver for every hardware node",
+      "layer": "aurora",
+      "chips": {
+        "m1": {"aurora": {"status": "unknown"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "unknown"}},
+        "m2": {"aurora": {"status": "unknown"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "unknown"}},
+        "m3": {"aurora": {"status": "unknown"}},
+        "m3-pro": {"aurora": {"status": "unknown"}},
+        "m3-max": {"aurora": {"status": "unknown"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}},
+        "m4": {"aurora": {"status": "unknown"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}}
+      },
+      "note": "From the hardware inventory: every enabled device-tree node with a device of its own should have a driver bound, and none should fail its probe. Aurora doesn't claim that on any chip yet; each report lists what's unclaimed."
+    },
+    {
+      "id": "kernel-config",
+      "name": "Kernel build options (compared with Asahi's)",
+      "layer": "aurora",
+      "chips": {
+        "m1": {"aurora": {"status": "unknown"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "unknown"}},
+        "m2": {"aurora": {"status": "unknown"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "unknown"}},
+        "m3": {"aurora": {"status": "unknown"}},
+        "m3-pro": {"aurora": {"status": "unknown"}},
+        "m3-max": {"aurora": {"status": "unknown"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}},
+        "m4": {"aurora": {"status": "unknown"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}}
+      },
+      "note": "The running kernel's /proc/config.gz compared with Asahi's reference configuration (catalogue/asahi-kernel/). Differences are reported, not judged: Aurora builds more than Asahi on purpose."
+    },
+    {
       "id": "notch-bar",
       "name": "Bar clear of the notch",
       "layer": "omarchy",
@@ -1658,6 +1753,24 @@
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
+    },
+    {
+      "id": "firmware-loading",
+      "name": "Firmware for every driver that asks",
+      "layer": "omarchy",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      },
+      "note": "No firmware-load failure in this boot's kernel log: the firmware drivers ask for is installed (vendor firmware from macOS, linux-firmware and Asahi's firmware packages such as avd-fw)."
     }
   ]
 }

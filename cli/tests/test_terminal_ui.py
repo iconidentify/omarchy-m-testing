@@ -72,7 +72,7 @@ class OmarchyLookTest(unittest.TestCase):
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")
-        self.assertEqual(choose[-8:], TITLES.split())
+        self.assertEqual(choose[-len(TITLES.split()):], TITLES.split())
         self.assertEqual(confirm[:3], ["gum", "confirm", "Upload this report to https://omarchy-m-testing.org?"])
         self.assertIn("Not uploaded", mac.output)
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
@@ -236,7 +236,7 @@ class SectionsTest(unittest.TestCase):
         status = main(["--skip", "sleep"], mac)
 
         self.assertEqual(status, 4)
-        self.assertIn("--skip takes section names: boot, graphics, display, audio, network, input, power, cpu", mac.output)
+        self.assertIn("--skip takes section names: boot, hardware, graphics, display, audio, network, input, power, cpu", mac.output)
         self.assertEqual(mac.written, {})
 
     def test_ctrl_c_at_the_disclaimer_leaves_nothing_behind(self):
