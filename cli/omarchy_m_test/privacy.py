@@ -7,8 +7,8 @@ Two rules, applied to every report before it is written, shown or uploaded:
    mirrors schema/report-v1.schema.json (a Seam A test keeps them equal).
 2. Scrubbed, text-only, bounded evidence. Every evidence line passes the
    Scrubber, which replaces MAC addresses, IP addresses, Wi-Fi network names,
-   home paths, hostnames, usernames, e-mail addresses, serial numbers, UUIDs
-   and long hex identifiers with placeholders such as <mac> or <ssid>.
+   home paths, hostnames, usernames, e-mail addresses, serial numbers, disk
+   identifiers, UUIDs and long hex identifiers with placeholders such as <mac> or <ssid>.
    Evidence is text only (non-text lines are replaced by a note) and at most
    EVIDENCE_BUDGET_BYTES (64 KiB) per report.
 
@@ -47,8 +47,9 @@ REPORT_ALLOWLIST: dict[str, Any] = {
     "machine": {"model": True, "board": True, "soc": True, "chip": True, "arch": True, "kernel": True},
     "checks": [_CHECK],
 }
-# Free-text report fields that are scrubbed like evidence.
-_SCRUBBED_MACHINE_FIELDS = ("model", "kernel")
+# Free-text report fields that are scrubbed like evidence. The model is the
+# device-tree model string, constrained by the schema, and is left alone.
+_SCRUBBED_MACHINE_FIELDS = ("kernel",)
 
 # Names that are never personal and would wreck logs if scrubbed as hints
 # (the image's default hostname is "omarchy", Arch's is "archlinux").
@@ -64,6 +65,7 @@ _SYSTEM_USERS = {
 _HEX = "[0-9A-Fa-f]"
 _H16 = f"{_HEX}{{1,4}}"
 _SYSLOG_TIME = r"[A-Z][a-z]{2} [ \d]\d \d\d:\d\d:\d\d(?:\.\d+)?"
+_FULL_TIME = r"[A-Z][a-z]{2} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)? [A-Z][A-Za-z0-9+-]{1,5}"
 _ISO_TIME = r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:[.,]\d+)?(?:[+-]\d\d:?\d\d|Z)?"
 _USER = r"[a-z_][a-z0-9_.-]*"
 _UNIT_SUFFIX = re.compile(r"\.(service|socket|target|timer|mount|slice|scope|device|path|swap|automount)$")
@@ -101,7 +103,11 @@ _rule(r"(?<![\w.%+-])([A-Za-z0-9._%+-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)", _
 # Device-tree properties that carry per-unit values (dtc output).
 _rule(r"(?i)\b((?:local-)?(?:mac|bd)-address|[\w,-]*serial-?(?:number|no)[\w,-]*|[\w,-]*uuid|[\w,-]*nonce|[\w,-]*ecid|mlb-[\w-]+)(\s*=\s*)(\[[^\]]*\]|\"[^\"]*\"(?:\s*,\s*\"[^\"]*\")*|<[^>]*>)", r"\1\2<redacted>")
 # Serial numbers in tool output (lsusb, SerialNumber:, serial=...).
-_rule(r"(?i)\b(serial[ _-]?(?:number|no)?|iSerial)(\s*[:=]\s*(?:\d+\s+)?)(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
+_rule(r"(?i)\b(serial[ _-]?(?:number|no|num)|ID_SERIAL(?:_SHORT)?)(\s*[:=]\s*)(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
+_rule(r"\b(iSerial\s+\d+\s+)(\S.*)$", r"\1<serial>")
+# Disk identifiers: /dev/disk/by-* names and FAT volume ids (UUID=ABCD-1234).
+_rule(r"(/dev/disk/by-(?:uuid|partuuid|id|label|partlabel|diskseq|path)/)[^\s'\"`:;,()\[\]{}<>]+", r"\1<disk>")
+_rule(r"(?i)\b((?:PART)?UUID=\"?)[0-9A-F]{4}-[0-9A-F]{4}\b", r"\1<disk>")
 # SSH key fingerprints.
 _rule(r"\b(SHA256|MD5):[A-Za-z0-9+/:=]{16,}", r"\1:<fingerprint>")
 # UUIDs (disk, partition, connection and boot identifiers).
@@ -115,13 +121,15 @@ _rule(
     "<ip>",
 )
 # IPv4, but not inside longer dotted versions such as 23.20.95.0.40.50.92.
-_rule(r"(?<![\w.])(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?![\w]|\.\d)", "<ip>")
+_rule(r"(?<![\w.-])(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?![\w]|\.\d)", "<ip>")
 # Long hex identifiers (boot and machine ids, hashes, kernel pointers).
 _rule(rf"(?<![0-9A-Za-z])(?:0x)?{_HEX}{{16,}}(?![0-9A-Za-z])", "<hex>")
 # Wi-Fi network names in NetworkManager, iwd, wpa_supplicant, iw and nmcli output.
 _rule(r"(?i)\b(e?ssid)(\s*[:=]?\s*)(['\"])(.*?)\3", r"\1\2\3<ssid>\3")
 _rule(r"(?i)\b(e?ssid)(\s*[:=]\s*)(?!['\"<])([^,\n]*?[^,\s])(?=,|\s*$|\s+[\w-]+[:=])", r"\1\2<ssid>")
 _rule(r"(?i)\b(connection|access point|network|connected to|to network|for network|known network)(\s+)'([^'\n]*)'", r"\1\2'<ssid>'")
+_rule(r"^(\s*ssid )(\S.*)$", r"\1<ssid>")
+_rule(r"(?i)\b((?:connected|connecting|joined|joining) to network\s+|Wireless network\s+)(?!['<])(\S+)", r"\1<ssid>")
 _rule(r"(policy: set )'[^'\n]*'", r"\1'<ssid>'")
 _rule(r"(audit: op=\"connection[\w-]*\".*?\bname=)\"[^\"]*\"", r'\1"<ssid>"')
 _rule(r"(?m)^(\s*[\w.-]+:wifi:[\w ()-]+:)(?!<ssid>)(.+)$", r"\1<ssid>")
@@ -129,10 +137,10 @@ _rule(r"(?m)^(\s*Connected network\s+)(\S.*?)\s*$", r"\1<ssid>")
 _rule(r"(/var/lib/iwd/)[^/\s]+?(\.(?:psk|open|8021x))\b", r"\1<ssid>\2")
 _rule(r"(system-connections/)[^/\s'\"]+", r"\1<ssid>")
 # Hostnames: journal and syslog line prefixes, uname -a, host=... and hostnamed.
-_rule(rf"(?m)^(\s*(?:{_SYSLOG_TIME}|{_ISO_TIME})\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+[^\s\[\]:]+(?:\[\d+\])?:)", r"\1<hostname>\3")
+_rule(rf"(?m)^(\s*(?:{_FULL_TIME}|{_SYSLOG_TIME}|{_ISO_TIME})\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+[^\s\[\]:]+(?:\[\d+\])?:)", r"\1<hostname>\3")
 _rule(r"(?m)^(\s*\[\s*\d+\.\d+\]\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+(?:kernel|[^\s\[\]:]+\[\d+\]):)", r"\1<hostname>\3")
 _rule(r"(?m)^(\s*Linux )(\S+)( \d+\.\d+)", r"\1<hostname>\3")
-_rule(r"(?i)\b((?:static |transient |pretty )?host(?:name)?)(\s*[:=]\s*)(\"?)(?!<)([A-Za-z0-9][\w.-]*)\3", r"\1\2<hostname>")
+_rule(r"(?i)\b((?:static |transient |pretty )?host(?:_?name)?)(\s*(?:=>|[:=])\s*)(['\"]?)(?!<)([A-Za-z0-9][\w.-]*)\3", r"\1\2\3<hostname>\3")
 _rule(r"(?i)\b(hostname (?:set )?to\s+)<?(?!hostname>)[\w.-]+>?", r"\1<hostname>")
 # Usernames: sudo, PAM, logind, environment-style keys, uid=N(name).
 _rule(rf"(?m)^(.*?\s)({_USER})(\s+:\s+(?=(?:TTY|PWD|USER|COMMAND)=))", _keep_unless_system(2, "<user>", (1,), (3,)))
@@ -147,18 +155,24 @@ class Scrubber:
     """Replaces personal identifiers in text with placeholders."""
 
     def __init__(self, hostnames: Iterable[str] = (), users: Iterable[str] = (), networks: Iterable[str] = ()):
+        # Hostnames match in any case (DNS ignores case); account and network
+        # names only exactly, so a user called "max" leaves "M2 Max" alone.
         hints = []
-        for values, placeholder in ((networks, "<ssid>"), (hostnames, "<hostname>"), (users, "<user>")):
+        for values, placeholder, flags in (
+            (networks, "<ssid>", 0),
+            (hostnames, "<hostname>", re.IGNORECASE),
+            (users, "<user>", 0),
+        ):
             for value in values:
                 value = value.strip()
                 if len(value) < 3 or value.lower() in _NOT_PERSONAL or value.startswith("<"):
                     continue
-                hints.append((value, placeholder))
+                hints.append((value, placeholder, flags))
         # Longest first, so "omarchy-m2-max" goes before a network named "omarchy-m2".
         hints.sort(key=lambda hint: -len(hint[0]))
         self._hints = [
-            (re.compile(rf"(?<![\w-]){re.escape(value)}(?![\w-])", re.IGNORECASE), placeholder)
-            for value, placeholder in hints
+            (re.compile(rf"(?<![\w-]){re.escape(value)}(?![\w-])", flags), placeholder)
+            for value, placeholder, flags in hints
         ]
 
     @classmethod

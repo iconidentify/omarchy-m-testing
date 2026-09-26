@@ -224,6 +224,36 @@ class ReportPrivacyContractTest(unittest.TestCase):
             self.assertNotIn(value, text)
         self.assertEqual(errors(SCHEMA, enforced), [])
 
+    def test_evidence_in_other_tool_formats_is_scrubbed(self):
+        lines = {
+            "  iSerial                 3 C02XG1ZZQ05N": "C02XG1ZZQ05N",
+            "usb 1-1: SerialNumber: C02XG1ZZQ05N": "C02XG1ZZQ05N",
+            "\tssid Kookaburra Nest": "Kookaburra",
+            "iwd: station: Connected to network KookaburraNest": "KookaburraNest",
+            "dhcp4 (wlan0): option host_name => 'kestrels-mac'": "kestrels-mac",
+            "Sat 2026-09-26 08:40:28 AEST kestrels-mac kernel: PM: suspend entry (s2idle)": "kestrels-mac",
+            "Expecting device /dev/disk/by-uuid/4F4D-5801...": "4F4D-5801",
+            "root=UUID=1A2B-3C4D rw": "1A2B-3C4D",
+            "Accepted publickey for kestrel from 10.0.0.9 port 51234 ssh2: ED25519 SHA256:40+oZmQAparc9et6IwaI28X2SMonCFaVfvqpYqxCHkg": "kestrel",
+            "rsync kestrel@build.example.net:/srv": "kestrel@",
+        }
+
+        enforced = privacy.enforce(self.report([self.check(list(lines))]), privacy.Scrubber())
+
+        evidence = enforced["checks"][0]["evidence"]
+        for line, identifier in zip(evidence, lines.values()):
+            self.assertNotIn(identifier, line)
+        self.assertNotIn("40+oZmQA", " ".join(evidence))
+        self.assertIn("suspend entry (s2idle)", evidence[5])
+
+    def test_a_short_common_account_name_leaves_the_model_alone(self):
+        report = self.report([self.check(["kernel: Machine model: Apple MacBook Pro (16-inch, M2 Max, 2023)"])])
+
+        enforced = privacy.enforce(report, privacy.Scrubber(users=["max"], hostnames=["mac"]))
+
+        self.assertEqual(enforced["machine"]["model"], "Apple MacBook Pro (16-inch, M2 Max, 2023)")
+        self.assertEqual(enforced["checks"][0]["evidence"], ["kernel: Machine model: Apple MacBook Pro (16-inch, M2 Max, 2023)"])
+
     def test_evidence_is_at_most_64_kib_per_report(self):
         line = "x" * 500
         report = self.report([self.check([line] * 50) for _ in range(5)])  # 125 000 bytes

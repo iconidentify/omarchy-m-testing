@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from .host import CommandResult, Host, HttpResponse
-from .privacy import Scrubber
+from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
 
@@ -256,10 +256,7 @@ class RecordingHost:
                 for entry in self.commands
             ],
             "files": {scrubber.scrub(path): _file_entry(path, data, scrubber) for path, data in self.files.items()},
-            "dirs": {
-                scrubber.scrub(path): None if names is None else sorted(scrubber.scrub(name) for name in names)
-                for path, names in self.dirs.items()
-            },
+            "dirs": {scrubber.scrub(path): _dir_entry(path, names, scrubber) for path, names in self.dirs.items()},
         }
 
     def save(self, path: str, learn: bool = True) -> None:
@@ -273,9 +270,19 @@ class RecordingHost:
         self.inner.write_file(path, json.dumps(self.recording(scrubber), indent=2, ensure_ascii=False) + "\n")
 
 
+def _dir_entry(path: str, names: list[str] | None, scrubber: Scrubber) -> list[str] | None:
+    if names is None:
+        return None
+    if path == HOME_DIR:  # account names, however short
+        return ["<user>" if not name.startswith(".") else name for name in sorted(names)]
+    return sorted(scrubber.scrub(name) for name in names)
+
+
 def _file_entry(path: str, data: bytes | None, scrubber: Scrubber) -> dict[str, Any] | None:
     if data is None:
         return None
+    if path == HOSTNAME_PATH:  # the hostname, however short
+        return {"text": "<hostname>\n"}
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
