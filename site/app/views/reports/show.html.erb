@@ -5,6 +5,7 @@
     <dt>Chip</dt><dd><%= @report.machine["chip"] %> (<%= @report.machine["soc"] %>, board <%= @report.machine["board"] %>)</dd>
     <dt>Kernel</dt><dd><%= @report.machine["kernel"] %></dd>
     <dt>Tool</dt><dd><%= @report.body.dig("tool", "name") %> <%= @report.body.dig("tool", "version") %></dd>
+    <dt>Catalogue</dt><dd>feature catalogue v<%= @report.body["catalogue_version"] %></dd>
     <dt>Uploaded</dt><dd><%= @report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC") %></dd>
   </dl>
 
@@ -14,10 +15,15 @@
       <li class="check check-<%= check["status"] %>" id="check-<%= check["id"] %>">
         <span class="status"><%= check["status"].upcase %></span>
         <span class="check-id"><%= check["id"] %></span>
+        <% if (classification = check["classification"]) %>
+          <span class="outcome outcome-<%= classification["outcome"] %>"><%= Catalogue.outcome_words(classification["outcome"]) %></span>
+          <span class="feature"><%= Catalogue.feature(classification["feature"])&.fetch("name") || classification["feature"] %>, <%= classification["layer"] %> layer</span>
+        <% end %>
         <% if check["evidence"].any? %>
           <pre class="evidence"><%= check["evidence"].join("\n") %></pre>
         <% end %>
       </li>
     <% end %>
   </ul>
+  <p class="credit">Asahi hardware states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0.</p>
 </article>

@@ -5,6 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 1,
+  "catalogue_version": 1,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -23,7 +24,16 @@
         "compatible: apple,j416c apple,t6021 apple,arm-platform",
         "chip: M2 Max (t6021)",
         "kernel: 7.1.12-2-2-ARCH"
-      ]
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "devicetree",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
     }
   ]
 }

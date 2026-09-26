@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fail if CLI code talks to the machine, the human or the network outside the host boundary.
 
-Only omarchy_m_test/host.py (the real host), recording.py (the recorded host)
-and __main__.py (the process entry point) may do I/O. Everything else must go
+Only omarchy_m_test/host.py (the real host), recording.py (the recorded host),
+__main__.py (the process entry point) and bundled.py (the tool's own data
+files, never the machine's) may do I/O. Everything else must go
 through a Host. Also fails on any import outside the standard library.
 """
 
@@ -11,7 +12,7 @@ import pathlib
 import sys
 
 PACKAGE = pathlib.Path(__file__).resolve().parent.parent / "omarchy_m_test"
-ALLOWED_IO = {"host.py", "recording.py", "__main__.py"}
+ALLOWED_IO = {"host.py", "recording.py", "__main__.py", "bundled.py"}
 IO_MODULES = {
     "os", "subprocess", "socket", "urllib", "http", "shutil", "pathlib", "glob", "tempfile",
     "platform", "getpass", "termios", "tty", "select", "pty", "ctypes", "io", "importlib",
