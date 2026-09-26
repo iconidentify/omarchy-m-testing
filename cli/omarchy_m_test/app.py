@@ -2,7 +2,9 @@
 
 Sections run one after another (session.py): each is checkpointed when it
 finishes, and every change it makes is restored when it ends, on an error or
-on Ctrl-C.
+on Ctrl-C. Disruptive sections are skipped over SSH or without a local seat
+(presence.py). Everything runs through a Guarded host (safety.py): the tool
+never reboots, and never touches disk encryption or boot files.
 """
 
 from __future__ import annotations
@@ -11,13 +13,14 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, privacy, report, signing, system, updates
+from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, signing, system, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
 from .host import Host, NetworkError
 from .machine import NotAppleSilicon, identify
 from .recording import RecordingHost
+from .safety import Guarded
 from .sections import APPLE
 from .session import Changes, Checkpoint, Context, Section, State, run_key, skipped
 from .ui import Ui
@@ -77,12 +80,12 @@ def main(argv: Sequence[str], host: Host, sections: Sequence[Section] = APPLE) -
         return done.status
 
     if not args.record:
-        return _interruptible(args, host, sections)
+        return _interruptible(args, Guarded(host), sections)
 
     # Record mode: nothing more runs after the disclaimer is declined, and a
     # refused machine's recording holds only what identifying it read.
     recorder = RecordingHost(host)
-    status = _interruptible(args, recorder, sections)
+    status = _interruptible(args, Guarded(recorder), sections)
     if status == EXIT_INTERRUPTED:
         return status
     if status == EXIT_CANCELLED:
@@ -170,9 +173,11 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     # a check found reaches the checkpoint or the report unscrubbed.
     scrubber = privacy.Scrubber.for_host(host)
     key = run_key(machine, catalogue, TOOL_VERSION)
-    state = _resume(ui, saved, key, sections, skip)
+    cache: dict = {}
+    blocked = _blocked(host, sections, cache)
+    state = _resume(ui, saved, key, sections, skip | set(blocked))
     if state is None:
-        state = State(_choose(ui, sections, skip), key=key)
+        state = State(_choose(ui, sections, skip, blocked), key=key)
     # Anything an earlier run left that couldn't be put back yet stays registered.
     state.restorers[:0] = changes.pending
     changes.pending = state.restorers
@@ -183,14 +188,14 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     found = system.detect(host)
     ui.text(f"Checking {machine.model} ({found.describe()})...")
     ui.text("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
-    shared, cache = state.shared, {}
+    shared = state.shared
     try:
         for section in sections:
-            if section.id not in state.selected or section.id in state.done:
+            if section.id not in state.selected or section.id in state.done or section.id in blocked:
                 continue
             section_host = ui.section(section.title, section.description)
             try:
-                results = section.run(Context(section_host, machine, catalogue, changes, found, shared, cache))
+                results = section.run(Context(section_host, machine, catalogue, changes, found, shared, cache, ui))
             finally:
                 ui.end_section()
                 changes.restore()
@@ -207,7 +212,10 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
 
     results = []
     for section in sections:
-        results += state.done[section.id] if section.id in state.done else skipped(section)
+        if section.id in state.done:
+            results += state.done[section.id]
+        else:
+            results += skipped(section, blocked.get(section.id))
     built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue, shared.get("inventory"))
 
     signed, unsigned_because = signing.sign(host, privacy.enforce(built, scrubber))
@@ -239,7 +247,7 @@ def _report_failed_restores(host: Host, changes: Changes) -> None:
     for restorer, reason in changes.take_failures():
         host.show(
             f"Couldn't undo: {restorer.description} ({reason or 'it failed'}). "
-            f"To put it back yourself, run: {' '.join(restorer.argv)}"
+            f"To put it back yourself, run: {' '.join(restorer.command)}"
         )
 
 
@@ -260,18 +268,28 @@ def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section],
     return None
 
 
-def _choose(ui: Ui, sections: Sequence[Section], skip: set[str]) -> list[str]:
+def _blocked(host: Host, sections: Sequence[Section], cache: dict) -> dict[str, str]:
+    """The disruptive sections this run can't do, and why (over SSH, no local seat)."""
+    if not any(section.disruptive for section in sections):
+        return {}
+    reason = presence.of(host, cache).blocks()
+    return {section.id: reason for section in sections if section.disruptive and reason}
+
+
+def _choose(ui: Ui, sections: Sequence[Section], skip: set[str], blocked: dict[str, str]) -> list[str]:
     """List the sections up front and let the human skip any (at a terminal; --skip everywhere)."""
     ui.text("This run has these sections" + (" (skip any with --skip NAME):" if not ui.styled else ":"))
     for number, section in enumerate(sections, 1):
-        mark = "skip" if section.id in skip else "    "
-        ui.text(f"  {number:2}. {mark} {section.title} ({section.id}): {section.description}")
+        mark = "skip" if section.id in skip or section.id in blocked else "    "
+        why = f" Skipped: {blocked[section.id]}." if section.id in blocked else ""
+        ui.text(f"  {number:2}. {mark} {section.title} ({section.id}): {section.description}{why}")
+    offered = [section for section in sections if section.id not in blocked]
     kept = ui.choose(
         "Sections to run (space toggles, Enter starts)",
-        [section.title for section in sections],
-        [section.title for section in sections if section.id not in skip],
+        [section.title for section in offered],
+        [section.title for section in offered if section.id not in skip],
     )
-    return [section.id for section in sections if section.title in kept]
+    return [section.id for section in offered if section.title in kept]
 
 
 def _upload(host: Host, site: str, text: str) -> int:

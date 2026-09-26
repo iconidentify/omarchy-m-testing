@@ -8,9 +8,9 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Human check type with yes/no/skip and optional note, recorded in the report
-- [ ] Detection of SSH sessions and missing local seat; disruptive sections skipped with a clear reason
-- [ ] Restorers for volume, Wi-Fi state and temporary packages, registered before each change
-- [ ] Temporary test packages installed only after consent and removed at the end
-- [ ] The tool never reboots and never touches disk encryption or boot files (asserted in tests)
-- [ ] Seam A tests: human answers scripted; interruption mid-section restores everything
+- [x] Human check type with yes/no/skip and optional note, recorded in the report
+- [x] Detection of SSH sessions and missing local seat; disruptive sections skipped with a clear reason
+- [x] Restorers for volume, Wi-Fi state and temporary packages, registered before each change
+- [x] Temporary test packages installed only after consent and removed at the end
+- [x] The tool never reboots and never touches disk encryption or boot files (asserted in tests)
+- [x] Seam A tests: human answers scripted; interruption mid-section restores everything

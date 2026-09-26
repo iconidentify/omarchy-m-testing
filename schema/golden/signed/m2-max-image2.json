@@ -4,7 +4,7 @@
     "name": "omarchy-m-test",
     "version": "0.1.0"
   },
-  "consent_version": 1,
+  "consent_version": 2,
   "catalogue_version": 3,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
@@ -1330,6 +1330,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQIZmzZ2k4VKnl87BeowSKpt36KLghaBsR08HCe8z17\ntJzYZln4TveG5iNmVPu9cwoCrB+zDcPFVXmsdBH0qqQwU=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFrf+X6fkHg1yN8DwErTglievgxjEI0VoElF70s0hP\nNdEQuSHXbOQBIIJARjVpF1JI9L/DzTxz3ogBT4hhpONgA=\n-----END SSH SIGNATURE-----"
   }
 }
