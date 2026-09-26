@@ -17,6 +17,9 @@ the catalogue's sources.asahi.commit. --live reads Asahi's main branch.
 
 Unknown table columns (a new Mac model), unknown rows (a new feature) and cells
 this parser can't read are drift too: add them to COLUMNS / ROWS below.
+An Asahi-layer feature marked "asahi_tables": false is kept by hand (hardware
+the tables have no row for, such as DisplayPort audio): check and update
+leave it alone.
 Python 3 standard library only.
 """
 
@@ -277,11 +280,16 @@ def dump(value, indent: int = 0, width: int = 150) -> str:
     return "[\n" + ",\n".join(inner + dump(v, indent + 1, width) for v in value) + "\n" + pad + "]"
 
 
+def from_tables(feature: dict) -> bool:
+    """False for an Asahi-layer feature kept by hand ("asahi_tables": false): hardware Asahi's tables have no row for."""
+    return feature.get("asahi_tables", True)
+
+
 def projection(catalogue: dict) -> dict[str, dict]:
     """The Asahi layer as it stands in the catalogue, in asahi_layer()'s shape."""
     found = {}
     for feature in catalogue["features"]:
-        if feature["layer"] != "asahi":
+        if feature["layer"] != "asahi" or not from_tables(feature):
             continue
         found[feature["id"]] = {
             "name": feature["name"],
@@ -311,7 +319,7 @@ def drift(catalogue: dict, layer: dict[str, dict]) -> list[str]:
 
 def update(catalogue: dict, layer: dict[str, dict]) -> dict:
     by_id = {f["id"]: f for f in catalogue["features"]}
-    features = [f for f in catalogue["features"] if f["layer"] != "asahi" or f["id"] in layer]
+    features = [f for f in catalogue["features"] if f["layer"] != "asahi" or f["id"] in layer or not from_tables(f)]
     for fid, found in layer.items():
         feature = by_id.get(fid)
         if feature is None:

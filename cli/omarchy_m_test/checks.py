@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import audio as live_audio, display as live_display, hardware, inventory, network as live_network, scripts
+from . import audio as live_audio, display as live_display, hardware, inputs, inventory, network as live_network, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -38,6 +38,9 @@ ORDER = (
     "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
     "sleep.lid-suspend", "sleep.clamshell", "sleep.wifi-after-resume", "sleep.thunderbolt-after-resume",
     "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
+    "input.function-keys", "input.trackpad-gestures",
+    "camera.isp", "camera.frames", "camera.image",
+    "ports.usb-c", "ports.thunderbolt", "ports.external-displays", "ports.devices-work", "ports.external-display-picture",
     "power.battery",
     "cpu.frequency-scaling",
 )
@@ -119,7 +122,8 @@ def network(ctx: Context) -> list[dict]:
 
 
 def input_devices(ctx: Context) -> list[dict]:
-    return [*display_check(ctx), live_display.keyboard_light(ctx)]
+    """The light sensor and keyboard light (apple-display-check), then the function keys and the trackpad."""
+    return [*display_check(ctx), live_display.keyboard_light(ctx), *inputs.run(ctx)]
 
 
 def power(ctx: Context) -> list[dict]:

@@ -9,7 +9,7 @@ Two rules, applied to every report before it is written, shown or uploaded:
    Scrubber, which replaces MAC addresses, IP addresses, Wi-Fi network names,
    home paths, hostnames, usernames, e-mail addresses, serial numbers (of the
    Mac, displays, audio and USB or Thunderbolt devices), Bluetooth addresses, the
-   names people give their devices, hex dumps, disk
+   names people give their devices, hex dumps (bytes, and 32-bit words), disk
    identifiers, UUIDs and long hex identifiers with placeholders such as <mac> or <ssid>.
    Evidence is text only (non-text lines are replaced by a note) and at most
    EVIDENCE_BUDGET_BYTES (64 KiB) per report.
@@ -119,6 +119,7 @@ SERIAL_FIELD = re.compile(
 _LEARNED_SERIAL = re.compile(r"(?!(?:0x)?(.)\1*$)(?!\d{1,7}$)(?!(?:0x)?0+$)(?!0?123456789?0?$)(?=[^\s]*\d)[A-Za-z0-9_-]{5,}")
 # Files whose whole content is a serial (sysfs), kept only as <serial> in a recording.
 SERIAL_FILES = ("/serial", "/unique_id", "/serial_number")
+SENSOR_SERIAL = re.compile(r"\b(found sensor \d+ )(?!<)([A-Za-z0-9]{8,})")
 
 # Names people give their devices ("Marcelo's AirPods", "Kestrel's MacBook Pro"): the
 # whole name is learned and replaced by <device-name> wherever it appears (learn()).
@@ -199,6 +200,10 @@ _rule(SERIAL_FIELD, r"\1\2\3<serial>")
 # Serial numbers in tool output (lsusb, SerialNumber:, serial=...).
 _rule(r"(?i)\b(serial[ _-]?(?:number|no|num)|ID_SERIAL(?:_SHORT)?)(\s*[:=]\s*)(?!['<])(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
 _rule(r"\b(iSerial\s+\d+\s+)(\S.*)$", r"\1<serial>")
+# The camera module's serial, as the ISP driver logs it ("apple-isp ...: found sensor 558 CC2411719QXRWTVDC on ch 0").
+_rule(SENSOR_SERIAL, r"\1<serial>")
+# Runs of 32-bit hex words (the ISP's command dumps spell the camera module's serial in them as ASCII).
+_rule(rf"(?<![0-9A-Za-z])(?:{_HEX}{{8}}[ \t]+){{3,}}{_HEX}{{8}}(?![0-9A-Za-z])", "<hex words>")
 # Bluetooth addresses with underscores (BlueZ D-Bus paths dev_7C_C1_..., PipeWire bluez_output.7C_C1_...).
 _rule(rf"(?<![0-9A-Fa-f]){_HEX}{{2}}(?:_{_HEX}{{2}}){{5}}(?!_?[0-9A-Fa-f])", "<mac>")
 # Disk identifiers: /dev/disk/by-* names and FAT volume ids (UUID=ABCD-1234).
@@ -301,6 +306,7 @@ class Scrubber:
         recording, a report's evidence) learns from all of them first.
         """
         serials = [m.group(4) for m in SERIAL_FIELD.finditer(text) if _LEARNED_SERIAL.fullmatch(m.group(4))]
+        serials += [m.group(2) for m in SENSOR_SERIAL.finditer(text)]
         self.remember(serials=serials, names=_device_names(text))
 
     def remember(self, serials: Iterable[str] = (), names: Iterable[str] = ()) -> None:

@@ -8,7 +8,7 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Camera opens and produces frames; human confirms the image
-- [ ] Function keys and trackpad gestures checked with prompts
-- [ ] USB-C, Thunderbolt/USB4 devices and external displays enumerated and confirmed
-- [ ] Seam A tests with recordings for each area
+- [x] Camera opens and produces frames; human confirms the image
+- [x] Function keys and trackpad gestures checked with prompts
+- [x] USB-C, Thunderbolt/USB4 devices and external displays enumerated and confirmed
+- [x] Seam A tests with recordings for each area
