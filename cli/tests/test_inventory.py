@@ -17,8 +17,8 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.inventory import DEVICES, KERNEL_CONFIG, KERNEL_LOG, NODE_PROPERTIES
-from omarchy_m_test.recording import INTERRUPT, RecordedHost
-from tests.desktop import CHECKPOINT, SECTIONS, host as desktop_host, with_home, with_section_commands
+from omarchy_m_test.recording import ENDED, INTERRUPT, RecordedHost
+from tests.desktop import CHECKPOINT, SECTIONS, UNANSWERED, host as desktop_host, with_home, with_section_commands
 from tests.schema_validator import errors
 from tests.test_core_checks import M1_PRO, M2_MAX, answer, command, results, run
 from tests.test_seam_a import ENTER, REPORT_FILE, SCHEMA, golden
@@ -173,7 +173,7 @@ class GapMapTest(unittest.TestCase):
         del catalogue["hardware"]["apple,t*-avd"]
         rec = copy.deepcopy(M2_MAX)
         rec["files"]["draft.json"] = {"text": json.dumps(catalogue)}
-        mac = RecordedHost(rec, answers=[ENTER])
+        mac = RecordedHost(rec, answers=[ENTER, ENDED])
 
         main(["--dry-run", "--catalogue", "draft.json"], mac)
 
@@ -231,7 +231,7 @@ class UnreadableTest(unittest.TestCase):
         self.assertEqual(errors(SCHEMA, report), [])
 
     def test_skipping_the_hardware_section_leaves_the_inventory_out(self):
-        mac = RecordedHost(copy.deepcopy(M2_MAX), answers=[ENTER])
+        mac = RecordedHost(copy.deepcopy(M2_MAX), answers=[ENTER, ENDED])
 
         main(["--dry-run", "--skip", "hardware"], mac)
 
@@ -256,7 +256,7 @@ class ReferenceConfigTest(unittest.TestCase):
 
 class ResumeTest(unittest.TestCase):
     def test_a_resumed_run_keeps_the_inventory_without_mapping_again(self):
-        first = desktop_host(with_section_commands(with_home(M2_MAX)), answers=[ENTER, INTERRUPT])
+        first = desktop_host(with_section_commands(with_home(M2_MAX)), answers=[ENTER, *UNANSWERED, INTERRUPT])
         main(["--dry-run"], first, sections=SECTIONS)
         second = desktop_host(with_section_commands(with_home(M2_MAX, checkpoint=first.written[CHECKPOINT])), answers=[ENTER, ENTER, "y"])
 

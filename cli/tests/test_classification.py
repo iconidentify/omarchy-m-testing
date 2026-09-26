@@ -15,7 +15,7 @@ import os
 import unittest
 
 from omarchy_m_test.app import main
-from omarchy_m_test.recording import RecordedHost
+from omarchy_m_test.recording import ENDED, RecordedHost
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, REPO, REPORT_FILE, RECORDINGS, SCHEMA, golden, read
 
@@ -72,7 +72,7 @@ def run(rec: dict, argv=("--dry-run",), catalogue: dict | None = None) -> tuple[
     if catalogue is not None:
         rec["files"][DRAFT] = {"text": json.dumps(catalogue)}
         argv += ["--catalogue", DRAFT]
-    mac = RecordedHost(rec, answers=[ENTER])
+    mac = RecordedHost(rec, answers=[ENTER, ENDED])
     return main(argv, mac), mac
 
 

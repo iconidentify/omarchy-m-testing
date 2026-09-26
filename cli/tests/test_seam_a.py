@@ -14,7 +14,8 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.host import HttpResponse, NetworkError
-from omarchy_m_test.recording import EOF, RecordedHost, RecordingMiss
+from omarchy_m_test.recording import ENDED, EOF, RecordedHost, RecordingMiss
+from tests.desktop import UNANSWERED
 from tests.schema_validator import errors
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -53,7 +54,7 @@ def created(report_id: str = "abc123") -> HttpResponse:
 
 class FullRunTest(unittest.TestCase):
     def test_m2_max_run_writes_shows_and_uploads_the_golden_report(self):
-        mac = host("m2-max-image2", answers=[ENTER, "y"], responses=[created()])
+        mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, "y"], responses=[created()])
 
         status = main(["--site", SITE], mac)
 
@@ -67,7 +68,7 @@ class FullRunTest(unittest.TestCase):
         self.assertEqual(mac.unused_script(), [])
 
     def test_the_exact_report_is_shown_before_the_upload_prompt(self):
-        mac = host("m2-max-image2", answers=[ENTER, "y"], responses=[created()])
+        mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, "y"], responses=[created()])
 
         main(["--site", SITE], mac)
 
@@ -76,14 +77,14 @@ class FullRunTest(unittest.TestCase):
         self.assertLess(shown_report, upload_prompt)
 
     def test_report_records_the_consent_version(self):
-        mac = host("m2-max-image2", answers=[ENTER], responses=[])
+        mac = host("m2-max-image2", answers=[ENTER, ENDED], responses=[])
 
         main(["--dry-run"], mac)
 
         self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], 2)
 
     def test_output_option_chooses_where_the_report_is_written(self):
-        mac = host("m2-max-image2", answers=[ENTER])
+        mac = host("m2-max-image2", answers=[ENTER, ENDED])
 
         main(["--dry-run", "--output", "/tmp/r.json"], mac)
 
@@ -92,7 +93,7 @@ class FullRunTest(unittest.TestCase):
 
 class DryRunTest(unittest.TestCase):
     def test_dry_run_writes_the_golden_report_and_never_uploads(self):
-        mac = host("m2-max-image2", answers=[ENTER])
+        mac = host("m2-max-image2", answers=[ENTER, ENDED])
 
         status = main(["--dry-run", "--site", SITE], mac)
 
@@ -107,7 +108,7 @@ class UploadDeclinedOrFailedTest(unittest.TestCase):
     def test_answering_no_keeps_the_report_local(self):
         for answer in ("n", "", "nope", EOF):
             with self.subTest(answer=answer):
-                mac = host("m2-max-image2", answers=[ENTER, answer])
+                mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, answer])
 
                 status = main(["--site", SITE], mac)
 
@@ -117,7 +118,7 @@ class UploadDeclinedOrFailedTest(unittest.TestCase):
 
     def test_a_rejected_upload_shows_the_sites_reason(self):
         rejected = HttpResponse(422, json.dumps({"error": "Report does not match schema v1.", "details": ["checks is missing"]}))
-        mac = host("m2-max-image2", answers=[ENTER, "y"], responses=[rejected])
+        mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, "y"], responses=[rejected])
 
         status = main(["--site", SITE], mac)
 
@@ -131,7 +132,7 @@ class UploadDeclinedOrFailedTest(unittest.TestCase):
                 super().post_json(url, body)
                 raise NetworkError("connection refused")
 
-        mac = Unreachable(host("m2-max-image2").recording, answers=[ENTER, "y"], responses=[created()])
+        mac = Unreachable(host("m2-max-image2").recording, answers=[ENTER, *UNANSWERED, "y"], responses=[created()])
 
         status = main(["--site", SITE], mac)
 

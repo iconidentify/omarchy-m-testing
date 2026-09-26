@@ -13,9 +13,9 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
-from omarchy_m_test.recording import INTERRUPT
+from omarchy_m_test.recording import ENDED, INTERRUPT
 from tests.desktop import (
-    ACCENT_RGB, FEED_SECTIONS, TITLES, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
+    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, TITLES, UNANSWERED, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
 )
 from tests.schema_validator import errors
@@ -42,7 +42,7 @@ def ttys(mac) -> list[tuple[list[str], object]]:
 
 
 class OmarchyLookTest(unittest.TestCase):
-    def run_omarchy(self, env=None, answers=(ENTER, ALL_KEPT, UPLOAD_NO), **kwargs):
+    def run_omarchy(self, env=None, answers=(ENTER, ALL_KEPT, *GUM_UNANSWERED, UPLOAD_NO), **kwargs):
         mac = host(omarchy_desktop(recording(), env), answers=answers, terminal=TERMINAL, **kwargs)
         status = main([], mac)
         return status, mac
@@ -68,7 +68,9 @@ class OmarchyLookTest(unittest.TestCase):
     def test_prompts_are_gum_with_omarchys_installer_styling(self):
         status, mac = self.run_omarchy()
 
-        (choose, _), (confirm, _) = ttys(mac)
+        prompts = [argv for argv, _ in ttys(mac)]
+        choose, confirm = prompts[0], prompts[-1]
+        self.assertEqual([argv[:3] for argv in prompts[1:-1]], [["gum", "choose", "--header"]] * len(GUM_UNANSWERED))  # the human checks
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")
@@ -86,7 +88,7 @@ class OmarchyLookTest(unittest.TestCase):
                 return super().run_tty(argv, env)
 
         mac = Recording(omarchy_desktop(recording(), {"GUM_CONFIRM_SELECTED_BACKGROUND": "5"}),
-                        answers=[ENTER, ALL_KEPT, UPLOAD_NO], terminal_size=TERMINAL)
+                        answers=[ENTER, ALL_KEPT, *GUM_UNANSWERED, UPLOAD_NO], terminal_size=TERMINAL)
         main([], mac)
 
         self.assertEqual(seen["choose"]["GUM_CHOOSE_CURSOR_FOREGROUND"], "2")
@@ -103,7 +105,7 @@ class OmarchyLookTest(unittest.TestCase):
 
     def test_the_report_is_the_same_as_off_a_terminal(self):
         created = HttpResponse(201, json.dumps({"report_url": "https://x/r/1", "deletion_url": "https://x/r/1/d"}))
-        status, mac = self.run_omarchy(answers=[ENTER, ALL_KEPT, CommandResult(0, "", "")], responses=[created])
+        status, mac = self.run_omarchy(answers=[ENTER, ALL_KEPT, *GUM_UNANSWERED, CommandResult(0, "", "")], responses=[created])
 
         self.assertEqual(status, 0)
         self.assertEqual(mac.posts[0].body, mac.written[REPORT_FILE])
@@ -113,7 +115,7 @@ class OmarchyLookTest(unittest.TestCase):
 
 class FallbackLookTest(unittest.TestCase):
     def test_without_omarchy_the_run_uses_tokyo_night_and_a_plain_title(self):
-        mac = host(bare_desktop(recording()), answers=[ENTER, ENTER, "n"], terminal=TERMINAL)
+        mac = host(bare_desktop(recording()), answers=[ENTER, ENTER, *UNANSWERED, "n"], terminal=TERMINAL)
 
         status = main([], mac)
 
@@ -134,14 +136,14 @@ class FallbackLookTest(unittest.TestCase):
                 seen[argv[1]] = env
                 return super().run_tty(argv, env)
 
-        mac = Recording(bare_desktop(recording(), gum=True), answers=[ENTER, ALL_KEPT, UPLOAD_NO], terminal_size=TERMINAL)
+        mac = Recording(bare_desktop(recording(), gum=True), answers=[ENTER, ALL_KEPT, *GUM_UNANSWERED, UPLOAD_NO], terminal_size=TERMINAL)
         main([], mac)
 
         self.assertEqual(seen["confirm"]["GUM_CONFIRM_SELECTED_BACKGROUND"], "#9ece6a")
 
     def test_an_older_omarchy_theme_directory_is_read_without_omarchy_theme_color(self):
         old = 'color2 = "#a6e3a1"\ncolor4 = "#89b4fa"\ncolor8 = "#6c7086"\ncolor7 = "#cdd6f4"\n'
-        mac = host(bare_desktop(recording(), old_theme=old), answers=[ENTER, ENTER, "n"], terminal=TERMINAL)
+        mac = host(bare_desktop(recording(), old_theme=old), answers=[ENTER, ENTER, *UNANSWERED, "n"], terminal=TERMINAL)
 
         main([], mac)
 
@@ -149,7 +151,7 @@ class FallbackLookTest(unittest.TestCase):
         self.assertIn(ACCENT_RGB, mac.output)
 
     def test_off_a_terminal_the_output_is_plain_text(self):
-        mac = host(recording(), answers=[ENTER])
+        mac = host(recording(), answers=[ENTER, ENDED])
 
         main(["--dry-run"], mac)
 
@@ -161,7 +163,7 @@ class LiveFeedTest(unittest.TestCase):
     def run_feed(self, rec=None):
         rec = rec or omarchy_desktop(recording())
         rec["commands"].append(command(["omarchy-ascii", "Kernel"], SYSTEM_ART + "\n"))
-        mac = host(rec, answers=[ENTER, CommandResult(0, TITLES + "Kernel\n", ""), UPLOAD_NO], terminal=TERMINAL)
+        mac = host(rec, answers=[ENTER, CommandResult(0, TITLES + "Kernel\n", ""), *GUM_UNANSWERED, UPLOAD_NO], terminal=TERMINAL)
         status = main([], mac, sections=FEED_SECTIONS)
         return status, mac
 
@@ -193,7 +195,7 @@ class LiveFeedTest(unittest.TestCase):
 
 class SectionsTest(unittest.TestCase):
     def test_sections_are_listed_up_front_before_anything_runs(self):
-        mac = host(recording(), answers=[ENTER])
+        mac = host(recording(), answers=[ENTER, ENDED])
 
         main(["--dry-run"], mac)
 
@@ -202,7 +204,7 @@ class SectionsTest(unittest.TestCase):
         self.assertLess(listed, checked)
 
     def test_a_skipped_section_reports_its_checks_as_skipped_not_failed(self):
-        mac = host(recording(), answers=[ENTER])
+        mac = host(recording(), answers=[ENTER, ENDED])
 
         status = main(["--dry-run", "--skip", "boot"], mac)
 

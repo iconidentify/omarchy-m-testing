@@ -17,7 +17,7 @@ from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import EOF, INTERRUPT
 from omarchy_m_test.session import Context, Section
-from tests.desktop import CHECKPOINT, TERMINAL, bare_desktop, omarchy_desktop, recording
+from tests.desktop import CHECKPOINT, HUMAN_QUESTIONS, TERMINAL, bare_desktop, omarchy_desktop, recording
 from tests.live_mac import CATALOGUE_PATH, NODE, LiveMac, MacState, ascii_titles, live_recording
 from tests.schema_validator import errors
 
@@ -645,7 +645,7 @@ class NeverRebootsOrTouchesBootTest(unittest.TestCase):
     def test_whole_runs_never_send_such_a_command(self):
         for name in ("m2-max-image2", "m1-pro-mx-mac"):
             with self.subTest(recording=name):
-                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, "y", "y", "y", "y"])
+                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, *[EOF] * HUMAN_QUESTIONS[name], "y", "y", "y", "y"])
 
                 main(ARGS, host, sections=(*_apple(), SPEAKER, WIFI, BENCH))
 

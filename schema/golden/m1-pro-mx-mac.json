@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 2,
-  "catalogue_version": 4,
+  "catalogue_version": 5,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -1046,6 +1046,60 @@
       }
     },
     {
+      "id": "display.notch-bar",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Look at the top bar on the built-in screen: is every icon and label clear of the camera notch?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "notch-bar",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "display.brightness-steps",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: brightnessctl couldn't list the lights (not captured in the seed evidence)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "brightness",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.cursor",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Move the pointer all over the built-in screen, over the top bar too: is it visible everywhere, without trails or flicker?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "audio.sound-cards",
       "kind": "automatic",
       "status": "pass",
@@ -1151,6 +1205,60 @@
       }
     },
     {
+      "id": "audio.microphone-signal",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: pactl couldn't name the default input"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "microphones",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-tone",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "speakersafetyd: active",
+        "skipped: speaker protection isn't confirmed: this boot's kernel log doesn't say 'Speaker volumes unlocked', so nothing was played"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.headphone-detection",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Plug headphones into the headphone jack now (s if you have none). Did the Mac switch its sound to them?",
+        "answer: none (counted as skipped)",
+        "default output after: audio_effect.j314-convolver (the speakers' DSP sink)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "headphone-jack",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "network.wifi",
       "kind": "automatic",
       "status": "pass",
@@ -1224,6 +1332,24 @@
       "status": "skip",
       "evidence": [
         "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "auto-keyboard-light",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.keyboard-light-follows-room",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "skipped: no ambient light sensor"
       ],
       "classification": {
         "outcome": "not-tested",
