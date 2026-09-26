@@ -16,7 +16,7 @@ import unittest
 
 from omarchy_m_test import privacy
 from omarchy_m_test.app import main
-from omarchy_m_test.recording import ENDED, RECORDED_SOURCES, RecordedHost
+from omarchy_m_test.recording import ENDED, RECORDED_SOURCES, RecordedHost, RecordingHost
 from tests.corpus import MACHINES, forbidden, raw_host, raw_recording, seeded_recording_path
 from tests.schema_validator import errors
 
@@ -43,6 +43,46 @@ LEAK_PATTERNS = {
     "UUID": re.compile(r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
     "long hex identifier": re.compile(r"(?<![0-9A-Za-z])(0x)?[0-9A-Fa-f]{16,}(?![0-9A-Za-z])"),
     "home path": re.compile(r"/home/[^\s<]"),
+    "underscored Bluetooth address": re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{2}(_[0-9A-Fa-f]{2}){5}(?![0-9A-Fa-f])"),
+}
+
+# Device identifiers in the formats the tools print them (displays, audio cards,
+# USB and Thunderbolt devices, Bluetooth), each with the identifiers it carries.
+DEVICE_SERIALS = {
+    ("hyprctl", "monitors", "-j"): (
+        '[{"id": 0, "name": "eDP-1", "description": "Apple Computer Inc 0x0000", "make": "Apple Computer Inc", "model": "", "serial": ""},\n'
+        ' {"id": 1, "name": "USB-2", "description": "Dell Inc. DELL U3423WE 9RKXZN3 (DP-2)", "make": "Dell Inc.",\n'
+        '  "model": "DELL U3423WE", "serial": "9RKXZN3", "width": 3440}]\n',
+        ("9RKXZN3",),
+    ),
+    ("hyprctl", "monitors"): ("Monitor USB-2 (ID 1):\n\t3440x1440@59.97300 at 1728x0\n\tdescription: Dell Inc. DELL U3423WE 9RKXZN3 (DP-2)\n"
+                             "\tmake: Dell Inc.\n\tmodel: DELL U3423WE\n\tserial: 9RKXZN3\n", ("9RKXZN3",)),
+    ("edid-decode", "/sys/class/drm/card1-DP-2/edid"): (
+        "Block 0, Base EDID:\n  Vendor & Product Identification:\n    Manufacturer: DEL\n    Model: 41586\n"
+        "    Serial Number: 1112231500 (0x424b4c4c)\n  Display Descriptors:\n    Display Product Serial Number: '9RK XZN3'\n",
+        ("1112231500", "424b4c4c", "9RK XZN3"),
+    ),
+    ("pactl", "list", "cards"): ('Card #52\n\tName: alsa_card.usb-Generic_USB_Audio_201405280001-00\n\tProperties:\n'
+                                 '\t\tdevice.serial = "Generic_USB_Audio_201405280001"\n\t\tdevice.vendor.name = "Generic"\n',
+                                 ("201405280001",)),
+    ("wpctl", "inspect", "52"): ('id 52, type PipeWire:Interface:Device\n  * device.name = "alsa_card.usb-Generic_USB_Audio_201405280001-00"\n'
+                                 '    device.serial = "Generic_USB_Audio_201405280001"\n', ("201405280001",)),
+    ("udevadm", "info", "/dev/snd/controlC1"): ("E: ID_SERIAL=Generic_USB_Audio_201405280001\nE: ID_SERIAL_SHORT=201405280001\n"
+                                                "E: ID_USB_SERIAL=Generic_USB_Audio_201405280001\nE: ID_USB_SERIAL_SHORT=201405280001\n",
+                                                ("201405280001",)),
+    ("lsusb", "-v", "-s", "1:2"): ("  iSerial                 3 201405280001\n", ("201405280001",)),
+    ("boltctl", "list"): (" ● OWC Thunderbolt 3 Dock\n   ├─ uuid:          d6010000-0082-8718-a3c4-8c2b4e3f5a91\n"
+                          '   └─ "unique_id": "0082871a3c48c2b4"\n', ("d6010000-0082-8718-a3c4-8c2b4e3f5a91", "0082871a3c48c2b4")),
+    ("bluetoothctl", "devices"): ("Device 7C:C1:80:12:34:56 AirPods Pro\nController F0:C0:7B:98:E6:D4 omarchy [default]\n",
+                                  ("7C:C1:80:12:34:56", "F0:C0:7B:98:E6:D4")),
+    ("pw-dump",): ('    "node.name": "bluez_output.7C_C1_80_12_34_56.1",\n    "api.bluez5.path": "/org/bluez/hci0/dev_7C_C1_80_12_34_56",\n',
+                   ("7C_C1_80_12_34_56",)),
+}
+# sysfs files that hold nothing but a serial.
+SERIAL_FILES = {
+    "/sys/bus/usb/devices/1-2/serial": "201405280001\n",
+    "/sys/bus/thunderbolt/devices/0-1/unique_id": "d6010000-0082-8718-a3c4-8c2b4e3f5a91\n",
+    "/sys/class/drm/card1-DP-2/device/serial_number": "Z9RKX\n",
 }
 
 # What each machine's raw evidence is known to contain (the M1 evidence has
@@ -173,6 +213,43 @@ class ZeroLeakTest(unittest.TestCase):
                 for value in forbidden(machine):
                     self.assertNotIn(value.lower(), mac.output.lower())
 
+    def test_device_serials_and_bluetooth_addresses_never_reach_a_recording_or_a_report(self):
+        for stdout, values in DEVICE_SERIALS.values():
+            for value in values:
+                self.assertIn(value, stdout)  # the fixtures really hold what must not come out
+        machine = RecordedHost({
+            "recording_version": 1, "description": "device identifiers", "source": "tests",
+            "commands": [{"argv": list(argv), "returncode": 0, "stdout": stdout, "stderr": ""} for argv, (stdout, _) in DEVICE_SERIALS.items()],
+            "files": {path: {"text": text} for path, text in SERIAL_FILES.items()},
+            "dirs": {},
+        })
+        recorder = RecordingHost(machine)
+        recorder.capture_sources(list(DEVICE_SERIALS))
+        for path in SERIAL_FILES:
+            recorder.read_file(path)
+        saved = recorder.recording(privacy.Scrubber())
+        evidence = [line for stdout, _ in DEVICE_SERIALS.values() for line in stdout.splitlines()]
+        contract = ReportPrivacyContractTest()
+        enforced = privacy.enforce(contract.report([contract.check(evidence)]), privacy.Scrubber())
+        outputs = {
+            "recording": (json.dumps(saved, ensure_ascii=False), "".join(c["stdout"] for c in saved["commands"])),
+            "report": (json.dumps(enforced, ensure_ascii=False), "\n".join(enforced["checks"][0]["evidence"])),
+        }
+
+        identifiers = [value for _, values in DEVICE_SERIALS.values() for value in values] + [text.strip() for text in SERIAL_FILES.values()]
+        for output, (text, plain) in outputs.items():
+            with self.subTest(output=output):
+                for value in identifiers:
+                    self.assertNotIn(value.lower(), text.lower())
+                for kind, pattern in LEAK_PATTERNS.items():
+                    self.assertIsNone(pattern.search(text), kind)
+                # What isn't an identifier stays readable.
+                for kept in ("Dell Inc. DELL U3423WE <serial> (DP-2)", '"serial": "<serial>"', "\tserial: <serial>", "Serial Number: <serial>",
+                             'device.serial = "<serial>"', "alsa_card.usb-<serial>-00", "E: ID_USB_SERIAL_SHORT=<serial>",
+                             '"unique_id": "<serial>"', "Device <mac> AirPods Pro", "bluez_output.<mac>.1", "/org/bluez/hci0/dev_<mac>"):
+                    self.assertIn(kept, plain)
+        self.assertEqual({path: saved["files"][path] for path in SERIAL_FILES}, {path: {"text": "<serial>\n"} for path in SERIAL_FILES})
+
     def test_scrubbed_evidence_keeps_its_placeholders(self):
         text = record("m2-max-image2").written[RECORDING_FILE]
         for placeholder in ("<hostname>", "<user>", "<home>", "<ssid>", "<mac>", "<ip>", "<uuid>", "<hex>"):
@@ -246,6 +323,15 @@ class ReportPrivacyContractTest(unittest.TestCase):
             self.assertNotIn(identifier, line)
         self.assertNotIn("40+oZmQA", " ".join(evidence))
         self.assertIn("suspend entry (s2idle)", evidence[5])
+
+    def test_placeholder_serials_are_scrubbed_where_they_are_but_nowhere_else(self):
+        lines = ['{"name": "eDP-1", "serial": "0x0000"}', "E: ID_SERIAL_SHORT=12345", "E: ID_SERIAL_SHORT=0000000000",
+                 "00:00.0 PCI bridge [0604]: Apple Inc. Device [106b:1003], Class 0x0000", "read 12345 bytes from 0000000000 blocks"]
+
+        evidence = privacy.enforce(self.report([self.check(lines)]), privacy.Scrubber())["checks"][0]["evidence"]
+
+        self.assertEqual(evidence[:3], ['{"name": "eDP-1", "serial": "<serial>"}', "E: ID_SERIAL_SHORT=<serial>", "E: ID_SERIAL_SHORT=<serial>"])
+        self.assertEqual(evidence[3:], lines[3:])
 
     def test_a_short_common_account_name_leaves_the_model_alone(self):
         report = self.report([self.check(["kernel: Machine model: Apple MacBook Pro (16-inch, M2 Max, 2023)"])])

@@ -26,8 +26,10 @@ Checkpoint: after each section, the run's state (the sections chosen, the
 results of the finished ones, pending restorers) is written to
 $XDG_STATE_HOME/omarchy-m-test/checkpoint.json (~/.local/state/...). A run that
 finds one for the same tool, catalogue, Mac and kernel offers to resume: the
-finished sections aren't run again, the interrupted one starts over. The
-checkpoint is removed once the report is written.
+finished sections aren't run again, the interrupted one starts over. It also
+keeps the serial values the scrubber learned from the finished sections, so the
+resumed run removes them from its own evidence too. The checkpoint is removed
+once the report is written.
 """
 
 from __future__ import annotations
@@ -190,6 +192,9 @@ class State:
     restorers: list[Restorer] = field(default_factory=list)
     key: dict[str, Any] = field(default_factory=dict)
     shared: dict[str, Any] = field(default_factory=dict)
+    # Serial values the scrubber learned from finished sections (privacy.Scrubber.learn_serials),
+    # so a resumed run still removes them from the sections it runs; the file is only the user's.
+    serials: list[str] = field(default_factory=list)
 
     def to_text(self) -> str:
         return json.dumps({
@@ -198,6 +203,7 @@ class State:
             "selected": self.selected,
             "done": self.done,
             "shared": self.shared,
+            **({"serials": self.serials} if self.serials else {}),
             "restorers": [
                 {
                     "description": r.description, "argv": list(r.argv),
@@ -221,7 +227,8 @@ class State:
                 for r in data.get("restorers", [])
             ]
             done = {str(k): list(v) for k, v in data.get("done", {}).items()}
-            return cls([str(s) for s in data.get("selected", [])], done, restorers, dict(data.get("key", {})), dict(data.get("shared", {})))
+            return cls([str(s) for s in data.get("selected", [])], done, restorers, dict(data.get("key", {})), dict(data.get("shared", {})),
+                       [str(s) for s in data.get("serials", [])])
         except (ValueError, TypeError, KeyError, AttributeError):
             return None
 

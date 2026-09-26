@@ -14,6 +14,7 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import ENDED, EOF, INTERRUPT, RecordedHost
+from omarchy_m_test.session import Section
 from tests.corpus import MACHINES, forbidden, raw_recording
 from tests.desktop import (
     CHECKPOINT, HUMAN_QUESTIONS, LISTEN, MUTE, SECTIONS, UNANSWERED, UNMUTE, VOLUME_BACK, VOLUME_DOWN,
@@ -265,3 +266,38 @@ class CheckpointPrivacyTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# -- serials the scrubber learned survive a resume ------------------------------------------
+
+USB_SERIAL = "201405280001"
+
+
+def _cards(ctx):
+    return [{"id": "audio.sound-cards", "kind": "automatic", "status": "pass",
+             "evidence": [f'device.serial = "Generic_USB_Audio_{USB_SERIAL}"']}]
+
+
+def _sinks(ctx):
+    ctx.host.prompt(LISTEN)
+    return [{"id": "audio.default-sink", "kind": "automatic", "status": "pass",
+             "evidence": [f"default sink: alsa_output.usb-Generic_USB_Audio_{USB_SERIAL}-00.analog-stereo"]}]
+
+
+CARDS = Section("cards", "Cards", "Names the sound cards.", ("audio.sound-cards",), _cards)
+SINKS = Section("sinks", "Sinks", "Names the default sink.", ("audio.default-sink",), _sinks)
+
+
+class LearnedSerialsTest(unittest.TestCase):
+    def test_a_serial_one_section_named_is_removed_from_a_section_run_after_resuming(self):
+        first = RecordedHost(with_home(recording()), answers=[ENTER, INTERRUPT])
+        self.assertNotEqual(main(["--dry-run"], first, sections=(CARDS, SINKS)), 0)
+        checkpoint = first.written[CHECKPOINT]
+        self.assertEqual(json.loads(checkpoint)["done"]["cards"][0]["evidence"], ['device.serial = "<serial>"'])
+
+        second = RecordedHost(with_home(recording(), checkpoint=checkpoint), answers=[ENTER, ENTER, "y"])
+        self.assertEqual(main(["--dry-run"], second, sections=(CARDS, SINKS)), 0)
+
+        report = json.loads(second.written[REPORT_FILE])
+        self.assertNotIn(USB_SERIAL, second.written[REPORT_FILE])
+        self.assertIn("default sink: alsa_output.usb-<serial>-00.analog-stereo", report["checks"][1]["evidence"])

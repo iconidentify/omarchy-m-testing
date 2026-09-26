@@ -65,7 +65,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
 from .host import CommandResult, Host, HttpResponse, MachineSignature, NetworkError, SigningError, Terminal, bundled_argv
-from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
+from .privacy import HOME_DIR, HOSTNAME_PATH, SERIAL_FILES, Scrubber
 
 RECORDING_VERSION = 1
 
@@ -363,6 +363,11 @@ class RecordingHost:
 
     def recording(self, scrubber: Scrubber) -> dict[str, Any]:
         """The scrubbed recording of everything captured so far."""
+        for entry in self.commands:  # a serial one output names is removed from all of them
+            scrubber.learn_serials(entry["stdout"] + "\n" + entry["stderr"])
+        for data in self.files.values():
+            if data is not None:
+                scrubber.learn_serials(data.decode("utf-8", "replace"))
         recording = {
             "recording_version": RECORDING_VERSION,
             "description": "Recorded by omarchy-m-test --record",
@@ -408,6 +413,8 @@ def _file_entry(path: str, data: bytes | None, scrubber: Scrubber) -> dict[str, 
         return None
     if path == HOSTNAME_PATH:  # the hostname, however short
         return {"text": "<hostname>\n"}
+    if path.endswith(SERIAL_FILES):  # a sysfs serial (/sys/bus/usb/devices/1-1/serial), however it looks
+        return {"text": "<serial>\n"}
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
