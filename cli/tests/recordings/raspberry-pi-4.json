@@ -1,0 +1,13 @@
+{
+  "recording_version": 1,
+  "description": "A Raspberry Pi 4: aarch64 with a device tree, but not Apple",
+  "source": "Synthetic, from the Raspberry Pi 4 upstream device-tree compatible strings",
+  "commands": [
+    {"argv": ["uname", "-m"], "returncode": 0, "stdout": "aarch64\n", "stderr": ""}
+  ],
+  "files": {
+    "/proc/device-tree/model": {"text": "Raspberry Pi 4 Model B Rev 1.4\u0000"},
+    "/proc/device-tree/compatible": {"text": "raspberrypi,4-model-b\u0000brcm,bcm2711\u0000"}
+  },
+  "dirs": {}
+}

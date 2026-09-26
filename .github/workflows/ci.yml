@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cli:
+    name: CLI (Seam A)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Host boundary and stdlib-only imports
+        run: python cli/scripts/check_boundary.py
+      - name: Seam A tests
+        working-directory: cli
+        run: python -m unittest discover -s tests -t . -v
+
+  schema:
+    name: Report schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install check-jsonschema==0.33.0
+      - name: Schema is valid draft 2020-12
+        run: check-jsonschema --check-metaschema schema/report-v*.schema.json
+      - name: Golden reports validate
+        run: check-jsonschema --schemafile schema/report-v1.schema.json schema/golden/*.json
+
+  site:
+    name: Site (Seam B)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      RAILS_ENV: test
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: site
+          bundler-cache: true
+      - run: bin/rails db:test:prepare
+      - run: bin/rails test

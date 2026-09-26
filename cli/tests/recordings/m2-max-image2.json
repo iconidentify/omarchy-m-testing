@@ -1,0 +1,14 @@
+{
+  "recording_version": 1,
+  "description": "MacBook Pro 16-inch M2 Max (j416c, t6021) on the converged image-2 install, Aurora kernel 7.1.12-2-2-ARCH",
+  "source": "Transcribed from the M2 Max image-2 evidence gathered 2026-09-13 (device-tree model and compatible, uname)",
+  "commands": [
+    {"argv": ["uname", "-m"], "returncode": 0, "stdout": "aarch64\n", "stderr": ""},
+    {"argv": ["uname", "-r"], "returncode": 0, "stdout": "7.1.12-2-2-ARCH\n", "stderr": ""}
+  ],
+  "files": {
+    "/proc/device-tree/model": {"text": "Apple MacBook Pro (16-inch, M2 Max, 2023)\u0000"},
+    "/proc/device-tree/compatible": {"text": "apple,j416c\u0000apple,t6021\u0000apple,arm-platform\u0000"}
+  },
+  "dirs": {}
+}

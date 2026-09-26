@@ -8,11 +8,11 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] CLI in Python 3 using only the standard library; every machine/human interaction goes through a single host boundary (run command, read file, list directory, prompt)
-- [ ] Disclaimer screen: Enter accepts, anything else exits without running; consent version recorded in the report
-- [ ] Non-Apple hardware is refused with a clear message
-- [ ] One automatic check (model, chip, kernel) produces a schema-v1 report; `--dry-run` never uploads; the exact report is shown before an upload prompt
-- [ ] Shared, versioned report schema plus at least one golden report used by both CLI and site tests
-- [ ] Rails 8 + Postgres site: versioned upload API validates against the schema, stores the report, returns report and deletion links; minimal report page
-- [ ] Seam A test: CLI runs against a recorded host with scripted answers and its report matches the golden report; Seam B test: posting the golden report yields the expected stored report and page
-- [ ] CI runs both test suites on every push
+- [x] CLI in Python 3 using only the standard library; every machine/human interaction goes through a single host boundary (run command, read file, list directory, prompt)
+- [x] Disclaimer screen: Enter accepts, anything else exits without running; consent version recorded in the report
+- [x] Non-Apple hardware is refused with a clear message
+- [x] One automatic check (model, chip, kernel) produces a schema-v1 report; `--dry-run` never uploads; the exact report is shown before an upload prompt
+- [x] Shared, versioned report schema plus at least one golden report used by both CLI and site tests
+- [x] Rails 8 + Postgres site: versioned upload API validates against the schema, stores the report, returns report and deletion links; minimal report page
+- [x] Seam A test: CLI runs against a recorded host with scripted answers and its report matches the golden report; Seam B test: posting the golden report yields the expected stored report and page
+- [x] CI runs both test suites on every push

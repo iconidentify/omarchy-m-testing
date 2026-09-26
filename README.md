@@ -4,5 +4,6 @@ Test every hardware feature of your Apple Silicon Mac under Omarchy, and share t
 
 - `cli/`: the `omarchy-m-test` command.
 - `site/`: the omarchy-m-testing.org site and API.
+- `schema/`: the versioned report schema and the golden reports both are tested against.
 
 Status: in design. The spec is in this repo's issues.

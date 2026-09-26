@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omarchy-m-testing.org/schema/report-v1.schema.json",
+  "title": "omarchy-m-test report, schema version 1",
+  "description": "The report the omarchy-m-test CLI produces and the site's /api/v1 upload accepts. Shared by cli/ and site/; golden reports in schema/golden/ must validate against it. Only allowlisted, privacy-safe fields are permitted, so every object rejects unknown properties.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "consent_version", "machine", "checks"],
+  "properties": {
+    "schema_version": {
+      "description": "Report schema version. Bumped on any incompatible change.",
+      "const": 1
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "omarchy-m-test" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([.+-][0-9A-Za-z.+-]+)?$" }
+      }
+    },
+    "consent_version": {
+      "description": "Version of the disclaimer the user accepted.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "machine": {
+      "description": "What the Mac is. Model and chip come from the device tree, never from serial numbers or other per-unit identifiers.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "board", "soc", "chip", "arch", "kernel"],
+      "properties": {
+        "model": { "description": "Device-tree model string, e.g. \"Apple MacBook Pro (16-inch, M2 Max, 2023)\".", "type": "string", "pattern": "^Apple ", "maxLength": 120 },
+        "board": { "description": "Board id from the device-tree compatible list, e.g. \"j416c\".", "type": "string", "pattern": "^j[0-9]{3}[a-z]{0,2}$" },
+        "soc": { "description": "SoC id from the device-tree compatible list, e.g. \"t6021\".", "type": "string", "pattern": "^t[0-9]{4}$" },
+        "chip": { "description": "Marketing chip name for the SoC, e.g. \"M2 Max\"; \"unknown\" when the SoC isn't known yet.", "type": "string", "pattern": "^(M[0-9]+( Pro| Max| Ultra)?|unknown)$" },
+        "arch": { "const": "aarch64" },
+        "kernel": { "description": "Kernel release (uname -r).", "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "status", "evidence"],
+        "properties": {
+          "id": { "description": "Known check id. The site rejects ids it doesn't know.", "enum": ["system.identity"] },
+          "kind": { "enum": ["automatic", "human"] },
+          "status": { "enum": ["pass", "fail", "skip"] },
+          "evidence": {
+            "description": "Short, scrubbed evidence lines.",
+            "type": "array",
+            "maxItems": 50,
+            "items": { "type": "string", "maxLength": 500 }
+          }
+        }
+      }
+    }
+  }
+}
