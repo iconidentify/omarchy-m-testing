@@ -4,7 +4,9 @@
   <% if (nodes = inventory["nodes"]) %>
     <% unknown, known = Array(inventory["unclaimed"]).partition { |entry| entry["outcome"] == "unknown-hardware" } %>
     <% driver_states = nodes.each_with_object(Hash.new(0)) { |node, counts| counts[node["status"] == "okay" ? node["driver"] : "disabled"] += node["count"] } %>
-    <p class="inventory-summary"><%= nodes.sum { |node| node["count"] } %> hardware nodes: <%= driver_states["bound"] %> claimed by a driver, <%= driver_states["none"] %> with no device of their own, <%= driver_states["disabled"] %> disabled, <%= driver_states["unbound"] %> unclaimed.</p>
+    <% unclaimed = (unknown + known).sum { |entry| entry["count"] } %>
+    <% containers = driver_states["unbound"] - unclaimed %>
+    <p class="inventory-summary"><%= nodes.sum { |node| node["count"] } %> hardware nodes: <%= driver_states["bound"] %> claimed by a driver, <%= driver_states["none"] %> with no device of their own, <% if containers.positive? %><%= containers %> bus or register containers with no driver of their own, <% end %><%= driver_states["disabled"] %> disabled, <%= unclaimed %> unclaimed.</p>
 
     <h3>Unknown hardware</h3>
     <% if unknown.any? %>

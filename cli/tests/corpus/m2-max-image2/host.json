@@ -277,7 +277,7 @@
         "corpus": "uevents.txt"
       },
       "stderr": "",
-      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-aurora 7.1.12.aurora2-2 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound, except the AVD the kernel log shows failing its probe (firmware apple/avd-fw-v3-t1.bin missing); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
+      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-aurora 7.1.12.aurora2-2 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound (but simple-pm-bus only where simple-bus or simple-mfd is the first compatible, as its probe requires), except the AVD the kernel log shows failing its probe (firmware apple/avd-fw-v3-t1.bin missing); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
     },
     {
       "argv": [

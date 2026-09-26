@@ -161,7 +161,6 @@
 /sys/devices/platform/soc/289c08000.mbox/uevent:OF_FULLNAME=/soc/mbox@289c08000
 /sys/devices/platform/soc/289c08000.mbox/uevent:DRIVER=apple_mailbox
 /sys/devices/platform/soc/28e080000.power-management/uevent:OF_FULLNAME=/soc/power-management@28e080000
-/sys/devices/platform/soc/28e080000.power-management/uevent:DRIVER=simple_pm_bus
 /sys/devices/platform/soc/28e080000.power-management/100.power-controller/uevent:OF_FULLNAME=/soc/power-management@28e080000/power-controller@100
 /sys/devices/platform/soc/28e080000.power-management/100.power-controller/uevent:DRIVER=pmgr_pwrstate
 /sys/devices/platform/soc/28e080000.power-management/108.power-controller/uevent:OF_FULLNAME=/soc/power-management@28e080000/power-controller@108
@@ -307,7 +306,6 @@
 /sys/devices/platform/soc/28e080000.power-management/3b8.power-controller/uevent:OF_FULLNAME=/soc/power-management@28e080000/power-controller@3b8
 /sys/devices/platform/soc/28e080000.power-management/3b8.power-controller/uevent:DRIVER=pmgr_pwrstate
 /sys/devices/platform/soc/28e580000.power-management/uevent:OF_FULLNAME=/soc/power-management@28e580000
-/sys/devices/platform/soc/28e580000.power-management/uevent:DRIVER=simple_pm_bus
 /sys/devices/platform/soc/28e580000.power-management/100.power-controller/uevent:OF_FULLNAME=/soc/power-management@28e580000/power-controller@100
 /sys/devices/platform/soc/28e580000.power-management/100.power-controller/uevent:DRIVER=pmgr_pwrstate
 /sys/devices/platform/soc/28e580000.power-management/108.power-controller/uevent:OF_FULLNAME=/soc/power-management@28e580000/power-controller@108
@@ -503,7 +501,6 @@
 /sys/devices/platform/soc/2921f0000.pinctrl/uevent:OF_FULLNAME=/soc/pinctrl@2921f0000
 /sys/devices/platform/soc/2921f0000.pinctrl/uevent:DRIVER=pinctrl_apple_gpio
 /sys/devices/platform/soc/292280000.power-management/uevent:OF_FULLNAME=/soc/power-management@292280000
-/sys/devices/platform/soc/292280000.power-management/uevent:DRIVER=simple_pm_bus
 /sys/devices/platform/soc/292280000.power-management/58.power-controller/uevent:OF_FULLNAME=/soc/power-management@292280000/power-controller@58
 /sys/devices/platform/soc/292280000.power-management/58.power-controller/uevent:DRIVER=pmgr_pwrstate
 /sys/devices/platform/soc/292280000.power-management/60.power-controller/uevent:OF_FULLNAME=/soc/power-management@292280000/power-controller@60

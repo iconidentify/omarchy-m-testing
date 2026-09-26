@@ -62,6 +62,8 @@ class GoldenInventoryTest(unittest.TestCase):
         self.assertEqual(nodes[("apple,agx-t6021", "okay", "bound")], 1)
         self.assertEqual(nodes[("apple,t6020-pmgr-pwrstate", "okay", "bound")], 235)
         self.assertEqual(nodes[("apple,t6020-aic", "okay", "none")], 1)  # set up by the kernel core, no device
+        # The power manager's register blocks: no driver of their own, but their power domains have one. Not unclaimed.
+        self.assertEqual(nodes[("apple,t6020-pmgr", "okay", "unbound")], 5)
         self.assertIn(("apple,t6020-avd", "okay", "unbound"), nodes)
         self.assertTrue(any(status == "disabled" for _, status, _ in nodes))
 
@@ -76,7 +78,8 @@ class GoldenInventoryTest(unittest.TestCase):
             "hardware.kernel-config": ("pass", "works"),
         })
         self.assertEqual(found["hardware.drivers"]["evidence"], [
-            "424 hardware nodes: 371 claimed by a driver, 27 with no device of their own, 23 disabled, 3 unclaimed",
+            "424 hardware nodes: 366 claimed by a driver, 27 with no device of their own, "
+            "5 bus or register containers with no driver of their own, 23 disabled, 3 unclaimed",
             "unclaimed: apple,t6020-avd (1 node): doesn't work, but should on this Mac (Video decoder)",
             "unclaimed: apple,t6020-dpaudio (2 nodes): unknown hardware",
         ])

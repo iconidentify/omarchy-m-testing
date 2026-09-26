@@ -220,7 +220,7 @@
         "corpus": "uevents.txt"
       },
       "stderr": "",
-      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-asahi 7.1.13.asahi1-1 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound (no kernel log of the M1 exists to show a failed probe); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
+      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-asahi 7.1.13.asahi1-1 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound (but simple-pm-bus only where simple-bus or simple-mfd is the first compatible, as its probe requires) (no kernel log of the M1 exists to show a failed probe); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
     },
     {
       "argv": [

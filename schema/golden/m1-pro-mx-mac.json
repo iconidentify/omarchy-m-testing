@@ -331,7 +331,7 @@
       {
         "compatible": "apple,t6000-pmgr",
         "status": "okay",
-        "driver": "bound",
+        "driver": "unbound",
         "count": 3
       },
       {
@@ -811,7 +811,7 @@
       "kind": "automatic",
       "status": "fail",
       "evidence": [
-        "339 hardware nodes: 297 claimed by a driver, 17 with no device of their own, 24 disabled, 1 unclaimed",
+        "339 hardware nodes: 294 claimed by a driver, 17 with no device of their own, 3 bus or register containers with no driver of their own, 24 disabled, 1 unclaimed",
         "unclaimed: apple,t6000-dpaudio (1 node): unknown hardware"
       ],
       "classification": {

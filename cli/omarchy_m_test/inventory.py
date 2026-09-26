@@ -19,7 +19,10 @@ drivers) is bound (a driver claimed its device), unbound (it has a device no
 driver claimed) or none (no device of its own: disabled, set up early by the
 kernel core, or handled by its parent's driver). An enabled node whose device
 no driver claimed is unclaimed, and is explained against the catalogue's
-hardware map: the feature it is, failing, or unknown hardware.
+hardware map: the feature it is, failing, or unknown hardware. Bus and
+register-block containers (simple-bus, simple-mfd, syscon: their children are
+the hardware, e.g. the power manager's power domains) usually have no driver
+of their own and are never unclaimed.
 
 The report's inventory block carries only node types, statuses, driver-bound
 states and counts, never a property value or a node's path; kernel-log lines
@@ -48,10 +51,14 @@ KERNEL_CONFIG = ["zcat", "/proc/config.gz"]
 # /chosen (what the boot loader hands over, e.g. the boot framebuffer) and
 # memory carve-outs.
 SKIPPED_SUBTREES = ("/cpus", "/chosen", "/reserved-memory")
+# Containers: their children are the hardware; simple-pm-bus binds them only when this is their first compatible.
+CONTAINERS = frozenset({"simple-bus", "simple-mfd", "simple-pm-bus", "syscon"})
 
 LOG_LINES_PER_CHECK = 20
 EVIDENCE_DIFFERENCES = 40
 REPORT_DIFFERENCES = 200
+REPORT_NODE_KINDS = 1000   # schema maxItems
+REPORT_UNCLAIMED_KINDS = 500
 
 _COMPATIBLE = re.compile(r"[A-Za-z0-9][A-Za-z0-9,._+-]{0,79}")
 _PROPERTY = re.compile(r"^" + re.escape(DT_BASE) + r"(/[^:]*)?/(compatible|status):(.*)$")
@@ -62,8 +69,8 @@ _FIRMWARE_FAILURE = re.compile(
     r"|firmware(?: file)? \S+ (?:not found|load failed)|request_firmware\S* failed)"
 )
 _PROBE_ERROR = re.compile(r"(probe with driver \S+ failed with error -?\d+|probe of \S+ failed with error -?\d+|deferred probe pending)")
-_CONFIG_SET = re.compile(r"^(CONFIG_[A-Za-z0-9_]+)=(.*)$")
-_CONFIG_UNSET = re.compile(r"^# (CONFIG_[A-Za-z0-9_]+) is not set$")
+_CONFIG_SET = re.compile(r"^(CONFIG_[A-Za-z0-9_]{1,100})=(.*)$")
+_CONFIG_UNSET = re.compile(r"^# (CONFIG_[A-Za-z0-9_]{1,100}) is not set$")
 # Options the build toolchain decides rather than the kernel's packager.
 _TOOLCHAIN = re.compile(r"^CONFIG_(CC|AS|LD|GCC|CLANG|LLD|RUSTC|RUST_IS|BINDGEN|PAHOLE|TOOLCHAIN|OBJTOOL)_")
 _VALUE = re.compile(r"[ymn]|-?[0-9]{1,12}|0x[0-9A-Fa-f]{1,12}")
@@ -80,8 +87,12 @@ class Node:
         return self.compatibles[0]
 
     @property
+    def container(self) -> bool:
+        return bool(CONTAINERS.intersection(self.compatibles))
+
+    @property
     def unclaimed(self) -> bool:
-        return self.status == "okay" and self.driver == "unbound"
+        return self.status == "okay" and self.driver == "unbound" and not self.container
 
 
 @dataclass
@@ -103,8 +114,8 @@ class Inventory:
             block["nodes"] = [
                 {"compatible": compatible, "status": status, "driver": driver, "count": count}
                 for (compatible, status, driver), count in sorted(counts.items())
-            ]
-            block["unclaimed"] = self.unclaimed
+            ][:REPORT_NODE_KINDS]
+            block["unclaimed"] = self.unclaimed[:REPORT_UNCLAIMED_KINDS]
         differences = self.differences()
         if differences is not None:
             label, _ = self.reference or ("", {})
@@ -148,11 +159,15 @@ class Inventory:
     def _drivers(self, catalogue: Catalogue) -> dict:
         if self.nodes is None:
             return _result("hardware.drivers", "skip", [self.missing])
-        states = Counter(node.driver if node.status == "okay" else "disabled" for node in self.nodes)
+        states = Counter(
+            "disabled" if node.status != "okay" else "container" if node.driver == "unbound" and node.container else node.driver
+            for node in self.nodes
+        )
         unclaimed = sum(entry["count"] for entry in self.unclaimed)
+        containers = f"{states['container']} bus or register containers with no driver of their own, " if states["container"] else ""
         evidence = [
             f"{len(self.nodes)} hardware nodes: {states['bound']} claimed by a driver, "
-            f"{states['none']} with no device of their own, {states['disabled']} disabled, {unclaimed} unclaimed"
+            f"{states['none']} with no device of their own, {containers}{states['disabled']} disabled, {unclaimed} unclaimed"
         ]
         for entry in self.unclaimed:
             feature = catalogue.feature(entry.get("feature"))
