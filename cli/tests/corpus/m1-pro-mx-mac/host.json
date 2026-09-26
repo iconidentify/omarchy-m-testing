@@ -301,6 +301,31 @@
       "stdout": "audio_effect.j314-convolver\n",
       "stderr": "",
       "note": "reconstructed, not captured on the M1 on 2026-09-12: as mac-check's default-sink line"
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "auto",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Remote=yes\nSeat=\nActive=yes\n",
+      "stderr": "",
+      "note": "stand-in: the M1 evidence was taken over SSH: logind's answer for an SSH session (no seat), so the Wi-Fi first-join check is skipped"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c \"^Device \""
+      ],
+      "returncode": 1,
+      "stdout": "0\n",
+      "stderr": "",
+      "note": "stand-in: the paired-device count wasn't captured (grep -c prints 0 and exits 1 with none); the v0.1 dogfood run records it"
     }
   ],
   "files": {

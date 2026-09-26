@@ -17,8 +17,8 @@ from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import EOF, INTERRUPT
 from omarchy_m_test.session import Context, Section
-from tests.desktop import CHECKPOINT, HUMAN_QUESTIONS, TERMINAL, bare_desktop, omarchy_desktop, recording
-from tests.live_mac import CATALOGUE_PATH, NODE, LiveMac, MacState, ascii_titles, live_recording
+from tests.desktop import CHECKPOINT, TERMINAL, at_the_seat, bare_desktop, omarchy_desktop, recording
+from tests.live_mac import CATALOGUE_PATH, NODE, UNLOAD, LiveMac, MacState, ascii_titles, live_recording
 from tests.schema_validator import errors
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -645,11 +645,12 @@ class NeverRebootsOrTouchesBootTest(unittest.TestCase):
     def test_whole_runs_never_send_such_a_command(self):
         for name in ("m2-max-image2", "m1-pro-mx-mac"):
             with self.subTest(recording=name):
-                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, *[EOF] * HUMAN_QUESTIONS[name], "y", "y", "y", "y"])
+                host = LiveMac(live_recording(base=recording(name)), answers=[ENTER, *at_the_seat(name, reload="y"), "y", "y", "y", "y"])
 
                 main(ARGS, host, sections=(*_apple(), SPEAKER, WIFI, BENCH))
 
                 self.assertIn(REPORT_FILE, host.written)
+                self.assertIn(UNLOAD, host.commands_run)  # the Wi-Fi driver reload ran, and passed the guard
                 self.assertEqual([argv for argv in host.commands_run if touches_what_it_never_may(argv)], [])
                 self.assertEqual([p for p in host.written if p.startswith(("/boot", "/efi", "/dev/"))], [])
 

@@ -5,7 +5,7 @@
     "version": "0.1.1"
   },
   "consent_version": 2,
-  "catalogue_version": 5,
+  "catalogue_version": 6,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1409,6 +1409,44 @@
       }
     },
     {
+      "id": "network.bluetooth-pairing",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "Bluetooth controller powered (mac-check)",
+        "asked: Put a Bluetooth device (headphones, a mouse or a keyboard) in pairing mode and pair it: open Bluetooth (Super+Ctrl+B in Omarchy, or bluetui) and pick it (s if you have none to hand). Did it pair and work?",
+        "answer: none (counted as skipped)",
+        "paired devices: 0 before, 0 after"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "bluetooth",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.wifi-first-join",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "wifi-5ghz-first-join",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
       "id": "input.ambient-light",
       "kind": "automatic",
       "status": "pass",
@@ -1502,6 +1540,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQB+Z+DH5GdY2SglHmIxDzuqU6QVwgXOWnF2WXtg81S\nyjrhOgAnoMurqQI3WE45hXj4l2eF2GlNh3iD7bS3/BIg8=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQONcbwI6TB0tqcp9VoWOR5KCWWBb4bbr68VjVlPUvT\nEXlbVbiwEAxY/JAtbGMEff7y/kN9oVsgWt/pGmRwAg/QM=\n-----END SSH SIGNATURE-----"
   }
 }

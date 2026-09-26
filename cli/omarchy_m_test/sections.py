@@ -42,7 +42,9 @@ APPLE: tuple[Section, ...] = (
         "audio.speaker-amps-unlocked", "audio.microphone-mapping",
         "audio.microphone-signal", "audio.speaker-tone", "audio.headphone-detection",
     ), checks.audio, ("audio.speaker-tone", "audio.headphone-detection")),
-    _section("network", "Network", "Wi-Fi, its backend and Bluetooth.", ("network.wifi", "network.wifi-backend", "network.bluetooth"), checks.network),
+    _section("network", "Network", "Wi-Fi, its backend and Bluetooth; then you pair a Bluetooth device, and (at the Mac, not over SSH, with your agreement) the Wi-Fi driver is reloaded to time the first join to a 5 GHz network.", (
+        "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
+    ), checks.network, ("network.bluetooth-pairing",)),
     _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light.", (
         "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
     ), checks.input_devices, ("input.keyboard-light-follows-room",)),
