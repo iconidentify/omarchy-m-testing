@@ -51,8 +51,11 @@ module DataExport
     end)
   end
 
-  # RFC 4180: every field quoted, quotes doubled, CRLF line ends.
+  # RFC 4180: every field quoted, quotes doubled, CRLF line ends. Uploaded
+  # text starting like a formula gets a leading ' so spreadsheets show it as text.
   def self.csv(header, rows)
-    [ header, *rows ].map { |row| row.map { |field| %("#{field.to_s.gsub('"', '""')}") }.join(",") + "\r\n" }.join
+    [ header, *rows ].map { |row| row.map { |field| %("#{defuse(field.to_s).gsub('"', '""')}") }.join(",") + "\r\n" }.join
   end
+
+  def self.defuse(text) = text.match?(/\A[=+\-@\t\r]/) ? "'#{text}" : text
 end

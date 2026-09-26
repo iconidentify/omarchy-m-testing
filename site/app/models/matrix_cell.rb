@@ -43,9 +43,12 @@ class MatrixCell
   def confirmed? = state.present? && tallies.any?
   def unconfirmed? = state.nil?
 
-  # What the community reports say before machines agree.
+  # What the community reports say before machines agree; partial on a tie.
   def tentative
-    tallies.max_by { |state, count| [ count, -ResultState::ORDER.index(state) ] }&.first || "not-tested"
+    return "not-tested" if tallies.empty?
+
+    leaders = tallies.select { |_state, count| count == tallies.values.max }.keys
+    leaders.one? ? leaders.first : "partial"
   end
 
   def display_state = state || tentative

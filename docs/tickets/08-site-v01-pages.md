@@ -4,15 +4,15 @@
 
 **Blocked by:** 01, 05
 
-**Status:** ready-for-agent
+**Status:** done
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Matrix, per-model, per-feature, kernel-gap and report pages
-- [ ] Omarchy branding and design language: dark, Tokyo Night palette, JetBrains Mono, terminal cards; colour code green works / yellow partial / red regression / blue expected missing / magenta unknown hardware / grey not tested
-- [ ] Aggregation: community reports visible immediately, labelled; matrix colour only from two or more distinct machines agreeing (tester rule arrives in 19)
-- [ ] Deletion link removes a report and its evidence completely
-- [ ] JSON and CSV exports of all public data (CC0)
-- [ ] Admin (secret token): hide or delete any report
-- [ ] Upload API rejects outdated schema versions with an upgrade message and unknown check IDs, and rate-limits per IP
-- [ ] Seam B tests for every page, rule and admin action using golden reports
+- [x] Matrix, per-model, per-feature, kernel-gap and report pages
+- [x] Omarchy branding and design language: dark, Tokyo Night palette, JetBrains Mono, terminal cards; colour code green works / yellow partial / red regression / blue expected missing / magenta unknown hardware / grey not tested
+- [x] Aggregation: community reports visible immediately, labelled; matrix colour only from two or more distinct machines agreeing (tester rule arrives in 19)
+- [x] Deletion link removes a report and its evidence completely
+- [x] JSON and CSV exports of all public data (CC0)
+- [x] Admin (secret token): hide or delete any report
+- [x] Upload API rejects outdated schema versions with an upgrade message and unknown check IDs, and rate-limits per IP
+- [x] Seam B tests for every page, rule and admin action using golden reports

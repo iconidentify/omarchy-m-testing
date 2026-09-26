@@ -40,6 +40,13 @@ class ExportsTest < ActionDispatch::IntegrationTest
                  m2.slice("id", "board", "stack", "omarchy_version", "checks", "pass", "fail", "skip", "encryption"))
   end
 
+  test "uploaded text that looks like a spreadsheet formula is exported as text" do
+    upload_report golden("m2-max-image2").tap { |r| r["machine"]["kernel"] = "=HYPERLINK(\"http://example.com\")" }
+    get "/api/v1/reports.csv"
+
+    assert_includes response.body, %("'=HYPERLINK(""http://example.com"")")
+  end
+
   test "checks.csv has one row per check result" do
     get "/api/v1/checks.csv"
 

@@ -52,6 +52,14 @@ class UploadRulesTest < ActionDispatch::IntegrationTest
     assert_equal [ 1, limit ], Report.group(:machine_id).count.values.sort
   end
 
+  test "an IPv6 address counts as one machine per /64, so rotating privacy addresses don't multiply a Mac" do
+    upload_report golden("m2-max-image2"), ip: "2001:db8:1:2::a"
+    upload_report golden("m2-max-image2"), ip: "2001:db8:1:2:dead:beef:0:1"
+    upload_report golden("m2-max-image2"), ip: "2001:db8:1:3::a"
+
+    assert_equal [ 1, 2 ], Report.group(:machine_id).count.values.sort
+  end
+
   test "the machine id is a keyed digest, never the address itself" do
     upload_report golden("m2-max-image2"), ip: "10.0.0.7"
 

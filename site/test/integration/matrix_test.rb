@@ -72,6 +72,7 @@ class MatrixTest < ActionDispatch::IntegrationTest
     get "/matrix"
     assert_equal "unconfirmed", state(M2, "brightness")
     assert_match "1 machine works, 1 machine regression", cell(M2, "brightness")["title"]
+    assert_includes cell(M2, "brightness")["class"], "cell-hint-partial", "a tie hints partial, not the better state"
 
     upload_report golden("m2-max-image2"), ip: "10.0.0.3"
     get "/matrix"

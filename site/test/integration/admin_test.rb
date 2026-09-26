@@ -101,6 +101,14 @@ class AdminTest < ActionDispatch::IntegrationTest
     assert_equal 2, Report.visible.count
   end
 
+  test "an admin session expires" do
+    sign_in
+    travel (AdminAuthentication::SESSION_HOURS.hours + 1.minute) do
+      get "/admin"
+      assert_response :unauthorized
+    end
+  end
+
   test "changing ADMIN_TOKEN signs the admin out" do
     sign_in
     ENV["ADMIN_TOKEN"] = "#{TOKEN}-rotated"

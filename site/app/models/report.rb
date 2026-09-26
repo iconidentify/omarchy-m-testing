@@ -33,9 +33,15 @@ class Report < ApplicationRecord
     OpenSSL::Digest::SHA256.hexdigest(token.to_s)
   end
 
+  # An IPv6 address counts by its /64: a Mac's temporary IPv6 address changes
+  # daily, so the full address would make one Mac look like several.
   def self.machine_id_for_ip(ip)
+    address = IPAddr.new(ip.to_s)
+    network = address.ipv6? && !address.ipv4_mapped? ? address.mask(64).to_s : address.native.to_s
     key = Rails.application.key_generator.generate_key("report machine id from ip")
-    "ip:#{OpenSSL::HMAC.hexdigest("SHA256", key, ip.to_s).first(20)}"
+    "ip:#{OpenSSL::HMAC.hexdigest("SHA256", key, network).first(20)}"
+  rescue IPAddr::InvalidAddressError
+    "ip:unknown"
   end
 
   def deletion_token_matches?(token)
