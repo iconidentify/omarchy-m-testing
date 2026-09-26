@@ -42,9 +42,18 @@ The Hardware section (`omarchy_m_test/inventory.py`) maps the Mac's hardware on 
 
 Its four results are `hardware.drivers`, `hardware.firmware`, `hardware.probe-errors` and `hardware.kernel-config`. The report's `inventory` block holds only node types (the first compatible string), statuses, driver-bound states and counts, the unclaimed nodes with their classification, and the build-option differences: never a property value or a node's path. Skipping the section leaves the block out.
 
+## On-screen video check
+
+The Video section (`omarchy_m_test/video.py`, with `omarchy_m_test/testcard/`) checks that hardware-decoded video shows correctly on the built-in screen. For H.264 and then HEVC, `testcard/video-card.sh` makes the test card with ffmpeg (six solid colour bars: red, green, yellow, blue, magenta, cyan; 1920x1080, BT.709), plays it paused and full screen on the built-in screen (the `eDP` output in `hyprctl monitors`) with mpv, and `testcard/testcard.lua` screenshots that screen with grim once it shows. Then:
+
+- **Colours.** The screenshot is decoded with the standard library (`omarchy_m_test/png.py`) and sampled in the middle of each bar: each bar's median colour must be within 64 levels of the card's on every channel. Green, blocky or garbled frames fail, such as the M2 Max's zero-copy decode through gpu-next.
+- **Hardware decode and mode.** mpv's log says whether hardware decode was used (`Using hardware decoding (vaapi-copy)`), with which video output and GPU context; the evidence records that mode. Software decode fails the check.
+
+mpv runs with the machine's own configuration (`/etc/mpv/mpv.conf`, then the user's `mpv.conf`), so the mode checked is the one videos play in; when that configuration leaves hardware decode off, `--hwdec=auto-safe` is added. It checks one paused frame: nothing about tearing, frame pacing or VRR. It needs the desktop at the Mac (a Wayland session, a local seat, not over SSH), Hyprland and a built-in screen, and mpv, grim and ffmpeg (installed for the run with consent when missing); otherwise both checks are skipped with the reason. The test cards, screenshots and logs sit in a private `/tmp/omarchy-m-test-video.*` directory that is removed when the section ends; none of it is uploaded. Record mode (`--record`) keeps the screenshots as taken, unscrubbed: if the card never showed, that is a picture of the built-in screen, so look at a recording's screenshots before sharing it.
+
 ## The run: sections, resume, restore
 
-A run is a list of sections (`omarchy_m_test/sections.py`: boot, hardware, graphics, display, audio, network, input, power, cpu), listed up front after the disclaimer. mac-check feeds several of them and runs once, for the first one that isn't skipped. Any can be skipped: untick it in the picker at a terminal, or `--skip NAME` (repeatable, or comma-separated) anywhere. A skipped section's checks are reported as skipped.
+A run is a list of sections (`omarchy_m_test/sections.py`: boot, hardware, graphics, video, display, audio, network, input, power, cpu), listed up front after the disclaimer. mac-check feeds several of them and runs once, for the first one that isn't skipped. Any can be skipped: untick it in the picker at a terminal, or `--skip NAME` (repeatable, or comma-separated) anywhere. A skipped section's checks are reported as skipped.
 
 After each section the run's state is checkpointed to `$XDG_STATE_HOME/omarchy-m-test/checkpoint.json` (`~/.local/state/...`). A run interrupted by Ctrl-C, a closed terminal or a crash offers to resume on the next start with the same tool, catalogue, Mac and kernel: finished sections aren't run again. Evidence is scrubbed before it is checkpointed, and the file is only the user's (0600, in a 0700 directory). The checkpoint is removed once the report is written, or when the disclaimer is declined. Record mode never checkpoints.
 

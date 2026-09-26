@@ -29,6 +29,7 @@ ORDER = (
     "system.failed-units", "system.snapshots",
     "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     "gpu.driver", "gpu.vulkan", "gpu.opengl",
+    "video.h264-on-screen", "video.hevc-on-screen",
     "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
     "display.notch-bar", "display.brightness-steps", "display.cursor",
     "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
