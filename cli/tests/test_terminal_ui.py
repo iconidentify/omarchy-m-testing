@@ -15,7 +15,7 @@ from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
 from omarchy_m_test.recording import ENDED, INTERRUPT
 from tests.desktop import (
-    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
+    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, UNANSWERED_AT_A_TERMINAL, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
 )
 from tests.schema_validator import errors
@@ -70,8 +70,9 @@ class OmarchyLookTest(unittest.TestCase):
 
         prompts = [argv for argv, _ in ttys(mac)]
         choose, confirm = prompts[0], prompts[-1]
-        # The human checks, then the benchmarks' package offer.
-        self.assertEqual([argv[:3] for argv in prompts[1:-2]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 1))
+        # The human checks, the charge limit's sudo prompt, then the benchmarks' package offer.
+        self.assertEqual([argv[:3] for argv in prompts[1:-3]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 2))
+        self.assertEqual(prompts[-3], ["sudo", "-v"])
         self.assertEqual(prompts[-2][:3], ["gum", "confirm", "Install 2 package(s) now?"])
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
@@ -117,7 +118,7 @@ class OmarchyLookTest(unittest.TestCase):
 
 class FallbackLookTest(unittest.TestCase):
     def test_without_omarchy_the_run_uses_tokyo_night_and_a_plain_title(self):
-        mac = host(bare_desktop(recording()), answers=[ENTER, ENTER, *UNANSWERED, "n"], terminal=TERMINAL)
+        mac = host(bare_desktop(recording()), answers=[ENTER, ENTER, *UNANSWERED_AT_A_TERMINAL, "n"], terminal=TERMINAL)
 
         status = main([], mac)
 
@@ -128,7 +129,8 @@ class FallbackLookTest(unittest.TestCase):
         # No gum: the section picker and upload question are plain prompts.
         prompts = [e[1] for e in mac.transcript if e[0] == "prompt"]
         self.assertTrue(any("Sections to skip" in p for p in prompts), prompts)
-        self.assertEqual(ttys(mac), [])
+        # The only interactive command is sudo asking for its password (for the charge limit).
+        self.assertEqual([argv for argv, _ in ttys(mac)], [["sudo", "-v"]])
 
     def test_gum_off_omarchy_is_styled_in_tokyo_night(self):
         seen = {}
@@ -145,7 +147,7 @@ class FallbackLookTest(unittest.TestCase):
 
     def test_an_older_omarchy_theme_directory_is_read_without_omarchy_theme_color(self):
         old = 'color2 = "#a6e3a1"\ncolor4 = "#89b4fa"\ncolor8 = "#6c7086"\ncolor7 = "#cdd6f4"\n'
-        mac = host(bare_desktop(recording(), old_theme=old), answers=[ENTER, ENTER, *UNANSWERED, "n"], terminal=TERMINAL)
+        mac = host(bare_desktop(recording(), old_theme=old), answers=[ENTER, ENTER, *UNANSWERED_AT_A_TERMINAL, "n"], terminal=TERMINAL)
 
         main([], mac)
 

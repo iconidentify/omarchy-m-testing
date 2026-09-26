@@ -31,16 +31,20 @@ TERMINAL = Terminal(120, 40)
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
 # tone, headphone jack, Bluetooth pairing, keyboard light, function keys,
 # trackpad, USB-C devices, USB-C display), left unanswered as in its golden
-# report, then the Benchmarks section's offer to install vkmark, unanswered and so
-# declined: at a plain prompt (end of input) and at gum (Esc). A run that
-# needs no answer after them ends its answers with ENDED instead.
+# report, then the Power section's sudo password prompt for the charge limit (the recorded
+# runs have no cached sudo; only at a terminal), unanswered and so skipped, then the
+# Benchmarks section's offer to install vkmark, unanswered and so declined: at a plain
+# prompt (end of input) and at gum (Esc). A run that needs no answer after them ends
+# its answers with ENDED instead.
+SUDO_PROMPT = [EOF]
 BENCHMARK_OFFER = [EOF]
 UNANSWERED = [EOF] * 11 + BENCHMARK_OFFER
+UNANSWERED_AT_A_TERMINAL = [EOF] * 11 + SUDO_PROMPT + BENCHMARK_OFFER
 # How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
 # the converged M1 and M2 ran over SSH, where brightness can't be set, so that one isn't asked; the M1s have
 # nothing plugged into their USB-C ports, so the two ports questions aren't asked).
 HUMAN_QUESTIONS = {"m2-max-image2": 11, "m1-pro-mx-mac": 6, "m1-pro-converged": 8, "m2-max-converged": 10}
-GUM_UNANSWERED = [CommandResult(1, "", "")] * 12
+GUM_UNANSWERED = [CommandResult(1, "", "")] * 13  # the sudo prompt (sudo -v) exits 1 like gum
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
 BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6}
 # What only a run at a local seat asks besides: the Ports section's "plug in what you have" (after the reload).
@@ -50,13 +54,17 @@ AT_THE_SEAT_ONLY = 1
 # The Sleep section (after the reload question) asks whether to close the lid for the suspend step, then
 # whether an external display is showing, then (only after a yes) whether to close the lid with it on.
 SLEEP_DECLINED = (EOF, EOF)
+# The Power section at the Mac (on AC power, as recorded) asks to unplug the charger for the idle measurement,
+# then whether to measure the drain over ten minutes asleep: both unanswered, and so declined.
+POWER_DECLINED = (EOF, EOF)
 
 
-def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_DECLINED) -> list:
+def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_DECLINED, power: tuple = POWER_DECLINED) -> list:
     """A whole run's answers at the Mac, after the disclaimer: its human checks unanswered, `reload` at the
-    driver-reload question, `sleep` at the Sleep section's, and the benchmarks' package offer unanswered."""
+    driver-reload question, `sleep` at the Sleep section's, `power` at the Power section's, and the benchmarks'
+    package offer unanswered."""
     before = BEFORE_RELOAD[machine]
-    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before + AT_THE_SEAT_ONLY), *BENCHMARK_OFFER]
+    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before + AT_THE_SEAT_ONLY), *power, *BENCHMARK_OFFER]
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
 SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "

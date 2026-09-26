@@ -319,6 +319,24 @@
     },
     {
       "argv": [
+        "omarchy-battery-charge-limit"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "omarchy-battery-charge-limit: command not found\n"
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
         "pacman",
         "-Q",
         "vkmark",
@@ -409,6 +427,12 @@
     "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
       "text": "100\n"
     },
+    "/sys/class/power_supply/macsmc-battery/charge_control_start_threshold": {
+      "text": "100\n"
+    },
+    "/etc/udev/macsmc-battery.conf": null,
+    "/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules": null,
+    "/usr/lib/omarchy-mac/battery-charge-limit-restore": null,
     "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
       "text": "apple-cpufreq\n"
     },

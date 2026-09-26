@@ -8,7 +8,7 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Idle power draw over 30 seconds
-- [ ] Charge limit set and cleared, original value restored
-- [ ] Optional sleep-drain test using the sleep section's resume support
-- [ ] Seam A tests with recordings
+- [x] Idle power draw over 30 seconds
+- [x] Charge limit set and cleared, original value restored
+- [x] Optional sleep-drain test using the sleep section's resume support
+- [x] Seam A tests with recordings

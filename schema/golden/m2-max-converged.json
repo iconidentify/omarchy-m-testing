@@ -4,8 +4,8 @@
     "name": "omarchy-m-test",
     "version": "0.1.3"
   },
-  "consent_version": 3,
-  "catalogue_version": 9,
+  "consent_version": 4,
+  "catalogue_version": 10,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1773,6 +1773,79 @@
         "layer": "asahi",
         "expected": {
           "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "power.charge-limit",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "charge limit before: 100% (charging restarts at 100%)",
+        "skipped: setting the charge limit needs sudo, and it wasn't given"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "battery-info",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "power.charge-limit-kept",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "`omarchy-battery-charge-limit` shows 100%, as the SMC has",
+        "omarchy-mac's udev rule and helper that restore a saved limit at boot are installed",
+        "nothing saved in /etc/udev/macsmc-battery.conf",
+        "skipped: setting the charge limit needs sudo, and it wasn't given"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "battery-charge-limit",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "power.idle-draw",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: the Mac is on AC power (battery Full), where the battery doesn't show what it draws, and nobody may be at the Mac to unplug the charger (running over SSH, where it could cut the connection)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "battery-info",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "power.sleep-drain",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "suspend-sleep",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
           "aurora": "asahi"
         }
       }
