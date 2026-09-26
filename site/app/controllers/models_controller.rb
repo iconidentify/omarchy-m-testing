@@ -11,5 +11,6 @@ class ModelsController < ApplicationController
 
     @latest = @rows.flat_map(&:reports).max_by(&:created_at)
     @chip = Catalogue.chip_for_soc(@latest.soc)
+    @benchmarks = BenchmarkScores.visible.for_board(params[:board])
   end
 end

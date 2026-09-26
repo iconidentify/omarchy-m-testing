@@ -34,6 +34,9 @@
               <%= outcome_badge(classification["outcome"]) %>
               <span class="feature"><%= Catalogue.feature(classification["feature"])&.fetch("name") || classification["feature"] %>, <%= classification["layer"] %> layer</span>
             <% end %>
+            <% if (score = check["score"]).is_a?(Hash) %>
+              <span class="score">score <strong><%= score_words(score["value"]) %></strong> <%= BenchmarkScores::UNITS.fetch(score["unit"], score["unit"]) %> (<%= score["tool"] %>, suite <%= score["suite"] %>) · <a href="<%= benchmarks_path(anchor: "benchmark-#{check["id"].delete_prefix("benchmark.")}-suite-#{score["suite"]}") %>">compare</a></span>
+            <% end %>
             <% if check["evidence"].any? %>
               <pre class="evidence"><%= check["evidence"].join("\n") %></pre>
             <% end %>

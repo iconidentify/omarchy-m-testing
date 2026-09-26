@@ -70,7 +70,9 @@ class OmarchyLookTest(unittest.TestCase):
 
         prompts = [argv for argv, _ in ttys(mac)]
         choose, confirm = prompts[0], prompts[-1]
-        self.assertEqual([argv[:3] for argv in prompts[1:-1]], [["gum", "choose", "--header"]] * len(GUM_UNANSWERED))  # the human checks
+        # The human checks, then the benchmarks' package offer.
+        self.assertEqual([argv[:3] for argv in prompts[1:-2]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 1))
+        self.assertEqual(prompts[-2][:3], ["gum", "confirm", "Install 2 package(s) now?"])
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")

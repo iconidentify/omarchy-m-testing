@@ -19,10 +19,12 @@ def load_catalogue(host: Host, path: str | None) -> Catalogue:
 
 
 def line(check: dict, classification: dict, catalogue: Catalogue) -> str:
-    """One result as the human sees it, e.g. "  PASS  system.identity  works (Device tree)"."""
+    """One result as the human sees it, e.g. "  PASS  system.identity  works (Device tree)"; a benchmark's with its score."""
     feature = catalogue.feature_for_check(check["id"])
     name = feature["name"] if feature else classification["feature"]
-    return f"  {check['status'].upper():4}  {check['id']}  {catalogue.words(classification['outcome'])} ({name})"
+    score = check.get("score")
+    measured = f", score {score['value']} {score['unit']} ({score['tool']})" if isinstance(score, dict) else ""
+    return f"  {check['status'].upper():4}  {check['id']}  {catalogue.words(classification['outcome'])} ({name}){measured}"
 
 
 def explain(host: Host, path: str, catalogue: Catalogue) -> bool:
@@ -31,7 +33,7 @@ def explain(host: Host, path: str, catalogue: Catalogue) -> bool:
         report = json.loads(host.read_file(path))
         machine, checks = report["machine"], report["checks"]
         soc, board, model = machine["soc"], machine["board"], machine["model"]
-        results = [{"id": c["id"], "status": c["status"]} for c in checks]
+        results = [{"id": c["id"], "status": c["status"], **({"score": c["score"]} if isinstance(c.get("score"), dict) else {})} for c in checks]
     except OSError as error:
         host.show(f"Couldn't read {path} ({error}).")
         return False

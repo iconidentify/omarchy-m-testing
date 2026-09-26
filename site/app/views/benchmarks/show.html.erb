@@ -1,0 +1,14 @@
+<% content_for :title, "Benchmarks" %>
+<h1>Benchmarks</h1>
+<p class="subtitle">Short GPU benchmarks and video decode throughput from omarchy-m-test's Benchmarks section, compared per Mac model and Omarchy stack/version. Each machine counts once per row, with its latest score; a row shows the median of its machines.</p>
+
+<% if @scores.empty? %>
+  <%= card "scores" do %>
+    <p class="dim">No report has a benchmark score yet. Run <code>omarchy-m-test</code> and keep the Benchmarks section to add one.</p>
+  <% end %>
+<% else %>
+  <% @scores.benchmarks.each do |benchmark| %>
+    <%= render "benchmarks/benchmark", benchmark: %>
+  <% end %>
+<% end %>
+<p class="dim">Scores are only compared within one benchmark: the same scenes or clip and settings (suite). Anything else the Mac was doing lowers a score. <a href="<%= api_v1_benchmarks_path(format: :json) %>">benchmarks.json</a> (CC0).</p>

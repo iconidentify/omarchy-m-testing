@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import camera, checks, ports, power, sleep, video
+from . import benchmarks, camera, checks, ports, power, sleep, video
 from .session import Context, Section
 
 
@@ -58,4 +58,6 @@ APPLE: tuple[Section, ...] = (
     _section("power", "Power", "The battery, its charge limit (set, cleared, then put back as it was) and omarchy-mac's saved limit, and idle power over 30 s on battery; then, at the Mac and if you want, the battery drain over ten minutes asleep.",
              power.CHECK_IDS, power.run),
     _section("cpu", "CPU", "CPU frequency scaling.", ("cpu.frequency-scaling",), checks.cpu),
+    _section("benchmarks", "Benchmarks", "About a minute of short benchmarks for comparing Macs: OpenGL (glmark2, off-screen), Vulkan (vkmark, headless) and H.264 and HEVC hardware decode (ffmpeg). Leave the Mac alone while they run.",
+             benchmarks.CHECK_IDS, benchmarks.run),
 )

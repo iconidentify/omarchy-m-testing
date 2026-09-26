@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "omarchy-m-test",
+    "version": "0.1.3"
+  },
+  "consent_version": 3,
+  "catalogue_version": 9,
+  "machine": {
+    "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
+    "board": "j416c",
+    "soc": "t6021",
+    "chip": "M2 Max",
+    "arch": "aarch64",
+    "kernel": "7.1.12-2-10-ARCH"
+  },
+  "system": {
+    "stack": "converged",
+    "distro": "archarm",
+    "boot_loader": "unknown",
+    "encryption": "on",
+    "packages": [
+      {
+        "name": "omarchy",
+        "version": "4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001"
+      },
+      {
+        "name": "omarchy-settings",
+        "version": "4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001"
+      },
+      {
+        "name": "omarchy-mac",
+        "version": "0.1.0-5.362376005140001"
+      },
+      {
+        "name": "omarchy-mac-boot",
+        "version": "20260926-1.362376005140001"
+      },
+      {
+        "name": "linux-aurora",
+        "version": "7.1.12.aurora2-10"
+      },
+      {
+        "name": "m1n1-aurora",
+        "version": "1.6.1.aurora1-3"
+      },
+      {
+        "name": "uboot-asahi",
+        "version": "2026.07.asahi2-4"
+      },
+      {
+        "name": "limine",
+        "version": "12.9.0-1"
+      },
+      {
+        "name": "mesa",
+        "version": "1:26.2.3-1"
+      },
+      {
+        "name": "vulkan-asahi",
+        "version": "1:26.2.3-1"
+      },
+      {
+        "name": "asahi-audio",
+        "version": "4.1-1"
+      },
+      {
+        "name": "speakersafetyd",
+        "version": "2.0.1-1"
+      },
+      {
+        "name": "alsa-ucm-conf-asahi",
+        "version": "10-1"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "benchmark.opengl",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "already installed: glmark2 vkmark ffmpeg",
+        "glmark2-wayland --off-screen at 1920x1080, 8 scenes of 3 s (suite 1)",
+        "renderer: Apple M2 Max (G14C B1), OpenGL 4.6 (Compatibility Profile) Mesa 26.2.3",
+        "[build] use-vbo=true: 4120 fps (0.243 ms a frame)",
+        "[texture] texture-filter=linear: 3890 fps (0.257 ms a frame)",
+        "[shading] shading=phong: 3310 fps (0.302 ms a frame)",
+        "[bump] bump-render=high-poly: 2870 fps (0.348 ms a frame)",
+        "[effect2d] kernel=0,1,0;1,-4,1;0,1,0;: 2460 fps (0.407 ms a frame)",
+        "[desktop] blur-radius=5:effect=blur:passes=1:separable=true:windows=4: 2230 fps (0.448 ms a frame)",
+        "[jellyfish] <default>: 2750 fps (0.364 ms a frame)",
+        "[terrain] <default>: 280 fps (3.571 ms a frame)",
+        "glmark2 score: 2987"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      },
+      "score": {
+        "value": 2987,
+        "unit": "points",
+        "tool": "glmark2 2023.01",
+        "suite": 1
+      }
+    },
+    {
+      "id": "benchmark.vulkan",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "already installed: glmark2 vkmark ffmpeg",
+        "vkmark --winsys headless at 1920x1080, 7 scenes of 3 s (suite 1)",
+        "device: Apple M2 Max (G14C B1)",
+        "[vertex] device-local=true: 9870 fps (0.101 ms a frame)",
+        "[texture] anisotropy=16: 7310 fps (0.137 ms a frame)",
+        "[shading] shading=phong: 6480 fps (0.154 ms a frame)",
+        "[shading] shading=cel: 6620 fps (0.151 ms a frame)",
+        "[effect2d] kernel=blur: 3140 fps (0.318 ms a frame)",
+        "[desktop] <default>: 5210 fps (0.192 ms a frame)",
+        "[cube] <default>: 4240 fps (0.236 ms a frame)",
+        "vkmark score: 6124"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      },
+      "score": {
+        "value": 6124,
+        "unit": "points",
+        "tool": "vkmark 2025.01",
+        "suite": 1
+      }
+    },
+    {
+      "id": "benchmark.h264-decode",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "already installed: glmark2 vkmark ffmpeg",
+        "clip: H.264 1920x1080, 150 frames (testsrc2, libx264 veryfast), decoded 4 times to a null output (suite 1)",
+        "software decode: 600 frames in 1.46 s, 412.1 fps",
+        "hardware decode (VA-API): 600 frames in 0.91 s, 657.9 fps",
+        "hardware decode is 1.60x software decode",
+        "ffmpeg n9.0.2"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      },
+      "score": {
+        "value": 658,
+        "unit": "fps",
+        "tool": "ffmpeg n9.0.2",
+        "suite": 1
+      }
+    },
+    {
+      "id": "benchmark.hevc-decode",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "already installed: glmark2 vkmark ffmpeg",
+        "clip: HEVC 1920x1080, 150 frames (testsrc2, libx265 ultrafast), decoded 4 times to a null output (suite 1)",
+        "software decode: 600 frames in 1.84 s, 325.7 fps",
+        "hardware decode (VA-API): 600 frames in 1.02 s, 585.9 fps",
+        "hardware decode is 1.80x software decode",
+        "ffmpeg n9.0.2"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      },
+      "score": {
+        "value": 586,
+        "unit": "fps",
+        "tool": "ffmpeg n9.0.2",
+        "suite": 1
+      }
+    }
+  ]
+}
