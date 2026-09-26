@@ -14,10 +14,12 @@ Operations:
   show(text)                 show text to the human
   write_file(path, text)     write a file the CLI produces (the report)
   post_json(url, body)       POST a JSON text body; returns the HTTP response
+  get(url)                   GET a small text (the latest release's version); NetworkError if unreachable
 """
 
 from __future__ import annotations
 
+import http.client
 import os
 import subprocess
 import sys
@@ -28,6 +30,8 @@ from typing import Protocol, Sequence
 
 COMMAND_TIMEOUT_SECONDS = 60
 HTTP_TIMEOUT_SECONDS = 30
+# GETs only look up the latest release; a slow or absent network must not hold up a run.
+GET_TIMEOUT_SECONDS = 5
 
 
 @dataclass(frozen=True)
@@ -61,6 +65,8 @@ class Host(Protocol):
     def write_file(self, path: str, text: str) -> None: ...
 
     def post_json(self, url: str, body: str) -> HttpResponse: ...
+
+    def get(self, url: str) -> HttpResponse: ...
 
 
 class RealHost:
@@ -112,5 +118,15 @@ class RealHost:
                 return HttpResponse(response.status, response.read().decode("utf-8", "replace"))
         except urllib.error.HTTPError as error:
             return HttpResponse(error.code, error.read().decode("utf-8", "replace"))
-        except (urllib.error.URLError, OSError) as error:
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as error:
+            raise NetworkError(str(getattr(error, "reason", error))) from error
+
+    def get(self, url: str) -> HttpResponse:
+        request = urllib.request.Request(url, headers={"Accept": "text/plain"})
+        try:
+            with urllib.request.urlopen(request, timeout=GET_TIMEOUT_SECONDS) as response:
+                return HttpResponse(response.status, response.read(4096).decode("utf-8", "replace"))
+        except urllib.error.HTTPError as error:
+            return HttpResponse(error.code, "")
+        except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error

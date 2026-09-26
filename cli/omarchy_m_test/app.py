@@ -6,7 +6,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report
+from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -90,6 +90,8 @@ def _run(args: argparse.Namespace, host: Host) -> int:
 
     if args.explain:
         return EXIT_OK if explain(host, args.explain, catalogue) else EXIT_BAD_INPUT
+
+    updates.notify(host)
 
     try:
         machine = identify(host)
