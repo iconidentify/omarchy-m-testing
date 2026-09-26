@@ -22,6 +22,16 @@ jobs:
         working-directory: cli
         run: python -m unittest discover -s tests -t . -v
 
+  installer:
+    name: Installer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install, upgrade in place, refuse tampered and foreign-signed releases
+        run: installer/test.sh
+      - name: The release tarball ships the catalogue and the vendored check scripts
+        run: release/check.sh
+
   catalogue:
     name: Feature catalogue
     runs-on: ubuntu-latest

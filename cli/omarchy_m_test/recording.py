@@ -37,7 +37,9 @@ Replay: a RecordedHost answers from a recording. Anything the CLI asks for
 that the recording doesn't mention raises RecordingMiss, so a test can never
 pass by silently reading this machine. The human side is scripted: `answers`
 are returned by prompt() in order (EOF ends input like Ctrl-D). Uploads get
-the scripted `responses` in order. Everything shown, prompted, written and
+the scripted `responses` in order. GETs (the latest-release lookup) get
+the scripted `fetches` by URL; a URL that isn't scripted behaves like a
+machine with no network (NetworkError). Everything shown, prompted, written and
 posted is kept for assertions.
 """
 
@@ -48,7 +50,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
-from .host import CommandResult, Host, HttpResponse, bundled_argv
+from .host import CommandResult, Host, HttpResponse, NetworkError, bundled_argv
 from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
@@ -95,11 +97,13 @@ class RecordedHost:
     recording: dict[str, Any]
     answers: list[Any] = field(default_factory=list)
     responses: list[HttpResponse] = field(default_factory=list)
+    fetches: dict[str, HttpResponse] = field(default_factory=dict)
     # What happened, in order: ("show", text) / ("prompt", message, answer)
     transcript: list[tuple] = field(default_factory=list)
     commands_run: list[list[str]] = field(default_factory=list)
     written: dict[str, str] = field(default_factory=dict)
     posts: list[Post] = field(default_factory=list)
+    gets: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         version = self.recording.get("recording_version")
@@ -172,6 +176,12 @@ class RecordedHost:
             raise RecordingMiss(f"no scripted response left for POST {url}")
         return self.responses.pop(0)
 
+    def get(self, url: str) -> HttpResponse:
+        self.gets.append(url)
+        if url not in self.fetches:
+            raise NetworkError(f"no network in this recording: GET {url}")
+        return self.fetches[url]
+
     # -- assertions helpers ---------------------------------------------
 
     @property
@@ -242,6 +252,9 @@ class RecordingHost:
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         return self.inner.post_json(url, body)
+
+    def get(self, url: str) -> HttpResponse:
+        return self.inner.get(url)
 
     # -- saving ------------------------------------------------------------
 
