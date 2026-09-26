@@ -168,7 +168,12 @@ class Context:
         the lid) keeps its finished steps here, so a resumed run carries on from the
         step it stopped in instead of starting the section over.
         """
-        return self.shared.setdefault(PROGRESS, {}).setdefault(section_id, {})
+        every = self.shared.get(PROGRESS)
+        if not isinstance(every, dict):
+            every = self.shared[PROGRESS] = {}
+        if not isinstance(every.get(section_id), dict):
+            every[section_id] = {}
+        return every[section_id]
 
     def change(self, description: str, change: Sequence[str], restore: Sequence[str]) -> CommandResult:
         """Change the machine: `restore` is registered first, and runs when the section ends."""

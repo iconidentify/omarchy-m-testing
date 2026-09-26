@@ -66,7 +66,7 @@ THUNDERBOLT_AFTER = "sleep.thunderbolt-after-resume"
 CHECK_IDS = (LID_SUSPEND, CLAMSHELL, WIFI_AFTER, THUNDERBOLT_AFTER)
 
 CLOSE_SECONDS = 15   # to close the lid after answering y
-CLOSED_SECONDS = 25  # the lid may stay closed (with the Mac awake) this long before the watch stops
+CLOSED_SECONDS = 20  # the lid may stay closed (with the Mac awake) this long before the watch stops
 AFTER_OPEN_SECONDS = 3  # the displays are watched this long after the lid opens
 CLAMSHELL_MIN_CLOSED = 3.0  # a clamshell closed for less says nothing
 RECOVERY_SECONDS = 30
@@ -162,6 +162,10 @@ CLAMSHELL_WARNING = (
     "the Mac should stay awake on the external display, with the built-in screen off."
 )
 CLAMSHELL_QUESTION = "Close the lid with the external display on now?"
+# logind logs every lid switch; none at all means this user can't read the system's log, only their own.
+NO_LID_EVENTS = (
+    "the system log shows no lid events, so a suspend can't be seen (reading it needs the wheel, adm or systemd-journal group)"
+)
 RECOVERED_NOTE = "The last run stopped during the lid check; its result is read from the system log."
 
 
@@ -177,11 +181,18 @@ class Lid:
     monitors: list[tuple[float, dict[str, bool]]] = field(default_factory=list)
     end: str = ""  # "end", "timeout" or "nolid"
 
-    def displays(self, at: float | None = None, after: float | None = None) -> dict[str, bool] | None:
-        """The monitors in effect at `at` (the last reading), counting only readings after `after`."""
+    def first_displays(self) -> dict[str, bool] | None:
+        """The monitors when the watch started."""
+        return self.monitors[0][1] if self.monitors else None
+
+    def displays(self, until: float | None = None, after: float | None = None, at: float | None = None) -> dict[str, bool] | None:
+        """The last reading before `until` (or at `at`, inclusive), counting only readings after `after`.
+
+        A reading taken in the same poll as the lid opening shares its time: `until` leaves it out.
+        """
         found = None
         for t, state in self.monitors:
-            if at is not None and t > at:
+            if (until is not None and t >= until) or (at is not None and t > at):
                 break
             if after is None or t > after:
                 found = state
@@ -337,6 +348,8 @@ class Step:
 def run(ctx: Context) -> list[dict]:
     progress = ctx.progress("sleep")
     results: dict[str, dict] = progress.setdefault("results", {})
+    if not isinstance(results, dict) or not all(isinstance(r, dict) and r.get("id") == k for k, r in results.items()):
+        results = progress["results"] = {}
     if "step" in progress:
         _recover(ctx, progress, results)
     if human.absent(ctx, CLAMSHELL):
@@ -415,7 +428,11 @@ def _finish(ctx: Context, progress: dict) -> None:
 
 def _recover(ctx: Context, progress: dict, results: dict) -> None:
     """The run stopped during a lid step: judge it from the system log since it began."""
-    step = Step.from_json(progress["step"])
+    try:
+        step = Step.from_json(progress["step"])
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError):
+        progress.pop("step", None)  # not a step this tool wrote: the section runs from the start
+        return
     check_id = LID_SUSPEND if step.name == "suspend" else CLAMSHELL
     _ui(ctx).text(RECOVERED_NOTE)
     boot = _boot_id(ctx)
@@ -502,12 +519,14 @@ def judge_suspend(lid: Lid, journal: Journal | None, logind: dict[str, str], sto
         return _result(LID_SUSPEND, "skip", ["skipped: the system log couldn't be read, so suspend and resume can't be seen"])
     if lid.end == "nolid":
         return _result(LID_SUSPEND, "skip", ["skipped: logind can't say whether the lid is open or closed"])
-    first = lid.displays()
+    first = lid.first_displays()
     evidence = [f"before: {describe(first)}"] if first is not None else []
     found = _sleep(lid, journal)
     if found.closed is None:
         why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
         return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {why}"])
+    if found.entry is None and journal.first("lid-closed") is None:
+        return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {NO_LID_EVENTS}"])
     if found.entry is not None:
         evidence.append(f"lid closed: the Mac went to sleep {max(found.entry - found.closed, 0):.2f} s later ({found.mode or 'mode not logged'})")
         if found.exit is not None:
@@ -547,7 +566,9 @@ def judge_clamshell(lid: Lid, journal: Journal | None, before: dict[str, bool], 
     if found.closed is None:
         why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
         return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {why}"])
-    closed_view = lid.displays(at=lid.opened, after=lid.closed) if lid.closed is not None else None
+    if found.entry is None and journal.first("lid-closed") is None:
+        return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {NO_LID_EVENTS}"])
+    closed_view = lid.displays(until=lid.opened, after=lid.closed) if lid.closed is not None else None
     if found.entry is not None:
         evidence.append(f"lid closed: the Mac went to sleep {max(found.entry - found.closed, 0):.2f} s later ({found.mode or 'mode not logged'}), with {', '.join(external)} on")
         if closed_view is not None:
@@ -579,7 +600,7 @@ def judge_clamshell(lid: Lid, journal: Journal | None, before: dict[str, bool], 
     if not externals_on(closed_view):
         problems.append("no external display was on with the lid closed")
     if lid.opened is not None:
-        after_view = lid.displays(after=lid.opened) or lid.displays()
+        after_view = lid.displays(after=lid.opened - 0.001) or lid.displays()
         evidence.append(f"after the lid opened: {describe(after_view or {})}")
         if not any(on for name, on in (after_view or {}).items() if built_in(name)):
             problems.append(f"the built-in screen didn't come back within {AFTER_OPEN_SECONDS} s of the lid opening")

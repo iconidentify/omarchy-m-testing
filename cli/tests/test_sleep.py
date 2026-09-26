@@ -89,12 +89,15 @@ class SuspendTest(unittest.TestCase):
             ["systemctl", "suspend"], ["sudo", "-n", "systemctl", "start", "suspend.target"], ["loginctl", "suspend"],
             ["systemctl", "sleep"], ["rtcwake", "-m", "mem", "-s", "10"], ["omarchy-system-suspend"],
             ["busctl", "call", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "Suspend", "b", "false"],
+            ["busctl", "call", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "SuspendWithFlags", "t", "0"],
+            ["dbus-send", "--system", "--dest=org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager.SleepWithFlags", "uint64:0"],
             ["dbus-send", "--system", "--dest=org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager.Suspend", "boolean:true"],
             ["sh", "-c", "echo mem > /sys/power/state"], ["sh", "-c", "echo freeze | tee /sys/power/state"],
         ):
             with self.subTest(argv=argv):
                 self.assertIn("never puts the Mac to sleep", refusal(argv))
         self.assertIsNone(refusal(["rtcwake", "-m", "show"]))
+        self.assertIsNone(refusal(["busctl", "get-property", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "CanSuspend"]))
 
     def test_nothing_is_watched_or_read_until_the_human_says_yes(self):
         for reply in ("n", "", EOF):
@@ -258,6 +261,26 @@ class ClamshellTest(unittest.TestCase):
                 self.assertEqual((result["status"], result["evidence"][-1]), ("skip", why))
                 self.assertEqual(watches(host), 0)
 
+    def test_screens_read_in_the_same_poll_as_the_lid_opening_count_as_after(self):
+        # The watch reads the lid, then the monitors: when both change in one poll they share its time.
+        same = watch(CLAMSHELL_AT + 0.5, (0, "monitors eDP-1=on HDMI-A-1=on"), (3.0, "closed"), (3.0, "monitors eDP-1=on HDMI-A-1=on"),
+                     (3.5, "monitors eDP-1=off HDMI-A-1=on"), (14.0, "open"), (14.0, "monitors eDP-1=on HDMI-A-1=on"))
+        _, result = self.clamshell(clamshell_only(lid_watches=[same]))
+
+        self.assertEqual(result["status"], "pass")
+        self.assertIn("while the lid was closed: eDP-1 off, HDMI-A-1 on", result["evidence"])
+        self.assertIn("after the lid opened: eDP-1 on, HDMI-A-1 on", result["evidence"])
+
+    def test_a_system_log_without_lid_events_cant_show_a_suspend(self):
+        # Only the user's own journal is readable: no logind lines at all, so staying awake proves nothing.
+        _, result = self.clamshell(clamshell_only(journal=journal(lines=40)))
+
+        self.assertEqual(result["status"], "skip")
+        self.assertIn("the system log shows no lid events", result["evidence"][-1])
+        stayed = watch(SUSPEND_AT + 0.5, (0, "monitors eDP-1=on"), (3.0, "closed"), (13.0, "open"))
+        suspend = check(sleep_run(["y", "n"], suspend_only(lid_watches=[stayed], journal=journal(lines=40))), sleep.LID_SUSPEND)
+        self.assertEqual(suspend["status"], "skip")
+
     def test_a_lid_opened_straight_away_says_nothing(self):
         quick = watch(CLAMSHELL_AT + 0.5, (0, "monitors eDP-1=on HDMI-A-1=on"), (3.0, "closed"), (4.0, "open"))
         _, result = self.clamshell(clamshell_only(lid_watches=[quick]))
@@ -404,6 +427,15 @@ class CheckpointTest(unittest.TestCase):
         self.assertEqual(clamshell["status"], "fail")
         self.assertIn("lid closed: the Mac went to sleep 0.74 s later (s2idle), with USB-2 on", clamshell["evidence"])
         self.assertEqual(check(second, sleep.THUNDERBOLT_AFTER)["status"], "fail")
+
+    def test_a_checkpoint_with_a_step_it_cant_read_starts_the_section_over(self):
+        checkpoint = json.loads(self.stopped(["y"], suspend_only()))
+        checkpoint["shared"]["progress"]["sleep"] = {"step": {"since": "soon"}, "results": ["garbage"]}
+
+        second = self.resumed(json.dumps(checkpoint), ["y", "n"], suspend_only())
+
+        self.assertIn(SUSPEND_PROMPT, prompts(second))
+        self.assertEqual(check(second, sleep.LID_SUSPEND)["status"], "pass")
 
 
 # -- never over SSH, and the golden runs -----------------------------------------------------
