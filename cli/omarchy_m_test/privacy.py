@@ -244,6 +244,14 @@ def _allowed(value: Any, allowlist: Any) -> Any:
     return {}
 
 
+def scrub_check(check: dict, scrubber: Scrubber) -> dict:
+    """One check result with its evidence scrubbed, as the checkpoint keeps it (enforce() still runs on the report)."""
+    evidence = check.get("evidence")
+    if not isinstance(evidence, list):
+        return dict(check)
+    return {**check, "evidence": [_evidence_line(line, scrubber) for line in evidence]}
+
+
 def enforce(report: dict, scrubber: Scrubber) -> dict:
     """The report with only allowlisted fields and scrubbed, bounded, text-only evidence."""
     report = _allowed(report, REPORT_ALLOWLIST)

@@ -1,4 +1,9 @@
-"""The whole CLI run: refuse non-Apple machines, disclaimer, checks, report, upload."""
+"""The whole CLI run: refuse non-Apple machines, disclaimer, sections, report, upload.
+
+Sections run one after another (session.py): each is checkpointed when it
+finishes, and every change it makes is restored when it ends, on an error or
+on Ctrl-C.
+"""
 
 from __future__ import annotations
 
@@ -6,13 +11,16 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report, system, updates
+from . import TOOL_NAME, TOOL_VERSION, privacy, report, system, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
 from .host import Host, NetworkError
 from .machine import NotAppleSilicon, identify
 from .recording import RecordingHost
+from .sections import APPLE
+from .session import Changes, Checkpoint, Context, Section, State, run_key, skipped
+from .ui import Ui
 
 DEFAULT_SITE = "https://omarchy-m-testing.org"
 DEFAULT_OUTPUT = "omarchy-m-test-report.json"
@@ -23,6 +31,7 @@ EXIT_CANCELLED = 1
 EXIT_REFUSED = 2
 EXIT_UPLOAD_FAILED = 3
 EXIT_BAD_INPUT = 4
+EXIT_INTERRUPTED = 130
 
 
 class _Exit(Exception):
@@ -55,23 +64,27 @@ def _parse(argv: Sequence[str], host: Host) -> argparse.Namespace:
     parser.add_argument("--catalogue", metavar="FILE", help="use this feature catalogue instead of the bundled one (for trying a catalogue change)")
     parser.add_argument("--explain", metavar="REPORT", help="explain a saved report's results against the catalogue; runs no checks")
     parser.add_argument("--record", metavar="FILE", help="also save what this Mac answered, scrubbed, as a test recording")
+    parser.add_argument("--skip", metavar="SECTION", action="append", default=[], help="skip a section (repeat, or separate with commas); the run lists them")
     parser.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
     return parser.parse_args(list(argv))
 
 
-def main(argv: Sequence[str], host: Host) -> int:
+def main(argv: Sequence[str], host: Host, sections: Sequence[Section] = APPLE) -> int:
+    """Run the CLI. `sections` is the platform's list (Apple Silicon's by default)."""
     try:
         args = _parse(argv, host)
     except _Exit as done:
         return done.status
 
     if not args.record:
-        return _run(args, host)
+        return _interruptible(args, host, sections)
 
     # Record mode: nothing more runs after the disclaimer is declined, and a
     # refused machine's recording holds only what identifying it read.
     recorder = RecordingHost(host)
-    status = _run(args, recorder)
+    status = _interruptible(args, recorder, sections)
+    if status == EXIT_INTERRUPTED:
+        return status
     if status == EXIT_CANCELLED:
         return status
     if status != EXIT_REFUSED:
@@ -81,7 +94,25 @@ def main(argv: Sequence[str], host: Host) -> int:
     return status
 
 
-def _run(args: argparse.Namespace, host: Host) -> int:
+def _interruptible(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> int:
+    args.resumable = False
+    try:
+        return _run(args, host, sections)
+    except KeyboardInterrupt:
+        host.show(
+            f"\nInterrupted. Everything {TOOL_NAME} changed was put back and nothing was uploaded."
+            + (f"\nRun {TOOL_NAME} again to resume where it stopped." if args.resumable else "")
+        )
+        return EXIT_INTERRUPTED
+
+
+def _skips(requested: list[str], sections: Sequence[Section]) -> set[str] | None:
+    wanted = {name.strip() for value in requested for name in value.split(",") if name.strip()}
+    known = {section.id for section in sections}
+    return wanted if wanted <= known else None
+
+
+def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> int:
     try:
         catalogue = load_catalogue(host, args.catalogue)
     except CatalogueError as problem:
@@ -90,6 +121,11 @@ def _run(args: argparse.Namespace, host: Host) -> int:
 
     if args.explain:
         return EXIT_OK if explain(host, args.explain, catalogue) else EXIT_BAD_INPUT
+
+    skip = _skips(args.skip, sections)
+    if skip is None:
+        host.show(f"--skip takes section names: {', '.join(section.id for section in sections)}. Nothing was run.")
+        return EXIT_BAD_INPUT
 
     updates.notify(host)
 
@@ -102,26 +138,82 @@ def _run(args: argparse.Namespace, host: Host) -> int:
         )
         return EXIT_REFUSED
 
-    host.show(DISCLAIMER)
+    # Record mode neither resumes nor checkpoints: a recording must hold every read of a whole run.
+    checkpoint = Checkpoint.for_host(host, enabled=not args.record)
+    saved = checkpoint.load()
+    changes = Changes(host)
+    if saved and saved.restorers:
+        # A run was killed before it could put things back: do that before anything else.
+        host.show(f"An earlier {TOOL_NAME} run was stopped before it could undo its changes. Putting them back:")
+        for restorer in saved.restorers:
+            host.show(f"  - {restorer.description}")
+        changes.pending = list(saved.restorers)
+        changes.restore()
+        saved.restorers = changes.pending
+        _report_failed_restores(host, changes)
+        checkpoint.save(saved)
+
+    ui = Ui.for_host(host)
+    ui.intro()
+    ui.text(DISCLAIMER)
     try:
-        answer = host.prompt(ACCEPT_PROMPT)
+        answer = ui.ask(ACCEPT_PROMPT)
     except EOFError:
         answer = None
     if answer is None or not accepted(answer):
+        if not changes.pending:
+            checkpoint.clear()  # declining ends any earlier run too
         host.show("Cancelled. Nothing was run.")
         return EXIT_CANCELLED
 
-    found = system.detect(host)
-    host.show(f"Checking {machine.model} ({found.describe()})...")
-    host.show("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
-    results, system_block = checks.run(host, machine, found, catalogue)
-    built = report.build(machine, system_block, results, catalogue)
-    for result in built["checks"]:
-        host.show(line(result, result["classification"], catalogue))
-
+    # The Scrubber learns this Mac's hostname, accounts and networks: nothing
+    # a check found reaches the checkpoint or the report unscrubbed.
     scrubber = privacy.Scrubber.for_host(host)
+    key = run_key(machine, catalogue, TOOL_VERSION)
+    state = _resume(ui, saved, key, sections, skip)
+    if state is None:
+        state = State(_choose(ui, sections, skip), key=key)
+    # Anything an earlier run left that couldn't be put back yet stays registered.
+    state.restorers[:0] = changes.pending
+    changes.pending = state.restorers
+    changes.persist = lambda: checkpoint.save(state)
+    checkpoint.save(state)
+    args.resumable = checkpoint.path is not None
+
+    found = system.detect(host)
+    ui.text(f"Checking {machine.model} ({found.describe()})...")
+    ui.text("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
+    shared, cache = state.shared, {}
+    try:
+        for section in sections:
+            if section.id not in state.selected or section.id in state.done:
+                continue
+            section_host = ui.section(section.title, section.description)
+            try:
+                results = section.run(Context(section_host, machine, catalogue, changes, found, shared, cache))
+            finally:
+                ui.end_section()
+                changes.restore()
+                _report_failed_restores(host, changes)
+            state.done[section.id] = [privacy.scrub_check(result, scrubber) for result in results]
+            checkpoint.save(state)
+            for result in state.done[section.id]:
+                classification = catalogue.classify(result, machine.soc, machine.board)
+                ui.result(line(result, classification, catalogue), classification["outcome"])
+    finally:
+        ui.close()
+        changes.restore()
+        _report_failed_restores(host, changes)
+
+    results = []
+    for section in sections:
+        results += state.done[section.id] if section.id in state.done else skipped(section)
+    built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue)
+
     text = report.to_text(privacy.enforce(built, scrubber))
     host.write_file(args.output, text)
+    checkpoint.clear()
+    args.resumable = False
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)
 
@@ -130,15 +222,50 @@ def _run(args: argparse.Namespace, host: Host) -> int:
         return EXIT_OK
 
     site = args.site.rstrip("/")
-    try:
-        answer = host.prompt(f"Upload this report to {site}? [y/N] ")
-    except EOFError:
-        answer = ""
-    if answer.strip().lower() not in ("y", "yes"):
+    if not ui.confirm(f"Upload this report to {site}?"):
         host.show(f"Not uploaded. The report is saved at {args.output}.")
         return EXIT_OK
 
     return _upload(host, site, text)
+
+
+def _report_failed_restores(host: Host, changes: Changes) -> None:
+    for restorer, reason in changes.take_failures():
+        host.show(
+            f"Couldn't undo: {restorer.description} ({reason or 'it failed'}). "
+            f"To put it back yourself, run: {' '.join(restorer.argv)}"
+        )
+
+
+def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section], skip: set[str]) -> State | None:
+    """The saved state to carry on from, if there is one for this run and the human wants it."""
+    if saved is None or saved.key != key or not saved.done:
+        return None
+    known = {section.id for section in sections}
+    if not set(saved.selected) <= known or not set(saved.done) <= known:
+        return None
+    left = [section.title for section in sections if section.id in saved.selected and section.id not in saved.done]
+    if not left:
+        return None
+    ui.text(f"An earlier run stopped with {len(saved.done)} section(s) done; left to run: {', '.join(left)}.")
+    if ui.confirm("Resume where it stopped?", default=True):
+        selected = [s for s in saved.selected if s in saved.done or s not in skip]
+        return State(selected, dict(saved.done), [], key, dict(saved.shared))
+    return None
+
+
+def _choose(ui: Ui, sections: Sequence[Section], skip: set[str]) -> list[str]:
+    """List the sections up front and let the human skip any (at a terminal; --skip everywhere)."""
+    ui.text("This run has these sections" + (" (skip any with --skip NAME):" if not ui.styled else ":"))
+    for number, section in enumerate(sections, 1):
+        mark = "skip" if section.id in skip else "    "
+        ui.text(f"  {number:2}. {mark} {section.title} ({section.id}): {section.description}")
+    kept = ui.choose(
+        "Sections to run (space toggles, Enter starts)",
+        [section.title for section in sections],
+        [section.title for section in sections if section.id not in skip],
+    )
+    return [section.id for section in sections if section.title in kept]
 
 
 def _upload(host: Host, site: str, text: str) -> int:
