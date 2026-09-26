@@ -403,6 +403,26 @@
       "stdout": "apple-spi-keyboard\napple-spi-trackpad\n",
       "stderr": "",
       "note": "derived from hyprctl-devices.json (m1-hardware.log): the built-in names the script keeps from it"
+    },
+    {
+      "argv": [
+        "omarchy-battery-charge-limit"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "omarchy-battery-charge-limit: command not found\n",
+      "note": "mx-mac predates omarchy-mac's charge limit command (omarchy-mac 62)"
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n",
+      "note": "stand-in: the M1 evidence was taken over SSH, where sudo has no cached credentials"
     }
   ],
   "files": {
@@ -482,7 +502,14 @@
     "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": {
       "text": "schedutil\n"
     },
-    "/sys/module/hid_apple/parameters/fnmode": null
+    "/sys/module/hid_apple/parameters/fnmode": null,
+    "/sys/class/power_supply/macsmc-battery/charge_control_start_threshold": {
+      "text": "100\n",
+      "note": "reconstructed, not captured on the M1 on 2026-09-12: the start threshold the driver derives from the recorded 100% limit"
+    },
+    "/etc/udev/macsmc-battery.conf": null,
+    "/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules": null,
+    "/usr/lib/omarchy-mac/battery-charge-limit-restore": null
   },
   "dirs": {
     "/home": [

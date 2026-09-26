@@ -378,7 +378,7 @@ def _suspend(ctx: Context, progress: dict, results: dict) -> None:
         return
     step = _begin(ctx, progress, "suspend", {"logind": _logind(ctx)})
     lid = parse_lid(ctx.host.run(lid_watch_argv()).stdout)
-    journal = _journal(ctx, step.since)
+    journal = read_journal(ctx, step.since)
     results[LID_SUSPEND] = judge_suspend(lid, journal, step.before.get("logind", {}))
     _after_resume(ctx, results, step, _resumed(lid, journal))
     _finish(ctx, progress)
@@ -405,7 +405,7 @@ def _clamshell(ctx: Context, progress: dict, results: dict) -> None:
         return
     step = _begin(ctx, progress, "clamshell", {"displays": displays, "logind": _logind(ctx)})
     lid = parse_lid(ctx.host.run(lid_watch_argv()).stdout)
-    journal = _journal(ctx, step.since)
+    journal = read_journal(ctx, step.since)
     results[CLAMSHELL] = judge_clamshell(lid, journal, displays, step.before.get("logind", {}))
     _after_resume(ctx, results, step, _resumed(lid, journal))
     _finish(ctx, progress)
@@ -415,7 +415,7 @@ def _begin(ctx: Context, progress: dict, name: str, before: dict[str, Any]) -> S
     """Checkpoint the step before the lid closes: a run stopped while it's closed picks it up from here."""
     links = parse_links(ctx.host.run(LINKS).stdout)
     since = int(links.time) - 1 if links.time is not None else 0
-    step = Step(name, since, _boot_id(ctx), links, before)
+    step = Step(name, since, boot_id(ctx), links, before)
     progress["step"] = step.to_json()
     ctx.changes.persist()
     return step
@@ -435,7 +435,7 @@ def _recover(ctx: Context, progress: dict, results: dict) -> None:
         return
     check_id = LID_SUSPEND if step.name == "suspend" else CLAMSHELL
     _ui(ctx).text(RECOVERED_NOTE)
-    boot = _boot_id(ctx)
+    boot = boot_id(ctx)
     if step.boot and boot and boot != step.boot:
         results[check_id] = _result(check_id, "fail", [
             "the run stopped while the lid was closed for this check, and the Mac was started again since: "
@@ -443,7 +443,7 @@ def _recover(ctx: Context, progress: dict, results: dict) -> None:
         ])
         _finish(ctx, progress)
         return
-    journal = _journal(ctx, step.since)
+    journal = read_journal(ctx, step.since)
     if check_id == LID_SUSPEND:
         results[check_id] = judge_suspend(Lid(), journal, step.before.get("logind", {}), stopped=True)
     else:
@@ -452,7 +452,7 @@ def _recover(ctx: Context, progress: dict, results: dict) -> None:
     _finish(ctx, progress)
 
 
-def _boot_id(ctx: Context) -> str | None:
+def boot_id(ctx: Context) -> str | None:
     try:
         return ctx.host.read_file(BOOT_ID).decode("ascii", "replace").strip() or None
     except OSError:
@@ -467,7 +467,7 @@ def _logind(ctx: Context) -> dict[str, str]:
     return dict(zip(LOGIND_PROPERTIES, values)) if len(values) == len(LOGIND_PROPERTIES) else {}
 
 
-def _journal(ctx: Context, since: int) -> Journal | None:
+def read_journal(ctx: Context, since: int) -> Journal | None:
     journal = parse_journal(ctx.host.run(journal_argv(since)).stdout)
     return journal if journal.lines else None
 
@@ -483,7 +483,7 @@ class Sleep:
     failed: float | None = None
 
 
-def _sleep(lid: Lid, journal: Journal, window_end: float | None = None) -> Sleep:
+def asleep(lid: Lid, journal: Journal, window_end: float | None = None) -> Sleep:
     """When the lid closed and whether (and how) the kernel suspended after that, before `window_end`."""
     logged = journal.first("lid-closed", after=lid.epoch(lid.closed) - 2 if lid.closed is not None and lid.start else None)
     closed = logged[0] if logged else lid.epoch(lid.closed)
@@ -502,7 +502,7 @@ def _resumed(lid: Lid, journal: Journal | None) -> float | None:
     """When the Mac woke up (Unix time), if it went to sleep in this step."""
     if journal is None:
         return None
-    found = _sleep(lid, journal)
+    found = asleep(lid, journal)
     if found.entry is None:
         return None
     return found.exit or found.entry
@@ -521,7 +521,7 @@ def judge_suspend(lid: Lid, journal: Journal | None, logind: dict[str, str], sto
         return _result(LID_SUSPEND, "skip", ["skipped: logind can't say whether the lid is open or closed"])
     first = lid.first_displays()
     evidence = [f"before: {describe(first)}"] if first is not None else []
-    found = _sleep(lid, journal)
+    found = asleep(lid, journal)
     if found.closed is None:
         why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
         return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {why}"])
@@ -562,7 +562,7 @@ def judge_clamshell(lid: Lid, journal: Journal | None, before: dict[str, bool], 
         return _result(CLAMSHELL, "skip", [*evidence, "skipped: the system log couldn't be read, so a suspend can't be seen"])
     if lid.end == "nolid":
         return _result(CLAMSHELL, "skip", [*evidence, "skipped: logind can't say whether the lid is open or closed"])
-    found = _sleep(lid, journal, window_end=lid.epoch(lid.opened))
+    found = asleep(lid, journal, window_end=lid.epoch(lid.opened))
     if found.closed is None:
         why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
         return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {why}"])
@@ -628,7 +628,7 @@ def _after_resume(ctx: Context, results: dict, step: Step, resumed: float | None
 
 
 def _thunderbolt_errors(ctx: Context, since: int, resumed: float) -> int:
-    journal = _journal(ctx, since)
+    journal = read_journal(ctx, since)
     return journal.count("thunderbolt-error", after=resumed - 5) if journal else 0
 
 

@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 8,
+  "catalogue_version": 9,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -95,6 +95,10 @@
     "ports.devices-work": "usb3-tb-ports",
     "ports.external-display-picture": "usb4-displays",
     "power.battery": "battery-info",
+    "power.charge-limit": "battery-info",
+    "power.charge-limit-kept": "battery-charge-limit",
+    "power.idle-draw": "battery-info",
+    "power.sleep-drain": "suspend-sleep",
     "cpu.frequency-scaling": "cpufreq",
     "hardware.drivers": "hardware-drivers",
     "hardware.firmware": "firmware-loading",
@@ -1817,6 +1821,39 @@
         "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       },
       "note": "No firmware-load failure in this boot's kernel log: the firmware drivers ask for is installed (vendor firmware from macOS, linux-firmware and Asahi's firmware packages such as avd-fw)."
+    },
+    {
+      "id": "battery-charge-limit",
+      "name": "Battery charge limit kept across reboots",
+      "layer": "omarchy",
+      "asahi_feature": "battery-info",
+      "note": "omarchy-mac's `omarchy battery charge limit [80|100]` sets the SMC's charge limit and saves it to /etc/udev/macsmc-battery.conf; its udev rule restores the saved limit when the battery appears at boot.",
+      "chips": {
+        "m1": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      },
+      "models": {
+        "j274": {"omarchy": {"status": "absent"}},
+        "j456": {"omarchy": {"status": "absent"}},
+        "j457": {"omarchy": {"status": "absent"}},
+        "j375c": {"omarchy": {"status": "absent"}},
+        "j375d": {"omarchy": {"status": "absent"}},
+        "j473": {"omarchy": {"status": "absent"}},
+        "j474s": {"omarchy": {"status": "absent"}},
+        "j475c": {"omarchy": {"status": "absent"}},
+        "j475d": {"omarchy": {"status": "absent"}},
+        "j180d": {"omarchy": {"status": "absent"}},
+        "j433": {"omarchy": {"status": "absent"}},
+        "j434": {"omarchy": {"status": "absent"}}
+      }
     }
   ]
 }

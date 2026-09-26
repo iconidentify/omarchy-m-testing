@@ -14,6 +14,9 @@ from the recording:
   bluetoothctl's paired-device count             when the test gives one
   the lid watch, the system log, the links,      the Sleep section's lid steps (sleep.py), as the
   Hyprland's monitors, logind, the boot id       fixtures below give them
+  macsmc-battery's status and charge limit,      the Power section (power.py): the SMC's thresholds,
+  the saved limit, omarchy-mac's command,        asahi-scripts saving every change to the saved file
+  the idle samples and battery readings          as its path unit does, and the fixtures below
 
 Tests assert on the model's state at the end (was everything put back?) and
 on the commands the Mac was sent. Nothing here ever asks for a password:
@@ -28,7 +31,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-from omarchy_m_test import changes, network, sleep
+from omarchy_m_test import changes, network, power, sleep
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import RecordedHost
 from tests.desktop import command, recording, with_home
@@ -132,6 +135,43 @@ FAILED_CLAMSHELL_JOURNAL = journal(
 BEFORE_FAILED_CLAMSHELL = links(T, tbnet=True, tbdevices=1)
 FAILED_AFTER = [links(T + 38.4 + i, wifi=0 if i < 4 else 1, tbnet=False, tbdevices=0) for i in range(31)]
 
+# -- the Power section ---------------------------------------------------------------
+# Reconstructed, not recorded (no corpus run measured power yet): an M2 Max idling on battery at the desktop,
+# power_now in microwatts, current_now negative while discharging.
+
+def samples(*watts: float, status: str = "Discharging", power_now: bool = True) -> str:
+    """What IDLE_SCRIPT prints: a sample a second."""
+    lines = []
+    for w in watts:
+        volts = 12.6
+        power = str(int(w * 1e6)) if power_now else "-"
+        lines.append(f"sample {status} {power} {int(-w / volts * 1e6)} {int(volts * 1e6)}")
+    return "\n".join(lines) + "\n"
+
+
+IDLE_WATTS = [6.1, 5.8, 6.4, 7.2, 6.0, 5.9, 6.2, 6.3, 5.8, 6.1] * 3
+IDLE_SAMPLES = samples(*IDLE_WATTS)
+
+
+def reading(time: float, energy: int | None, status: str = "Discharging", capacity: int = 81, energy_full: int = 95_300_000) -> str:
+    """What READING_SCRIPT prints: energy in microwatt-hours (the M2 Max's full battery holds about 95 Wh)."""
+    return "".join([
+        f"time {int(time)}\n", f"status {status}\n", f"capacity {capacity}\n",
+        f"energy_now {energy if energy is not None else ''}\n", f"energy_full {energy_full}\n", "charge_now \n", "charge_full \n",
+    ])
+
+
+# A good ten minutes asleep: the lid closes 3 s after the prompt, the Mac sleeps 0.7 s later for 10 min 12 s and
+# uses 0.26 Wh (1.5 W, 1.6% an hour).
+DRAIN_AT = T + 600
+GOOD_DRAIN_WATCH = watch(DRAIN_AT + 0.5, (0, "monitors eDP-1=on"), (3.0, "closed"), (616.5, "open"))
+GOOD_DRAIN_JOURNAL = journal(
+    ("lid-closed", DRAIN_AT + 3.6), ("logind-suspend", DRAIN_AT + 3.62), ("suspend-entry", DRAIN_AT + 4.3, "s2idle"),
+    ("suspend-exit", DRAIN_AT + 616.3), ("lid-opened", DRAIN_AT + 616.4),
+)
+BEFORE_DRAIN = reading(DRAIN_AT, 77_200_000)
+AFTER_DRAIN = reading(DRAIN_AT + 620, 76_940_000)
+
 WHOLE_JOURNAL = GOOD_SUSPEND_JOURNAL.replace("lines 120\n", "") + GOOD_CLAMSHELL_JOURNAL
 
 
@@ -186,6 +226,16 @@ class MacState:
     monitors: str = "eDP-1=on HDMI-A-1=on "  # Hyprland's, when the clamshell step looks for an external display
     logind: list[str] = field(default_factory=lambda: [LOGIND_UNDOCKED, LOGIND_DOCKED])  # in turn
     boot_id: str | None = BOOT
+    # The Power section: macsmc-battery's status, the SMC's end threshold (it takes 80 or 100), the saved limit
+    # (/etc/udev/macsmc-battery.conf's text, None: no file), whether a write sticks, whether asahi-scripts' path
+    # unit saves every change (80 saved, 100 removes the file); the idle samples; the battery readings, in turn.
+    battery_status: str = "Full"
+    charge_limit: int = 100
+    saved_limit: str | None = None
+    limit_sticks: bool = True
+    asahi_saves: bool = True
+    idle: str = IDLE_SAMPLES
+    readings: list[str] = field(default_factory=lambda: [BEFORE_DRAIN, AFTER_DRAIN])
 
     def copy(self) -> "MacState":
         return copy.deepcopy(self)
@@ -219,6 +269,17 @@ class LiveMac(RecordedHost):
         self.state = state or MacState()
 
     def read_file(self, path: str) -> bytes:
+        s = self.state
+        if path == power.END:
+            return f"{s.charge_limit}\n".encode()
+        if path == power.START:
+            return f"{power.RESTARTS_AT.get(s.charge_limit, s.charge_limit)}\n".encode()
+        if path == power.SAVED:
+            if s.saved_limit is None:
+                raise FileNotFoundError(path)
+            return s.saved_limit.encode()
+        if path == f"{power.SMC_BATTERY}/status":
+            return f"{s.battery_status}\n".encode()
         if path == sleep.BOOT_ID:
             if self.state.boot_id is None:
                 raise FileNotFoundError(path)
@@ -237,9 +298,42 @@ class LiveMac(RecordedHost):
         self.commands_run.append(argv)
         return answer
 
+    def _limit(self, limit: int) -> None:
+        """The SMC takes the end threshold; asahi-scripts' path unit then saves it (and removes the file at 100)."""
+        s = self.state
+        if s.limit_sticks and limit in power.RESTARTS_AT:
+            s.charge_limit = limit
+        if s.asahi_saves:
+            s.saved_limit = None if s.charge_limit == 100 else f"{power.SAVED_KEY}={s.charge_limit}\n"
+
     def _answer(self, argv: list[str]) -> CommandResult | None:
         s = self.state
         ok = CommandResult(0, "", "")
+        denied = CommandResult(1, "", "sudo: a password is required\n")
+        if argv[:5] == ["sudo", "-n", "sh", "-c", power.SET_SCRIPT]:
+            if not s.sudo_cached:
+                return denied
+            self._limit(int(argv[6]))
+            return ok
+        if argv[:5] == ["sudo", "-n", "sh", "-c", power.RESTORE_SCRIPT]:
+            if not s.sudo_cached:
+                return denied
+            self._limit(int(argv[6]))
+            s.saved_limit = None if argv[7] == power.NO_SAVED else argv[8]
+            return ok
+        if argv[:3] == ["sudo", "-n", power.COMMAND]:
+            if not s.sudo_cached:
+                return denied
+            self._limit(int(argv[3]))
+            if s.limit_sticks:  # the command saves what the SMC read back, before asahi-scripts' unit acts
+                s.saved_limit = f"{power.SAVED_KEY}={argv[3]}\n" if not s.asahi_saves or s.charge_limit != 100 else None
+            return CommandResult(0, f"Charge limit set to {s.charge_limit}%.\n", "")
+        if argv == [power.COMMAND] and any(entry["argv"] == argv and entry["returncode"] == 0 for entry in self.recording.get("commands", [])):
+            return CommandResult(0, f"Charge limit: {s.charge_limit}% (restart charging at {power.RESTARTS_AT.get(s.charge_limit)}%)\n", "")
+        if argv[:3] == ["sh", "-c", power.IDLE_SCRIPT]:
+            return CommandResult(0, s.idle, "")
+        if argv[:3] == ["sh", "-c", power.READING_SCRIPT]:
+            return CommandResult(0, _take(s.readings), "")
         if argv == ["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"]:
             return CommandResult(0, f"id {NODE}, type PipeWire:Interface:Node\n", "") if s.has_sink else CommandResult(1, "", "Object not found\n")
         if argv == ["wpctl", "get-volume", NODE]:

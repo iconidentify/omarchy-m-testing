@@ -41,7 +41,7 @@ ORDER = (
     "input.function-keys", "input.trackpad-gestures",
     "camera.isp", "camera.frames", "camera.image",
     "ports.usb-c", "ports.thunderbolt", "ports.external-displays", "ports.devices-work", "ports.external-display-picture",
-    "power.battery",
+    "power.battery", "power.charge-limit", "power.charge-limit-kept", "power.idle-draw", "power.sleep-drain",
     "cpu.frequency-scaling",
 )
 
@@ -124,10 +124,6 @@ def network(ctx: Context) -> list[dict]:
 def input_devices(ctx: Context) -> list[dict]:
     """The light sensor and keyboard light (apple-display-check), then the function keys and the trackpad."""
     return [*display_check(ctx), live_display.keyboard_light(ctx), *inputs.run(ctx)]
-
-
-def power(ctx: Context) -> list[dict]:
-    return [hardware.battery(ctx.host)]
 
 
 def cpu(ctx: Context) -> list[dict]:
