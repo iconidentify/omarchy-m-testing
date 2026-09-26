@@ -9,6 +9,7 @@ class IssueDraft
   REPOS = { "asahi" => "omacom/linux", "aurora" => "omacom/linux", "omarchy" => "omacom/omarchy-mac" }.freeze
   KERNEL_REPO = "omacom/linux".freeze
   MAX_BODY = 5000
+  MAX_URL = 7500 # GitHub refuses much longer new-issue links; percent-encoding can triple a body
   MAX_REPORTS = 10
   MAX_EVIDENCE_LINES = 20
   GAP_OUTCOMES = %w[fails not-in-aurora not-in-asahi not-in-omarchy unknown-hardware].freeze
@@ -102,16 +103,23 @@ class IssueDraft
   def initialize(layer:, title:, lines:)
     @repo = self.class.repo_for(layer)
     @title = title
-    body = [ *lines.compact, "", "From omarchy-m-testing.org, feature catalogue v#{Catalogue.version}." ].join("\n")
-    if body.size > MAX_BODY
-      body = body.first(MAX_BODY)
-      body += "\n```" if body.scan("```").size.odd?
-      body += "\n\n(cut short; the linked reports have the rest)"
+    full = [ *lines.compact, "", "From omarchy-m-testing.org, feature catalogue v#{Catalogue.version}." ].join("\n")
+    @body = full
+    length = full.size
+    while (@body.size > MAX_BODY || url.bytesize > MAX_URL) && length.positive?
+      length = [ (length * 0.9).floor, MAX_BODY - 100 ].min
+      @body = cut(full, length)
     end
-    @body = body
   end
 
   def url = "https://github.com/#{repo}/issues/new?#{URI.encode_www_form(title:, body:)}"
+
+  # The body's first `length` characters, any open code fence closed.
+  def cut(body, length)
+    kept = body.first(length)
+    kept += "\n```" if kept.scan("```").size.odd?
+    "#{kept}\n\n(cut short; the linked reports have the rest)"
+  end
 
   def self.on(report) = "#{report.short_model_name}, #{report.stack_words} #{report.omarchy_version}"
   def self.mac(report) = "#{report.model_name}, #{report.chip} (#{report.soc}, board #{report.board})"

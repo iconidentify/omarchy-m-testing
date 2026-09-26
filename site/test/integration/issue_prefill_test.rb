@@ -95,12 +95,14 @@ class IssuePrefillTest < ActionDispatch::IntegrationTest
 
   test "hidden reports get no issue, and long evidence is cut short with its fence closed" do
     long = golden("m2-max-image2").tap do |report|
-      report["checks"].find { |check| check["id"] == "setup.first-boot-hardware" }["evidence"] = Array.new(50) { |i| "line #{i} " + ("x" * 400) }
+      report["checks"].find { |check| check["id"] == "setup.first-boot-hardware" }["evidence"] = Array.new(50) { |i| "line #{i}: [probe] (/sys/x) " + (":/[" * 150) }
     end
     uploaded = upload_report long
     sign_in
     get path_of(uploaded["report_url"])
-    _, _, body = issue_in("li#check-setup\\.first-boot-hardware")
+    link = css_select("li#check-setup\\.first-boot-hardware a.issue-link").sole
+    assert_operator link["href"].bytesize, :<=, IssueDraft::MAX_URL, "percent-encoded, it still fits in a GitHub link"
+    _, _, body = issue(link)
     assert_operator body.size, :<, IssueDraft::MAX_BODY + 100
     assert_includes body, "Report: #{uploaded["report_url"]}", "the report link comes before the evidence"
     assert body.scan("```").size.even?
