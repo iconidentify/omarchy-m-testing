@@ -29,6 +29,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install, upgrade in place, refuse tampered and foreign-signed releases
         run: installer/test.sh
+      - name: The release tarball ships the catalogue and the vendored check scripts
+        run: release/check.sh
 
   catalogue:
     name: Feature catalogue

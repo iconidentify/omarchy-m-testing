@@ -19,6 +19,9 @@ A recording is a JSON file (recording_version 1):
     "env": {"HOME": "/home/<user>"}
   }
 
+A bundled script's run (Host.run_bundled) is a command whose argv starts with
+"bundled:<name>", e.g. ["bundled:mac-check"].
+
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A binary file the recorder could not scrub is kept only as its size and
 replays as that many zero bytes. An environment variable the recording
@@ -54,7 +57,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
-from .host import CommandResult, Host, HttpResponse, NetworkError, Terminal
+from .host import CommandResult, Host, HttpResponse, NetworkError, Terminal, bundled_argv
 from .privacy import HOME_DIR, HOSTNAME_PATH, Scrubber
 
 RECORDING_VERSION = 1
@@ -118,6 +121,7 @@ class RecordedHost:
     posts: list[Post] = field(default_factory=list)
     gets: list[str] = field(default_factory=list)
     removed: set[str] = field(default_factory=set)
+    private: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         version = self.recording.get("recording_version")
@@ -140,6 +144,9 @@ class RecordedHost:
             if entry["argv"] == argv:
                 return CommandResult(entry["returncode"], entry.get("stdout", ""), entry.get("stderr", ""))
         raise RecordingMiss(f"command not in recording: {argv}")
+
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        return self.run(bundled_argv(name, args))
 
     def read_file(self, path: str) -> bytes:
         if path in self.written:
@@ -203,9 +210,11 @@ class RecordedHost:
 
     # -- outputs -------------------------------------------------------
 
-    def write_file(self, path: str, text: str) -> None:
+    def write_file(self, path: str, text: str, private: bool = False) -> None:
         self.written[path] = text
         self.removed.discard(path)
+        if private:
+            self.private.add(path)
 
     def remove_file(self, path: str) -> None:
         self.written.pop(path, None)
@@ -253,6 +262,13 @@ class RecordingHost:
             self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
         return result
 
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        argv = bundled_argv(name, args)
+        result = self.inner.run_bundled(name, args)
+        if not any(entry["argv"] == argv for entry in self.commands):
+            self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
+        return result
+
     def read_file(self, path: str) -> bytes:
         try:
             data = self.inner.read_file(path)
@@ -293,8 +309,8 @@ class RecordingHost:
     def show(self, text: str) -> None:
         self.inner.show(text)
 
-    def write_file(self, path: str, text: str) -> None:
-        self.inner.write_file(path, text)
+    def write_file(self, path: str, text: str, private: bool = False) -> None:
+        self.inner.write_file(path, text, private)
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         return self.inner.post_json(url, body)

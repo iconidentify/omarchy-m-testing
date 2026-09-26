@@ -15,7 +15,7 @@ from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
 from omarchy_m_test.recording import INTERRUPT
 from tests.desktop import (
-    ACCENT_RGB, FEED_SECTIONS, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
+    ACCENT_RGB, FEED_SECTIONS, TITLES, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
 )
 from tests.schema_validator import errors
@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMA_DIR = os.path.join(os.path.dirname(os.path.dirname(HERE)), "schema")
 REPORT_FILE = "omarchy-m-test-report.json"
 ENTER = ""
-ALL_KEPT = CommandResult(0, "System\n", "")
+ALL_KEPT = CommandResult(0, TITLES, "")
 UPLOAD_NO = CommandResult(1, "", "")
 
 
@@ -63,7 +63,7 @@ class OmarchyLookTest(unittest.TestCase):
 
         title = next(e[1] for e in mac.transcript if e[0] == "show" and SYSTEM_ART.splitlines()[1] in e[1])
         self.assertIn(ACCENT_RGB, title)
-        self.assertIn(["omarchy-ascii", "System"], mac.commands_run)
+        self.assertIn(["omarchy-ascii", "Boot"], mac.commands_run)
 
     def test_prompts_are_gum_with_omarchys_installer_styling(self):
         status, mac = self.run_omarchy()
@@ -72,7 +72,7 @@ class OmarchyLookTest(unittest.TestCase):
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")
-        self.assertEqual(choose[-1], "System")
+        self.assertEqual(choose[-8:], TITLES.split())
         self.assertEqual(confirm[:3], ["gum", "confirm", "Upload this report to https://omarchy-m-testing.org?"])
         self.assertIn("Not uploaded", mac.output)
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
@@ -119,7 +119,7 @@ class FallbackLookTest(unittest.TestCase):
 
         self.assertEqual(status, 0)
         self.assertIn(TOKYO_GREEN_RGB, mac.output)
-        self.assertNotIn(["omarchy-ascii", "System"], mac.commands_run)
+        self.assertNotIn(["omarchy-ascii", "Boot"], mac.commands_run)
         self.assertNotIn(LOGO.splitlines()[1], mac.output)
         # No gum: the section picker and upload question are plain prompts.
         prompts = [e[1] for e in mac.transcript if e[0] == "prompt"]
@@ -161,7 +161,7 @@ class LiveFeedTest(unittest.TestCase):
     def run_feed(self, rec=None):
         rec = rec or omarchy_desktop(recording())
         rec["commands"].append(command(["omarchy-ascii", "Kernel"], SYSTEM_ART + "\n"))
-        mac = host(rec, answers=[ENTER, CommandResult(0, "System\nKernel\n", ""), UPLOAD_NO], terminal=TERMINAL)
+        mac = host(rec, answers=[ENTER, CommandResult(0, TITLES + "Kernel\n", ""), UPLOAD_NO], terminal=TERMINAL)
         status = main([], mac, sections=FEED_SECTIONS)
         return status, mac
 
@@ -197,19 +197,20 @@ class SectionsTest(unittest.TestCase):
 
         main(["--dry-run"], mac)
 
-        listed = next(i for i, e in enumerate(mac.transcript) if e[0] == "show" and "System (system)" in e[1])
+        listed = next(i for i, e in enumerate(mac.transcript) if e[0] == "show" and "Boot (boot)" in e[1])
         checked = next(i for i, e in enumerate(mac.transcript) if e[0] == "show" and "system.identity" in e[1])
         self.assertLess(listed, checked)
 
     def test_a_skipped_section_reports_its_checks_as_skipped_not_failed(self):
         mac = host(recording(), answers=[ENTER])
 
-        status = main(["--dry-run", "--skip", "system"], mac)
+        status = main(["--dry-run", "--skip", "boot"], mac)
 
         self.assertEqual(status, 0)
         report = json.loads(mac.written[REPORT_FILE])
         self.assertEqual(errors(SCHEMA, report), [])
-        (check,) = report["checks"]
+        check = report["checks"][0]
+        self.assertEqual([c["status"] for c in report["checks"][:12]], ["skip"] * 12)
         self.assertEqual((check["id"], check["status"], check["classification"]["outcome"]), ("system.identity", "skip", "not-tested"))
         self.assertNotIn("model: ", json.dumps(check))
 
@@ -224,10 +225,10 @@ class SectionsTest(unittest.TestCase):
     def test_skip_preselects_in_the_picker(self):
         mac = host(omarchy_desktop(recording()), answers=[ENTER, CommandResult(0, "", ""), UPLOAD_NO], terminal=TERMINAL)
 
-        main(["--skip", "system"], mac)
+        main(["--skip", "boot"], mac)
 
         choose = ttys(mac)[0][0]
-        self.assertNotIn("--selected", choose)
+        self.assertEqual(choose[choose.index("--selected") + 1], ",".join(TITLES.split()[1:]))
 
     def test_an_unknown_section_name_is_refused_before_anything_runs(self):
         mac = host(recording())
@@ -235,7 +236,7 @@ class SectionsTest(unittest.TestCase):
         status = main(["--skip", "sleep"], mac)
 
         self.assertEqual(status, 4)
-        self.assertIn("--skip takes section names: system", mac.output)
+        self.assertIn("--skip takes section names: boot, graphics, display, audio, network, input, power, cpu", mac.output)
         self.assertEqual(mac.written, {})
 
     def test_ctrl_c_at_the_disclaimer_leaves_nothing_behind(self):

@@ -1,0 +1,23 @@
+INFO  platform         Apple MacBook Pro (14-inch, M1 Pro, 2021) (apple,j314s apple,t6000 apple,arm-platform)
+PASS  kernel           running 7.1.13-1-1-ARCH from linux-asahi 7.1.13.asahi1-1
+INFO  packages         m1n1 1.5.2-1, uboot-asahi 2025.10.asahi1-1, omarchy-dev 4.0.2.r6879.gaae2586-1, omarchy-settings-dev 4.0.2.r6879.gaae2586-1
+PASS  repos            core extra alarm asahi-alarm omarchy
+PASS  kernel-repo      linux-asahi updates from [asahi-alarm]
+PASS  boot-check       running linux-asahi 7.1.13-1-1-ARCH; installed boot files match
+INFO  boot-loader      GRUB, ESP /boot/efi
+INFO  boot-file        f2b61d5e0a8a93d3c1e4a0c7a1b9d2e3f40516273849a5b6c7d8e9f0a1b2c3d4  /boot/vmlinuz-linux-asahi
+INFO  boot-file        0d1c2b3a49586776a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8  /boot/grub/grub.cfg
+INFO  boot-file        9a8b7c6d5e4f30211203f4e5d6c7b8a99a8b7c6d5e4f30211203f4e5d6c7b8a9  /boot/efi/m1n1/boot.bin
+PASS  units            no failed system or user units
+FAIL  vendor-firmware  omarchy-vendor-firmware.service is not installed
+PASS  speakersafetyd   speakersafetyd is active
+PASS  displays         1 active: eDP-1 3024x1964@120
+PASS  sound-cards      AppleJ314HPAI, AppleJ314
+PASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)
+PASS  wifi             wlan0 is connected
+FAIL  wifi-backend     NetworkManager is not configured with wifi.backend=iwd
+PASS  bluetooth        controller powered
+PASS  snapshots        /.snapshots is a btrfs subvolume holding 4 snapshots
+SKIP  migrations       omarchy-migrate is not installed
+INFO  coredumps        none this boot
+12 passed, 2 failed, 0 warnings, 1 skipped

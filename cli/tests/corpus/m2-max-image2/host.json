@@ -132,6 +132,117 @@
       },
       "stderr": "",
       "note": "lid close suspending with a USB-C monitor attached, as quoted in the logind issue draft (timestamps and host trimmed there)"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-settings 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-mac 0.1.0-5.361571887310001\nomarchy-mac-boot 20260925-3\nlinux-aurora 7.1.12.aurora2-2\nm1n1-aurora 1.6.1.aurora1-3\nuboot-asahi 2026.07.asahi2-4\nlimine 12.9.0-1\nmesa 1:26.2.3-1\nvulkan-asahi 1:26.2.3-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy-dev' was not found\nerror: package 'omarchy-settings-dev' was not found\nerror: package 'omarchy-mac-keyring' was not found\nerror: package 'linux-asahi' was not found\nerror: package 'm1n1' was not found\n",
+      "note": "image 2's package set (outputs/image2/PROVENANCE) with vulkan-asahi as the manual rerun of the first-boot setup installed it (41-deferred-evidence.txt); linux-aurora as the running kernel of the 2026-09-13 kernel log"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/mapper/root[/@]\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: image 2 was installed with encryption on (m2-image2-test/OWNER-STEPS.md: LUKS2, btrfs @ subvolume)"
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/mapper/root"
+      ],
+      "returncode": 0,
+      "stdout": "crypt btrfs\npart crypto_LUKS\ndisk \n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: the LUKS2 root that note describes"
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "mac-check.txt"
+      },
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: mac-check's lines built from image 2's evidence: package versions (PROVENANCE), ESP file hashes (IMAGE), Limine, displays (39-display-check-session.txt), sound cards, default sink and Wi-Fi as in omarchy-mac's own M2 Max fixture (tools/hardware/test/mac-check-test.sh); the v0.1 dogfood run records the real output"
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "audio-check.txt"
+      },
+      "stderr": "",
+      "note": "37-audio-check-nosound.txt, the same checks on image 2 (2026-09-26 09:43), in the vendored script's format; 'speaker amps unlocked' failed there because that script grepped speakersafetyd's journal, and is shown passing as the vendored script's kernel-log check would"
+    },
+    {
+      "argv": [
+        "bundled:apple-display-check",
+        "--read-only"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "display-check.txt"
+      },
+      "stderr": "",
+      "note": "39-display-check-session.txt (image 2, 2026-09-26 09:45) with the brightness steps --read-only skips removed"
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "vulkaninfo: command not found\n",
+      "note": "vulkan-tools isn't in image 2's package set (PROVENANCE)"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "eglinfo: command not found\n",
+      "note": "mesa-utils isn't in image 2's package set (PROVENANCE)"
     }
   ],
   "files": {
@@ -143,11 +254,103 @@
     },
     "/proc/sys/kernel/hostname": {
       "text": "omarchy-m2-max\n"
+    },
+    "/etc/os-release": {
+      "text": "NAME=\"Omarchy\"\nPRETTY_NAME=\"Omarchy\"\nID=omarchy\nID_LIKE=arch\nBUILD_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nVERSION_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nANSI_COLOR=\"38;2;158;206;106\"\nHOME_URL=\"https://omarchy.org/\"\n",
+      "note": "omarchy-settings' os-release override (its PKGBUILD) at image 2's version"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/factory-sealed": null,
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Full\n",
+      "note": "62-battery-before.txt"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "100\n",
+      "note": "62-battery-before.txt"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n",
+      "note": "62-battery-before.txt"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n",
+      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1 2 3\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2424000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_driver": {
+      "text": "apple-cpufreq\n",
+      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/related_cpus": {
+      "text": "4 5 6 7\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq": {
+      "text": "660000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq": {
+      "text": "3504000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_driver": {
+      "text": "apple-cpufreq\n",
+      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/related_cpus": {
+      "text": "8 9 10 11\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_min_freq": {
+      "text": "660000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_max_freq": {
+      "text": "3504000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/var/lib/omarchy/image/target.booted": {
+      "text": "format=1\nplatform=apple-silicon\n",
+      "note": "41-deferred-evidence.txt: the first boot retired the target record to target.booted (32 bytes); its content is the manifest image 2's inspection found (outputs/image2/INSPECTION), which names no candidate set"
     }
   },
   "dirs": {
     "/home": [
       "kestrel"
+    ],
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "module",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.aarch64.json"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-battery"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "policy0",
+      "policy4",
+      "policy8"
     ]
-  }
+  },
+  "dirs_note": "Directories: the asahi GPU device name is the kernel log's (406400000.gpu); the Vulkan ICD is vulkan-asahi's; power_supply lists only the battery 62-battery-before.txt read; the cpufreq policies and ranges are reconstructed. Reconstructed answers are replaced by the v0.1 dogfood recording."
 }

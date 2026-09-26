@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 1,
-  "catalogue_version": 1,
+  "catalogue_version": 2,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -13,6 +13,54 @@
     "chip": "M1 Pro",
     "arch": "aarch64",
     "kernel": "7.1.13-1-1-ARCH"
+  },
+  "system": {
+    "stack": "mx-mac",
+    "distro": "omarchy",
+    "boot_loader": "grub",
+    "encryption": "off",
+    "packages": [
+      {
+        "name": "omarchy-dev",
+        "version": "4.0.2.r6879.gaae2586-1"
+      },
+      {
+        "name": "omarchy-settings-dev",
+        "version": "4.0.2.r6879.gaae2586-1"
+      },
+      {
+        "name": "linux-asahi",
+        "version": "7.1.13.asahi1-1"
+      },
+      {
+        "name": "m1n1",
+        "version": "1.5.2-1"
+      },
+      {
+        "name": "uboot-asahi",
+        "version": "2025.10.asahi1-1"
+      },
+      {
+        "name": "mesa",
+        "version": "1:26.1.4-1"
+      },
+      {
+        "name": "vulkan-asahi",
+        "version": "1:26.1.4-1"
+      },
+      {
+        "name": "asahi-audio",
+        "version": "4.1-1"
+      },
+      {
+        "name": "speakersafetyd",
+        "version": "2.0.1-1"
+      },
+      {
+        "name": "alsa-ucm-conf-asahi",
+        "version": "10-1"
+      }
+    ]
   },
   "checks": [
     {
@@ -28,6 +76,543 @@
       "classification": {
         "outcome": "works",
         "feature": "devicetree",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "boot.kernel-package",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  kernel           running 7.1.13-1-1-ARCH from linux-asahi 7.1.13.asahi1-1"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.chain",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  boot-check       running linux-asahi 7.1.13-1-1-ARCH; installed boot files match"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.files",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "INFO  boot-file        <hex>  /boot/vmlinuz-linux-asahi",
+        "INFO  boot-file        <hex>  /boot/grub/grub.cfg",
+        "INFO  boot-file        <hex>  /boot/efi/m1n1/boot.bin"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.encryption",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "the root filesystem isn't encrypted: part btrfs < disk"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "disk-encryption",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.repositories",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  repos            core extra alarm asahi-alarm omarchy"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "package-repositories",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.kernel-updates",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  kernel-repo      linux-asahi updates from [asahi-alarm]"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "package-repositories",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.hardware",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "installed: mesa 1:26.1.4-1, vulkan-asahi 1:26.1.4-1, asahi-audio 4.1-1, speakersafetyd 2.0.1-1, alsa-ucm-conf-asahi 10-1"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "first-boot-hardware-setup",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "setup.first-boot-hardware",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "omarchy-provision-hardware.service never ran: this install has no deferred first-boot hardware setup"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "first-boot-hardware-setup",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "setup.vendor-firmware",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "FAIL  vendor-firmware  omarchy-vendor-firmware.service is not installed"
+      ],
+      "classification": {
+        "outcome": "fails",
+        "feature": "vendor-firmware",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "system.failed-units",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  units            no failed system or user units"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "system-services",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "system.snapshots",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  snapshots        /.snapshots is a btrfs subvolume holding 4 snapshots"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "snapshots",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "gpu.driver",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "asahi driver bound to 406400000.gpu"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "gpu.vulkan",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "Asahi Vulkan driver installed (asahi_icd.aarch64.json)",
+        "vulkaninfo (vulkan-tools) isn't installed, so the Vulkan version wasn't read"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "gpu.opengl",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "eglinfo (mesa-utils) isn't installed"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.outputs",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  displays         1 active: eDP-1 3024x1964@120"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.controller",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "dcp",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.backlight",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "brightness",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.notch-strip",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "notch-bar",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.sound-cards",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  sound-cards      AppleJ314HPAI, AppleJ314"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "mca",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.default-sink",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-dsp",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-audio-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-protection",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  speakersafetyd   speakersafetyd is active"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speaker-protection",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-amps-unlocked",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-audio-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "speaker-protection",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.microphone-mapping",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-audio-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "mic-mapping",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "network.wifi",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  wifi             wlan0 is connected"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "wifi",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.wifi-backend",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "FAIL  wifi-backend     NetworkManager is not configured with wifi.backend=iwd"
+      ],
+      "classification": {
+        "outcome": "fails",
+        "feature": "iwd-wifi-backend",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "network.bluetooth",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  bluetooth        controller powered"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "bluetooth",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "input.ambient-light",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "aop",
+        "layer": "aurora",
+        "expected": {
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.auto-keyboard-light",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "apple-display-check checks the converged image's omarchy-mac integration; not run on Omarchy, mx-mac"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "auto-keyboard-light",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "power.battery",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "macsmc-battery: Charging, 87% charged, charge limit 100%"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "battery-info",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "cpu.frequency-scaling",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "policy0: CPUs 0-1, apple-cpufreq, 600-2064 MHz, schedutil",
+        "policy2: CPUs 2-5, apple-cpufreq, 600-3228 MHz, schedutil",
+        "policy6: CPUs 6-9, apple-cpufreq, 600-3228 MHz, schedutil"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "cpufreq",
         "layer": "asahi",
         "expected": {
           "asahi": "upstream",

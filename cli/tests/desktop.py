@@ -22,6 +22,7 @@ HOME = "/home/tester"
 CHECKPOINT = f"{HOME}/.local/state/omarchy-m-test/checkpoint.json"
 THEME = f"{HOME}/.local/state/omarchy/current/theme"
 OLD_THEME = f"{HOME}/.config/omarchy/current/theme"
+TITLES = "\n".join(section.title for section in APPLE) + "\n"
 LOGO_PATHS = ("/usr/share/omarchy/logo.txt", f"{HOME}/.local/share/omarchy/logo.txt")
 TERMINAL = Terminal(120, 40)
 
@@ -63,7 +64,7 @@ def omarchy_desktop(rec: dict[str, Any], env: dict[str, str] | None = None) -> d
     rec["commands"] += [
         command(["omarchy-theme-color", "--file", f"{THEME}/colors.toml", "--all"], RESOLVED),
         command(["omarchy-ascii", "--help"], "Usage: omarchy-ascii [text...]\n"),
-        command(["omarchy-ascii", "System"], SYSTEM_ART + "\n"),
+        *(command(["omarchy-ascii", section.title], SYSTEM_ART + "\n") for section in APPLE),
         command(["gum", "--version"], "gum version 0.16.0\n"),
     ]
     return rec

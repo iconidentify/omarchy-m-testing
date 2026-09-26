@@ -14,6 +14,7 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import INTERRUPT, RecordedHost
+from tests.corpus import MACHINES, forbidden, raw_recording
 from tests.desktop import (
     CHECKPOINT, LISTEN, MUTE, SECTIONS, UNMUTE, VOLUME_BACK, VOLUME_DOWN,
     host, recording, with_home, with_section_commands,
@@ -26,9 +27,16 @@ ENTER = ""
 RESUME = "Resume where it stopped? [Y/n] "
 
 
-def tone_mac(answers, checkpoint=None, restore_returncode=0, cls=RecordedHost) -> RecordedHost:
-    rec = with_section_commands(with_home(recording(), checkpoint=checkpoint), restore_returncode)
+def _tone_mac(base, answers, checkpoint=None, restore_returncode=0, cls=RecordedHost) -> RecordedHost:
+    rec = with_section_commands(with_home(base, checkpoint=checkpoint), restore_returncode)
     return cls(rec, answers=list(answers))
+
+
+def tone_mac(answers, checkpoint=None, restore_returncode=0, cls=RecordedHost) -> RecordedHost:
+    """The recorded M2 with $HOME set, running every section plus Tone."""
+    return _tone_mac(recording(), answers, checkpoint, restore_returncode, cls)
+
+
 
 
 def after(mac: RecordedHost, argv: list[str]) -> list[list[str]]:
@@ -47,7 +55,7 @@ class RestorerTest(unittest.TestCase):
         status = main(["--dry-run"], mac, sections=SECTIONS)
 
         self.assertEqual(status, 0)
-        self.assertEqual(after(mac, VOLUME_DOWN), [MUTE, UNMUTE, VOLUME_BACK, ["nmcli", "--get-values", "NAME", "connection", "show"]])
+        self.assertEqual(after(mac, VOLUME_DOWN), [MUTE, UNMUTE, VOLUME_BACK])
         self.assertNotIn(CHECKPOINT, mac.written)
 
     def test_ctrl_c_mid_section_undoes_every_change_and_keeps_the_checkpoint(self):
@@ -62,7 +70,7 @@ class RestorerTest(unittest.TestCase):
         self.assertNotIn(REPORT_FILE, mac.written)
         saved = json.loads(mac.written[CHECKPOINT])
         self.assertEqual(saved["restorers"], [])
-        self.assertEqual(list(saved["done"]), ["system"])
+        self.assertEqual(list(saved["done"]), [s.id for s in SECTIONS[:-1]])
 
     def test_an_error_mid_section_undoes_every_change_then_surfaces(self):
         class Broken(RecordedHost):
@@ -120,7 +128,8 @@ class RestorerTest(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertEqual(second.commands_run[-2:], [UNMUTE, VOLUME_BACK])
         self.assertIn("the speaker volume", second.output)
-        self.assertEqual(json.loads(second.written[CHECKPOINT])["restorers"], [])
+        self.assertNotIn(CHECKPOINT, second.written)  # declined: the earlier run is over too
+        self.assertIn(CHECKPOINT, second.removed)
 
     def test_a_restorer_that_fails_tells_the_human_how_to_undo_it_by_hand(self):
         mac = tone_mac([ENTER, "y"], restore_returncode=1)
@@ -156,7 +165,7 @@ class CheckpointTest(unittest.TestCase):
 
     def test_finished_sections_are_not_run_again(self):
         saved = json.loads(self.interrupted())
-        saved["done"]["system"][0]["evidence"] = ["kept from the checkpoint"]
+        saved["done"]["boot"][0]["evidence"] = ["kept from the checkpoint"]
         mac = tone_mac([ENTER, ENTER, "y"], checkpoint=json.dumps(saved))
 
         main(["--dry-run"], mac, sections=SECTIONS)
@@ -225,6 +234,33 @@ class CheckpointTest(unittest.TestCase):
 
         self.assertEqual(status, 0)
         self.assertEqual(sorted(mac.written), ["m.json", REPORT_FILE])
+
+
+
+class CheckpointPrivacyTest(unittest.TestCase):
+    def test_the_checkpoint_is_private_and_holds_only_scrubbed_evidence(self):
+        for machine in MACHINES:
+            with self.subTest(machine=machine):
+                # The real, unscrubbed evidence, interrupted in the Tone section after every other section ran.
+                mac = _tone_mac(raw_recording(machine), [ENTER, INTERRUPT])
+
+                self.assertEqual(main(["--dry-run"], mac, sections=SECTIONS), 130)
+
+                self.assertIn(CHECKPOINT, mac.private)
+                text = mac.written[CHECKPOINT]
+                self.assertEqual(len(json.loads(text)["done"]), len(SECTIONS) - 1)
+                for identifier in forbidden(machine):
+                    self.assertNotIn(identifier, text)
+
+    def test_declining_the_disclaimer_deletes_an_earlier_runs_checkpoint(self):
+        left = tone_mac([ENTER, INTERRUPT])
+        main(["--dry-run"], left, sections=SECTIONS)
+
+        mac = tone_mac(["n"], checkpoint=left.written[CHECKPOINT])
+        status = main(["--dry-run"], mac, sections=SECTIONS)
+
+        self.assertEqual(status, 1)
+        self.assertIn(CHECKPOINT, mac.removed)
 
 
 if __name__ == "__main__":

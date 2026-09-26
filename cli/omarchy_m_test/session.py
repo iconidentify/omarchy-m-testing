@@ -24,11 +24,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 from .catalogue import Catalogue
 from .host import CommandResult, Host
 from .machine import Machine
+
+if TYPE_CHECKING:
+    from .system import System
 
 CHECKPOINT_VERSION = 1
 CHECKPOINT_NAME = "omarchy-m-test/checkpoint.json"
@@ -93,6 +96,13 @@ class Context:
     machine: Machine
     catalogue: Catalogue
     changes: Changes
+    system: "System | None" = None
+    # What sections share within a run and across a resume (JSON values only),
+    # e.g. the boot loader mac-check reported for the report's system block.
+    shared: dict[str, Any] = field(default_factory=dict)
+    # What sections share within this process only (never checkpointed), e.g.
+    # a script's results that feed two sections.
+    cache: dict[str, Any] = field(default_factory=dict)
 
     def change(self, description: str, change: Sequence[str], restore: Sequence[str]) -> CommandResult:
         """Change the machine: `restore` is registered first, and runs when the section ends."""
@@ -120,6 +130,7 @@ class State:
     done: dict[str, list[dict]] = field(default_factory=dict)
     restorers: list[Restorer] = field(default_factory=list)
     key: dict[str, Any] = field(default_factory=dict)
+    shared: dict[str, Any] = field(default_factory=dict)
 
     def to_text(self) -> str:
         return json.dumps({
@@ -127,6 +138,7 @@ class State:
             "key": self.key,
             "selected": self.selected,
             "done": self.done,
+            "shared": self.shared,
             "restorers": [{"description": r.description, "argv": list(r.argv)} for r in self.restorers],
         }, indent=2, ensure_ascii=False) + "\n"
 
@@ -138,7 +150,7 @@ class State:
                 return None
             restorers = [Restorer(str(r["description"]), tuple(str(a) for a in r["argv"])) for r in data.get("restorers", [])]
             done = {str(k): list(v) for k, v in data.get("done", {}).items()}
-            return cls([str(s) for s in data.get("selected", [])], done, restorers, dict(data.get("key", {})))
+            return cls([str(s) for s in data.get("selected", [])], done, restorers, dict(data.get("key", {})), dict(data.get("shared", {})))
         except (ValueError, TypeError, KeyError, AttributeError):
             return None
 
@@ -174,7 +186,7 @@ class Checkpoint:
 
     def save(self, state: State) -> None:
         if self.path:
-            self.host.write_file(self.path, state.to_text())
+            self.host.write_file(self.path, state.to_text(), private=True)
 
     def clear(self) -> None:
         if self.path:

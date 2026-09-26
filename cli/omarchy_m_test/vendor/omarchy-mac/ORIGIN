@@ -1,0 +1,14 @@
+Vendored from omacom/omarchy-mac (https://github.com/omacom/omarchy-mac), MIT licence (LICENSE beside this file).
+
+commit: 1937418f520b82f94e95650e9cb86d7cb972c439 (branch quattro-upstream)
+
+Files, unmodified, with their upstream paths and SHA-256:
+  d8f93e68a1d402823160a3c1daf270754335d6ff049e18e7e6ac5500920d0c1d  mac-check  (tools/hardware/mac-check)
+  4989b6f31fea00226eb748b3b809f4cdb49ccd0f8836b4a8e3a523d359eb0db8  apple-audio-check.sh  (test/manual/apple-audio-check.sh)
+  52306cf04030e5b0354d035658e4fdef86d99b4243296efab5493f490bebce87  apple-display-check.sh  (test/manual/apple-display-check.sh)
+
+omarchy-m-test runs mac-check as is, apple-audio-check.sh with --no-sound and
+apple-display-check.sh with --read-only, and turns their PASS/FAIL/SKIP lines
+into catalogue-classified results (omarchy_m_test/scripts.py). To update, copy
+the three files from a newer commit, update this file and rerun the Seam A
+tests.

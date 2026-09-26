@@ -45,6 +45,14 @@ _CLASSIFICATION = {
     "layer": True,
     "expected": {"asahi": True, "aurora": True, "omarchy": True},
 }
+_SYSTEM = {
+    "stack": True,
+    "distro": True,
+    "boot_loader": True,
+    "encryption": True,
+    "candidate_set": True,
+    "packages": [{"name": True, "version": True}],
+}
 _CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION}
 REPORT_ALLOWLIST: dict[str, Any] = {
     "schema_version": True,
@@ -52,6 +60,7 @@ REPORT_ALLOWLIST: dict[str, Any] = {
     "consent_version": True,
     "catalogue_version": True,
     "machine": {"model": True, "board": True, "soc": True, "chip": True, "arch": True, "kernel": True},
+    "system": _SYSTEM,
     "checks": [_CHECK],
 }
 # Free-text report fields that are scrubbed like evidence. The model is the
@@ -233,6 +242,14 @@ def _allowed(value: Any, allowlist: Any) -> Any:
     if isinstance(allowlist, dict) and isinstance(value, dict):
         return {key: _allowed(value[key], allowlist[key]) for key in allowlist if key in value}
     return {}
+
+
+def scrub_check(check: dict, scrubber: Scrubber) -> dict:
+    """One check result with its evidence scrubbed, as the checkpoint keeps it (enforce() still runs on the report)."""
+    evidence = check.get("evidence")
+    if not isinstance(evidence, list):
+        return dict(check)
+    return {**check, "evidence": [_evidence_line(line, scrubber) for line in evidence]}
 
 
 def enforce(report: dict, scrubber: Scrubber) -> dict:

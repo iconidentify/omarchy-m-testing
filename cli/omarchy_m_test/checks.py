@@ -1,8 +1,40 @@
-"""Checks. Each check returns one schema-v1 check result."""
+"""The automatic checks of a run. Each check returns one schema-v1 check result.
+
+One function per section (sections.py): each wraps omarchy-mac's check
+scripts (scripts.py) and adds the checks they don't cover (hardware.py).
+mac-check covers several sections and runs once, for the first of them that
+isn't skipped. On a reference distro the Omarchy-layer results are skipped:
+only the hardware is compared with Omarchy.
+"""
 
 from __future__ import annotations
 
+from . import hardware, scripts
+from .catalogue import Catalogue
 from .machine import Machine
+from .session import Context
+from .system import System
+
+MAC_CHECK_RESULTS = "mac_check"
+DISPLAY_CHECK_RESULTS = "display_check"
+BOOT_LOADER = "boot_loader"
+
+# Every automatic check id, in report order (the sections' order). Each is in the catalogue's checks.
+ORDER = (
+    "system.identity",
+    "boot.kernel-package", "boot.chain", "boot.files", "boot.encryption",
+    "packages.repositories", "packages.kernel-updates", "packages.hardware",
+    "setup.first-boot-hardware", "setup.vendor-firmware",
+    "system.failed-units", "system.snapshots",
+    "gpu.driver", "gpu.vulkan", "gpu.opengl",
+    "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
+    "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
+    "audio.speaker-amps-unlocked", "audio.microphone-mapping",
+    "network.wifi", "network.wifi-backend", "network.bluetooth",
+    "input.ambient-light", "input.auto-keyboard-light",
+    "power.battery",
+    "cpu.frequency-scaling",
+)
 
 
 def system_identity(machine: Machine) -> dict:
@@ -20,3 +52,85 @@ def system_identity(machine: Machine) -> dict:
         "status": "pass" if identified else "fail",
         "evidence": evidence,
     }
+
+
+def mac_check(ctx: Context) -> list[dict]:
+    """mac-check's results, run once per run whichever section needs them first.
+
+    Its boot-loader line goes in `shared` for the report's system block, so a
+    resumed run still has it.
+    """
+    if MAC_CHECK_RESULTS not in ctx.cache:
+        found = scripts.mac_check(ctx.host)
+        ctx.cache[MAC_CHECK_RESULTS] = found.results
+        ctx.shared[BOOT_LOADER] = found.boot_loader
+    return ctx.cache[MAC_CHECK_RESULTS]
+
+
+def display_check(ctx: Context) -> list[dict]:
+    """apple-display-check's results (the Display and Input sections), run once per run."""
+    if DISPLAY_CHECK_RESULTS not in ctx.cache:
+        ctx.cache[DISPLAY_CHECK_RESULTS] = scripts.display_check(ctx.host, _system(ctx))
+    return ctx.cache[DISPLAY_CHECK_RESULTS]
+
+
+def boot(ctx: Context) -> list[dict]:
+    system = _system(ctx)
+    return [
+        system_identity(ctx.machine),
+        *mac_check(ctx),
+        hardware.encryption(system),
+        hardware.hardware_packages(system),
+        hardware.first_boot_setup(ctx.host),
+    ]
+
+
+def graphics(ctx: Context) -> list[dict]:
+    system = _system(ctx)
+    return [hardware.gpu_driver(ctx.host), hardware.gpu_vulkan(ctx.host, system), hardware.gpu_opengl(ctx.host)]
+
+
+def display(ctx: Context) -> list[dict]:
+    return [*mac_check(ctx), *display_check(ctx)]
+
+
+def audio(ctx: Context) -> list[dict]:
+    return [*mac_check(ctx), *scripts.audio_check(ctx.host, _system(ctx))]
+
+
+def network(ctx: Context) -> list[dict]:
+    return mac_check(ctx)
+
+
+def input_devices(ctx: Context) -> list[dict]:
+    return display_check(ctx)
+
+
+def power(ctx: Context) -> list[dict]:
+    return [hardware.battery(ctx.host)]
+
+
+def cpu(ctx: Context) -> list[dict]:
+    return [hardware.cpu_scaling(ctx.host)]
+
+
+def only(check_ids: tuple[str, ...], results: list[dict], ctx: Context) -> list[dict]:
+    """A section's results: its own checks, in its order, compared as a reference run off Omarchy."""
+    by_id = {result["id"]: result for result in results}
+    ordered = [by_id[check_id] for check_id in check_ids]
+    system = _system(ctx)
+    if not system.is_omarchy:
+        ordered = [_reference(result, system, ctx.catalogue) for result in ordered]
+    return ordered
+
+
+def _system(ctx: Context) -> System:
+    assert ctx.system is not None, "sections run with the detected system"
+    return ctx.system
+
+
+def _reference(result: dict, system: System, catalogue: Catalogue) -> dict:
+    feature = catalogue.feature_for_check(result["id"])
+    if feature is None or feature["layer"] != "omarchy":
+        return result
+    return {**result, "status": "skip", "evidence": [f"reference run on {system.distro}: Omarchy integration isn't checked"]}

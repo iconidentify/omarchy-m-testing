@@ -11,7 +11,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, privacy, report, updates
+from . import TOOL_NAME, TOOL_VERSION, privacy, report, system, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -161,9 +161,14 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     except EOFError:
         answer = None
     if answer is None or not accepted(answer):
+        if not changes.pending:
+            checkpoint.clear()  # declining ends any earlier run too
         host.show("Cancelled. Nothing was run.")
         return EXIT_CANCELLED
 
+    # The Scrubber learns this Mac's hostname, accounts and networks: nothing
+    # a check found reaches the checkpoint or the report unscrubbed.
+    scrubber = privacy.Scrubber.for_host(host)
     key = run_key(machine, catalogue, TOOL_VERSION)
     state = _resume(ui, saved, key, sections, skip)
     if state is None:
@@ -175,21 +180,24 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     checkpoint.save(state)
     args.resumable = checkpoint.path is not None
 
-    ui.text(f"Checking {machine.model}...")
+    found = system.detect(host)
+    ui.text(f"Checking {machine.model} ({found.describe()})...")
+    ui.text("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
+    shared, cache = state.shared, {}
     try:
         for section in sections:
             if section.id not in state.selected or section.id in state.done:
                 continue
             section_host = ui.section(section.title, section.description)
             try:
-                results = section.run(Context(section_host, machine, catalogue, changes))
+                results = section.run(Context(section_host, machine, catalogue, changes, found, shared, cache))
             finally:
                 ui.end_section()
                 changes.restore()
                 _report_failed_restores(host, changes)
-            state.done[section.id] = results
+            state.done[section.id] = [privacy.scrub_check(result, scrubber) for result in results]
             checkpoint.save(state)
-            for result in results:
+            for result in state.done[section.id]:
                 classification = catalogue.classify(result, machine.soc, machine.board)
                 ui.result(line(result, classification, catalogue), classification["outcome"])
     finally:
@@ -200,9 +208,8 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     results = []
     for section in sections:
         results += state.done[section.id] if section.id in state.done else skipped(section)
-    built = report.build(machine, results, catalogue)
+    built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue)
 
-    scrubber = privacy.Scrubber.for_host(host)
     text = report.to_text(privacy.enforce(built, scrubber))
     host.write_file(args.output, text)
     checkpoint.clear()
@@ -243,7 +250,7 @@ def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section],
     ui.text(f"An earlier run stopped with {len(saved.done)} section(s) done; left to run: {', '.join(left)}.")
     if ui.confirm("Resume where it stopped?", default=True):
         selected = [s for s in saved.selected if s in saved.done or s not in skip]
-        return State(selected, dict(saved.done), [], key)
+        return State(selected, dict(saved.done), [], key, dict(saved.shared))
     return None
 
 
