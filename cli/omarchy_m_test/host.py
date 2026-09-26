@@ -44,6 +44,8 @@ COMMAND_TIMEOUT_SECONDS = 60
 # Bundled check scripts run many commands (mac-check's boot check rebuilds and
 # compares the m1n1 image), so they get longer.
 BUNDLED_TIMEOUT_SECONDS = 300
+# Installing and removing temporary test packages downloads them first.
+PACKAGE_TIMEOUT_SECONDS = 1800
 HTTP_TIMEOUT_SECONDS = 30
 # GETs only look up the latest release; a slow or absent network must not hold up a run.
 GET_TIMEOUT_SECONDS = 5
@@ -106,11 +108,18 @@ class Host(Protocol):
     def remove_file(self, path: str) -> None: ...
 
 
+def _changes_packages(argv: list[str]) -> bool:
+    """sudo -n pacman -S/-R ...: the temporary test packages (packages.py)."""
+    command = argv[2:] if argv[:2] == ["sudo", "-n"] else argv
+    return command[:1] == ["pacman"] and any(a.startswith(("-S", "-R")) and not a.startswith("-Sp") for a in command[1:2])
+
+
 class RealHost:
     """The host backed by this machine, its terminal and the network."""
 
     def run(self, argv: Sequence[str]) -> CommandResult:
-        return self._run(list(argv), COMMAND_TIMEOUT_SECONDS)
+        argv = list(argv)
+        return self._run(argv, PACKAGE_TIMEOUT_SECONDS if _changes_packages(argv) else COMMAND_TIMEOUT_SECONDS)
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
         try:

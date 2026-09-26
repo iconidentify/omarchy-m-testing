@@ -6,6 +6,11 @@ Omarchy's installer: the screen cleared, the installed logo centred in the
 theme's green, section titles in the logo's font, gum prompts, and during
 automatic checks a live feed: the last lines of what the checks run and read,
 redrawn in place in grey, each prefixed "  → " (install/helpers/logging.sh).
+
+Human checks (human.py) ask with Ui.human: yes, no or skip, plus an optional
+note. Off a terminal, or without gum, that is one line ("n the left speaker
+crackles"); with gum, a choice then a note. In the middle of a section every
+prompt goes through the section's feed, which it lifts while asking.
 """
 
 from __future__ import annotations
@@ -41,6 +46,14 @@ OUTCOME_COLOURS = {
     "not-in-asahi": "blue",
     "unknown-hardware": "magenta",
 }
+HUMAN_CHOICES = ("Yes", "No", "Skip")
+HUMAN_WORDS = {"y": "yes", "yes": "yes", "n": "no", "no": "no", "s": "skip", "skip": "skip"}
+HUMAN_HINT = (
+    "Answer y (yes), n (no) or s (skip). A note can follow the letter, "
+    'e.g. "n the left speaker crackles". Skipping is never counted as a failure.'
+)
+HUMAN_TRIES = 3
+NOTE_PROMPT = "Note (optional, Enter to go on): "
 _CONTROL = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|[\x00-\x08\x0b-\x1f\x7f]")
 
 
@@ -65,6 +78,7 @@ class Ui:
 
     def __init__(self, host: Host):
         self.host = host
+        self._hinted = False
 
     @classmethod
     def for_host(cls, host: Host) -> "Ui":
@@ -96,10 +110,33 @@ class Ui:
         """Which options the human keeps. Off a terminal, the ones given (--skip decides)."""
         return list(selected)
 
+    def human(self, question: str) -> tuple[str | None, str]:
+        """A human check's answer, "yes", "no" or "skip" (None: no answer at all), and the note."""
+        if not self._hinted:
+            self._hinted = True
+            self.text(HUMAN_HINT)
+        return self._human_by_prompt(question)
+
+    def _human_by_prompt(self, question: str, pad: str = "") -> tuple[str | None, str]:
+        for _ in range(HUMAN_TRIES):
+            try:
+                typed = self._io().prompt(f"{pad}{question} [y/n/s] ").strip()
+            except EOFError:
+                return None, ""
+            word, _, note = typed.partition(" ")
+            if word.lower() in HUMAN_WORDS:
+                return HUMAN_WORDS[word.lower()], note.strip()
+            self.text("Please answer y, n or s.")
+        return None, ""
+
+    def _io(self) -> Host:
+        """Where prompts go: the section's feed while one runs (it lifts itself), else the host."""
+        return self.host
+
     def confirm(self, question: str, default: bool = False) -> bool:
         suffix = " [Y/n] " if default else " [y/N] "
         try:
-            answer = self.host.prompt(question + suffix).strip().lower()
+            answer = self._io().prompt(question + suffix).strip().lower()
         except EOFError:
             return default
         if not answer:
@@ -151,10 +188,13 @@ class StyledUi(Ui):
         self.host.show(self.paint("dark_foreground", self._centred(caption)) + "\n")
 
     def text(self, text: str) -> None:
-        self.host.show(self.paint("foreground", self._padded(text)))
+        self._io().show(self.paint("foreground", self._padded(text)))
 
     def ask(self, message: str) -> str:
-        return self.host.prompt(self.pad + message)
+        return self._io().prompt(self.pad + message)
+
+    def _io(self) -> Host:
+        return self.feed if self.feed else self.host
 
     def section(self, title: str, description: str) -> "Host":
         art = self._ascii(title)
@@ -194,7 +234,7 @@ class StyledUi(Ui):
         return self._gum
 
     def _gum_run(self, argv: list[str]) -> CommandResult:
-        result = self.host.run_tty(argv, with_padding(self.theme, self.left))
+        result = self._io().run_tty(argv, with_padding(self.theme, self.left))
         if result.returncode == 130:
             raise Interrupted
         return result
@@ -213,11 +253,24 @@ class StyledUi(Ui):
 
     def _choose_by_prompt(self, options: Sequence[str], selected: Sequence[str]) -> list[str]:
         try:
-            answer = self.host.prompt(self.pad + "Sections to skip (numbers, e.g. 2 5; Enter runs them all): ")
+            answer = self._io().prompt(self.pad + "Sections to skip (numbers, e.g. 2 5; Enter runs them all): ")
         except EOFError:
             return list(selected)
         skip = {int(n) - 1 for n in re.findall(r"\d+", answer)}
         return [option for i, option in enumerate(options) if option in selected and i not in skip]
+
+    def human(self, question: str) -> tuple[str | None, str]:
+        if not self._has_gum():
+            return super().human(question)
+        chosen = self._gum_run(["gum", "choose", "--header", question, *HUMAN_CHOICES])
+        answer = chosen.stdout.strip().lower() if chosen.returncode == 0 else ""
+        if answer not in HUMAN_WORDS:
+            return None, ""  # Esc: no answer, which counts as skipped
+        noted = self._gum_run(["gum", "input", "--prompt", NOTE_PROMPT, "--placeholder", "what you saw or heard"])
+        return HUMAN_WORDS[answer], noted.stdout.strip() if noted.returncode == 0 else ""
+
+    def _human_by_prompt(self, question: str, pad: str = "") -> tuple[str | None, str]:
+        return super()._human_by_prompt(question, pad or self.pad)
 
     def confirm(self, question: str, default: bool = False) -> bool:
         if not self._has_gum():
