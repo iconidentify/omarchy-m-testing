@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 4,
+  "catalogue_version": 5,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -73,6 +73,8 @@
     "network.wifi": "wifi",
     "network.wifi-backend": "iwd-wifi-backend",
     "network.bluetooth": "bluetooth",
+    "network.bluetooth-pairing": "bluetooth",
+    "network.wifi-first-join": "wifi-5ghz-first-join",
     "input.ambient-light": "aop",
     "input.auto-keyboard-light": "auto-keyboard-light",
     "input.keyboard-light-follows-room": "auto-keyboard-light",
@@ -1583,7 +1585,7 @@
       "name": "First join to a 5 GHz Wi-Fi network",
       "layer": "omarchy",
       "asahi_feature": "wifi",
-      "note": "Known issue: right after first boot the first 5 GHz join can time out; a retry connects.",
+      "note": "Known issue: the first join after the Wi-Fi driver starts can land on the network's 6 GHz radio on BCM4388 Macs and get no traffic; a retry connects. omarchy-mac's iwd band preference avoids it (omacom/omarchy-mac#573).",
       "chips": {
         "m1": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
         "m1-pro-max-ultra": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},

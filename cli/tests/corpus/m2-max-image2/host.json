@@ -477,6 +477,31 @@
       "stdout": "kbd_backlight,leds,0,0%,255\n",
       "stderr": "",
       "note": "39-display-check-session.txt: 'keys 0/255' (a recording keeps one answer per command, so the covered reading replays the uncovered one)"
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "auto",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Remote=yes\nSeat=\nActive=yes\n",
+      "stderr": "",
+      "note": "the M2's corpus runs are over SSH on the Thunderbolt lab link: logind's answer for an SSH session (no seat), so the Wi-Fi first-join check is skipped"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c \"^Device \""
+      ],
+      "returncode": 1,
+      "stdout": "0\n",
+      "stderr": "",
+      "note": "stand-in: the paired-device count wasn't captured (grep -c prints 0 and exits 1 with none); the v0.1 dogfood run records it"
     }
   ],
   "files": {

@@ -10,6 +10,8 @@ from the recording:
   pacman -Q / -Sp, sudo -n pacman -S / -R        installed packages and the repositories
   sudo -n true                                   whether sudo has cached credentials
   loginctl show-session                          the run's login session
+  modprobe brcmfmac, nmcli, the join watch       the Wi-Fi driver, the connection and its first join
+  bluetoothctl's paired-device count             when the test gives one
 
 Tests assert on the model's state at the end (was everything put back?) and
 on the commands the Mac was sent. Nothing here ever asks for a password:
@@ -24,6 +26,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
+from omarchy_m_test import changes, network
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import RecordedHost
 from tests.desktop import command, recording, with_home
@@ -32,6 +35,23 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 CATALOGUE_PATH = "/test/catalogue.json"
 NODE = "57"
 WLAN = "wlan0"
+# The Wi-Fi connection's NetworkManager UUID (made up; the real one is never recorded in a report).
+CONNECTION = "3f0c2a8e-5b1d-4c7e-9a64-2d8b1e0f7c35"
+UEVENT = f"/sys/class/net/{WLAN}/device/uevent"
+UNLOAD = changes.unload_wifi_driver_argv(["brcmfmac_wcc", "brcmfmac"])
+LOAD = changes.LOAD_WIFI_DRIVER
+RECONNECT = changes.reconnect_argv(CONNECTION)
+WATCH = network.watch_argv(changes.WifiLink(WLAN, CONNECTION, 5240))
+
+# What the join watch prints after a driver reload (hundredths of a second since the driver loaded).
+# A good first join, as omarchy-mac's check saw it with the fix on the M2 Max
+# (operations/asahi-brcmfmac-6ghz-73/logs/after-auto.txt: 5240 MHz, an address 2.6 s after the reload;
+# the association time isn't in that log and is reconstructed).
+GOOD_JOIN = "up 212\naddress 260\nfreq 5240\nconnection same\n"
+# The recorded first-join failure (boot-1-failure.log, before-6ghz-auto.txt, manual-check-repro.txt): the
+# first join after the firmware loads lands on the network's 6 GHz radio (6135 MHz), reports connected and gets
+# no DHCP lease; the reload's association time is reconstructed.
+FAILED_JOIN = "up 187\ntimeout 5000\nfreq 6135\nconnection same\n"
 
 # Check ids the test sections report, added to a copy of the bundled catalogue.
 TEST_CHECKS = {
@@ -70,6 +90,13 @@ class MacState:
     sudo_cached: bool = True
     session: dict[str, str] | None = field(default_factory=lambda: {"Remote": "no", "Seat": "seat0", "Active": "yes"})
     session_ids: tuple[str, ...] = ("2", "auto")  # the ids logind answers for
+    wifi_driver: bool = True  # brcmfmac loaded
+    connection_active: bool = True  # NetworkManager has the Wi-Fi connection activated
+    frequency: str = "5240"  # MHz, the band Wi-Fi is on before the check
+    join: str = GOOD_JOIN  # what the join watch prints after a reload
+    reconnects: bool = True  # nmcli connection up works
+    driver_loads: bool = True  # modprobe brcmfmac works
+    paired: list[int] | None = None  # the paired-device counts BlueZ gives, in turn (the last one stays); None: as recorded
 
     def copy(self) -> "MacState":
         return copy.deepcopy(self)
@@ -82,8 +109,16 @@ def live_recording(env: dict[str, str] | None = None, checkpoint: str | None = N
     rec.setdefault("dirs", {}).update({
         "/sys/class/net": ["lo", WLAN],
         "/sys/class/net/lo": ["operstate"],
-        f"/sys/class/net/{WLAN}": ["operstate", "wireless"],
+        f"/sys/class/net/{WLAN}": ["device", "operstate", "wireless"],
+        "/sys/module/brcmfmac": ["parameters", "refcnt"],
+        "/sys/module/brcmfmac_wcc": ["refcnt"],
     })
+    rec["files"][UEVENT] = {"text": "DRIVER=brcmfmac\nPCI_CLASS=28000\nPCI_ID=14E4:4433\n"}
+    rec["commands"] += [
+        command(["nmcli", "-g", "connection.autoconnect", "connection", "show", CONNECTION], "yes\n"),
+        command(changes.addresses_argv(WLAN), "1\n"),
+        command(["sleep", "1"]),
+    ]
     return rec
 
 
@@ -164,6 +199,33 @@ class LiveMac(RecordedHost):
                 return CommandResult(1, "", "error: target not found\n")
             s.installed.difference_update(names)
             return ok
+        if argv == ["nmcli", "-g", "GENERAL.STATE,GENERAL.CON-UUID", "device", "show", WLAN]:
+            if not s.wifi_driver:
+                return CommandResult(10, "", f"Error: Device '{WLAN}' not found.\n")
+            return CommandResult(0, f"100 (connected)\n{CONNECTION}\n" if s.connection_active else "30 (disconnected)\n\n", "")
+        if argv == changes.frequency_argv(WLAN):
+            return CommandResult(0, f"{s.frequency}\n" if s.connection_active else "", "")
+        if argv == UNLOAD:
+            if not s.sudo_cached:
+                return CommandResult(1, "", "sudo: a password is required\n")
+            s.wifi_driver = s.connection_active = s.wifi_up = False
+            return ok
+        if argv == LOAD:
+            if not s.driver_loads:
+                return CommandResult(1, "", "modprobe: ERROR: could not insert 'brcmfmac': No such device\n")
+            s.wifi_driver = True
+            return ok
+        if argv == WATCH:
+            if s.wifi_driver and "address" in s.join:
+                s.connection_active = s.wifi_up = True
+            return CommandResult(0, s.join, "")
+        if argv == RECONNECT:
+            if not s.connection_active and s.wifi_driver and s.reconnects:
+                s.connection_active = s.wifi_up = True
+            return ok if s.connection_active else CommandResult(4, "", "Error: Connection activation failed.\n")
+        if argv == network.PAIRED and s.paired is not None:
+            count = s.paired.pop(0) if len(s.paired) > 1 else s.paired[0]
+            return CommandResult(0 if count else 1, f"{count}\n", "")
         if argv[:2] == ["loginctl", "show-session"]:
             if s.session is None or argv[2] not in s.session_ids:
                 return CommandResult(1, "", "Failed to get session: No session\n")

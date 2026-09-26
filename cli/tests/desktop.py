@@ -27,13 +27,21 @@ LOGO_PATHS = ("/usr/share/omarchy/logo.txt", f"{HOME}/.local/share/omarchy/logo.
 TERMINAL = Terminal(120, 40)
 
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
-# tone, headphone jack, keyboard light), left unanswered as in its golden
+# tone, headphone jack, Bluetooth pairing, keyboard light), left unanswered as in its golden
 # report: at a plain prompt (end of input) and at gum (Esc). A run that
 # needs no answer after them ends its answers with ENDED instead.
-UNANSWERED = [EOF] * 6
+UNANSWERED = [EOF] * 7
 # How many human checks each corpus machine's run asks (the M1's stand-ins skip three without asking).
-HUMAN_QUESTIONS = {"m2-max-image2": 6, "m1-pro-mx-mac": 3}
-GUM_UNANSWERED = [CommandResult(1, "", "")] * 6
+HUMAN_QUESTIONS = {"m2-max-image2": 7, "m1-pro-mx-mac": 4}
+GUM_UNANSWERED = [CommandResult(1, "", "")] * 7
+# How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
+BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4}
+
+
+def at_the_seat(machine: str, reload: str | object = EOF) -> list:
+    """A whole run's answers at the Mac, after the disclaimer: its human checks unanswered, `reload` at the driver-reload question."""
+    before = BEFORE_RELOAD[machine]
+    return [*[EOF] * before, reload, *[EOF] * (HUMAN_QUESTIONS[machine] - before)]
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
 SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "
