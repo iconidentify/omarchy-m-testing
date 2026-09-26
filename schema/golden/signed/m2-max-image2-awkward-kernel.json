@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "consent_version": 2,
   "catalogue_version": 6,
@@ -1540,6 +1540,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFG+kypgPHZHDwz9uqTQIprHSNZ/t2xQsNd0OsnLCk\nU5sMgweIBqvUT4CqqJ4ZG9Vy94sc5lnxycwiSa1OAI/ww=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFLGLY+iuZqG9/Mp/ysfjhd3E2Ld1pLL3jPO6Ahmxh\nvo/b3djAIUzBnMF4Xn2+6bd7/2tiHXAVbxadDA2dfr8QE=\n-----END SSH SIGNATURE-----"
   }
 }
