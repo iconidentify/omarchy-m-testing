@@ -1523,9 +1523,9 @@
       "kind": "automatic",
       "status": "pass",
       "evidence": [
-        "policy0: CPUs 0-3, apple-cpufreq, 600-2424 MHz, schedutil",
-        "policy4: CPUs 4-7, apple-cpufreq, 660-3504 MHz, schedutil",
-        "policy8: CPUs 8-11, apple-cpufreq, 660-3504 MHz, schedutil"
+        "policy0: CPUs 0-3, apple-cpufreq, 912-2424 MHz, schedutil",
+        "policy4: CPUs 4-7, apple-cpufreq, 702-3264 MHz, schedutil",
+        "policy8: CPUs 8-11, apple-cpufreq, 702-3264 MHz, schedutil"
       ],
       "classification": {
         "outcome": "works",
@@ -1540,6 +1540,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQDZx2/T9EBIp03q3g0OwY8rwfa0sixawvYGtCqjXyd\nrWxW9UxoXuStIpjPsqUns6E+YSPAaSYoZ8CCe1gG6RrgQ=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQIt+7fLbh2Avy5O0M7nElc7w+luaNbAxN6Mb+/PcQ3\nTbsD/E06ZmMgDXxE8S9UQBe8ZH9hB1EbNltDtGd0+RAw0=\n-----END SSH SIGNATURE-----"
   }
 }

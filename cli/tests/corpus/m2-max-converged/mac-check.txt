@@ -1,0 +1,23 @@
+INFO  platform         Apple MacBook Pro (16-inch, M2 Max, 2023) (apple,j416c apple,t6021 apple,arm-platform)
+PASS  kernel           running 7.1.12-2-10-ARCH from linux-aurora 7.1.12.aurora2-10
+INFO  packages         m1n1-aurora 1.6.1.aurora1-3, uboot-asahi 2026.07.asahi2-4, limine 12.9.0-1, omarchy 4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001, omarchy-settings 4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001, omarchy-mac 0.1.0-5.362376005140001, omarchy-mac-boot 20260926-1.362376005140001
+PASS  repos            omarchy asahi-alarm core extra alarm aur
+PASS  kernel-repo      linux-aurora updates from [omarchy]
+PASS  boot-check       running linux-aurora 7.1.12-2-10-ARCH; installed boot files match
+INFO  boot-loader      Limine, ESP /boot/efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/EFI/Linux/omarchy_linux-aurora.efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/limine.conf
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/m1n1/boot.bin
+PASS  units            no failed system or user units
+PASS  vendor-firmware  omarchy-vendor-firmware.service finished in this boot
+PASS  speakersafetyd   speakersafetyd is active
+PASS  displays         2 active: eDP-1 3456x2234@120, USB-2 3440x1440@60
+PASS  sound-cards      AppleJ416, AppleJ416HPAI
+PASS  default-sink     MacBook Pro J416 Speakers (audio_effect.j416-convolver)
+PASS  wifi             wlan0 is connected
+PASS  wifi-backend     NetworkManager uses iwd
+PASS  bluetooth        controller powered
+PASS  snapshots        /.snapshots is a btrfs subvolume holding 0 snapshots
+PASS  migrations       no pending migrations
+INFO  coredumps        none this boot
+15 passed, 0 failed, 0 warnings, 0 skipped

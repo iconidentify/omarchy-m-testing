@@ -1,0 +1,56 @@
+Sep 27 00:34:55 omarchy-m2-max systemd[1]: Starting User Login Management...
+Sep 27 00:34:55 omarchy-m2-max systemd-logind[1181]: New seat seat0.
+Sep 27 00:34:55 omarchy-m2-max systemd-logind[1181]: Watching system buttons on /dev/input/event0 (Apple SMC power/lid events)
+Sep 27 00:34:55 omarchy-m2-max systemd-logind[1181]: Watching system buttons on /dev/input/event2 (Apple MTP keyboard)
+Sep 27 00:34:55 omarchy-m2-max systemd[1]: Started User Login Management.
+Sep 27 00:34:58 omarchy-m2-max systemd-logind[1181]: New session '1' of user 'kestrel' with class 'user' and type 'wayland'.
+Sep 27 00:34:58 omarchy-m2-max systemd-logind[1181]: New session '2' of user 'kestrel' with class 'manager' and type 'unspecified'.
+Sep 27 00:35:24 omarchy-m2-max systemd-logind[1181]: New session '3' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:27 omarchy-m2-max systemd-logind[1181]: Session 3 logged out. Waiting for processes to exit.
+Sep 27 00:35:27 omarchy-m2-max systemd-logind[1181]: Removed session 3.
+Sep 27 00:35:31 omarchy-m2-max systemd-logind[1181]: New session '4' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:31 omarchy-m2-max systemd-logind[1181]: Session 4 logged out. Waiting for processes to exit.
+Sep 27 00:35:31 omarchy-m2-max systemd-logind[1181]: Removed session 4.
+Sep 27 00:35:34 omarchy-m2-max systemd-logind[1181]: New session '5' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:34 omarchy-m2-max systemd-logind[1181]: Session 5 logged out. Waiting for processes to exit.
+Sep 27 00:35:34 omarchy-m2-max systemd-logind[1181]: Removed session 5.
+Sep 27 00:35:39 omarchy-m2-max systemd-logind[1181]: New session '6' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:39 omarchy-m2-max systemd-logind[1181]: Session 6 logged out. Waiting for processes to exit.
+Sep 27 00:35:39 omarchy-m2-max systemd-logind[1181]: Removed session 6.
+Sep 27 00:35:45 omarchy-m2-max systemd-logind[1181]: New session '7' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:45 omarchy-m2-max systemd-logind[1181]: Session 7 logged out. Waiting for processes to exit.
+Sep 27 00:35:45 omarchy-m2-max systemd-logind[1181]: Removed session 7.
+Sep 27 00:35:47 omarchy-m2-max systemd-logind[1181]: New session '8' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:35:47 omarchy-m2-max systemd-logind[1181]: Session 8 logged out. Waiting for processes to exit.
+Sep 27 00:35:47 omarchy-m2-max systemd-logind[1181]: Removed session 8.
+Sep 27 00:36:58 omarchy-m2-max systemd-logind[1181]: New session '9' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:36:58 omarchy-m2-max systemd-logind[1181]: Session 9 logged out. Waiting for processes to exit.
+Sep 27 00:36:58 omarchy-m2-max systemd-logind[1181]: Removed session 9.
+Sep 27 00:36:58 omarchy-m2-max systemd-logind[1181]: New session '10' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:36:59 omarchy-m2-max systemd-logind[1181]: Session 10 logged out. Waiting for processes to exit.
+Sep 27 00:36:59 omarchy-m2-max systemd-logind[1181]: Removed session 10.
+Sep 27 00:37:03 omarchy-m2-max systemd-logind[1181]: New session '11' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:37:03 omarchy-m2-max systemd-logind[1181]: Session 11 logged out. Waiting for processes to exit.
+Sep 27 00:37:03 omarchy-m2-max systemd-logind[1181]: Removed session 11.
+Sep 27 00:37:23 omarchy-m2-max systemd-logind[1181]: New session '12' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:37:27 omarchy-m2-max systemd-logind[1181]: Session 12 logged out. Waiting for processes to exit.
+Sep 27 00:37:27 omarchy-m2-max systemd-logind[1181]: Removed session 12.
+Sep 27 00:37:32 omarchy-m2-max systemd-logind[1181]: New session '13' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:37:32 omarchy-m2-max systemd-logind[1181]: Session 13 logged out. Waiting for processes to exit.
+Sep 27 00:37:32 omarchy-m2-max systemd-logind[1181]: Removed session 13.
+Sep 27 00:38:42 omarchy-m2-max systemd-logind[1181]: New session '14' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:38:42 omarchy-m2-max systemd-logind[1181]: Session 14 logged out. Waiting for processes to exit.
+Sep 27 00:38:42 omarchy-m2-max systemd-logind[1181]: Removed session 14.
+Sep 27 00:38:46 omarchy-m2-max systemd-logind[1181]: New session '15' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:38:46 omarchy-m2-max systemd-logind[1181]: Session 15 logged out. Waiting for processes to exit.
+Sep 27 00:38:46 omarchy-m2-max systemd-logind[1181]: Removed session 15.
+Sep 27 00:38:53 omarchy-m2-max systemd-logind[1181]: New session '16' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:38:54 omarchy-m2-max systemd-logind[1181]: Session 16 logged out. Waiting for processes to exit.
+Sep 27 00:38:54 omarchy-m2-max systemd-logind[1181]: Removed session 16.
+Sep 27 00:39:05 omarchy-m2-max systemd-logind[1181]: New session '17' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:39:05 omarchy-m2-max systemd-logind[1181]: Session 17 logged out. Waiting for processes to exit.
+Sep 27 00:39:05 omarchy-m2-max systemd-logind[1181]: Removed session 17.
+Sep 27 00:39:05 omarchy-m2-max systemd-logind[1181]: New session '18' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:39:07 omarchy-m2-max systemd-logind[1181]: Session 18 logged out. Waiting for processes to exit.
+Sep 27 00:39:07 omarchy-m2-max systemd-logind[1181]: Removed session 18.
+Sep 27 00:39:14 omarchy-m2-max systemd-logind[1181]: New session '19' of user 'kestrel' with class 'user' and type 'tty'.

@@ -22,7 +22,7 @@ from omarchy_m_test.recording import RECORDING_VERSION, RecordedHost
 HERE = os.path.dirname(os.path.abspath(__file__))
 CORPUS = os.path.join(HERE, "corpus")
 RECORDINGS = os.path.join(HERE, "recordings")
-MACHINES = ("m2-max-image2", "m1-pro-mx-mac", "m1-pro-converged")
+MACHINES = ("m2-max-image2", "m1-pro-mx-mac", "m1-pro-converged", "m2-max-converged")
 
 
 def _manifest(machine: str) -> dict[str, Any]:
