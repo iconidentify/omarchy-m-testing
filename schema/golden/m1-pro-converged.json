@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "consent_version": 2,
   "catalogue_version": 6,
@@ -1293,7 +1293,7 @@
       "status": "pass",
       "evidence": [
         "default input: effect_output.j314-mic",
-        "captured 65536 samples: peak 65, rms 14.4 (16-bit)"
+        "captured 65536 samples: peak 87, rms 21.0 (16-bit)"
       ],
       "classification": {
         "outcome": "works",
@@ -1475,10 +1475,10 @@
       "kind": "human",
       "status": "skip",
       "evidence": [
-        "before: ambient light 19 lux, keyboard light 0/255",
+        "before: ambient light 20 lux, keyboard light 0/255",
         "asked: Keep it covered: did the keyboard light come on, or get brighter, within about 10 seconds?",
         "answer: none (counted as skipped)",
-        "while covered: ambient light 19 lux, keyboard light 0/255"
+        "while covered: ambient light 20 lux, keyboard light 0/255"
       ],
       "classification": {
         "outcome": "not-tested",

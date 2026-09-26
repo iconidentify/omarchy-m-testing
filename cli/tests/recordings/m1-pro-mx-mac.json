@@ -1,7 +1,7 @@
 {
   "recording_version": 1,
   "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac",
-  "source": "omarchy-m-test --record against tests/corpus/m1-pro-mx-mac/ (scrubbed). Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such. The inventory answers come from the booted kernel's own package, linux-asahi 7.1.13.asahi1-1 and its headers (device tree, module aliases, build config).",
+  "source": "omarchy-m-test --record against tests/corpus/m1-pro-mx-mac/ (scrubbed). Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such. The inventory answers come from the booted kernel's own package, linux-asahi 7.1.13.asahi1-1 and its headers (device tree, module aliases, build config). The M1 has since moved to the converged image, so its mx-mac answers (packages, encryption, mac-check, GPU tools, speaker services) can no longer be captured and stay reconstructed; tests/corpus/m1-pro-converged is its real run.",
   "commands": [
     {
       "argv": [

@@ -1,6 +1,6 @@
 {
   "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac: raw host answers for record mode",
-  "source": "Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such. The inventory answers come from the booted kernel's own package, linux-asahi 7.1.13.asahi1-1 and its headers (device tree, module aliases, build config).",
+  "source": "Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such. The inventory answers come from the booted kernel's own package, linux-asahi 7.1.13.asahi1-1 and its headers (device tree, module aliases, build config). The M1 has since moved to the converged image, so its mx-mac answers (packages, encryption, mac-check, GPU tools, speaker services) can no longer be captured and stay reconstructed; tests/corpus/m1-pro-converged is its real run.",
   "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m1-pro",
@@ -359,7 +359,7 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the M1 on 2026-09-12: M1 Pro: 2 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M1 on 2026-09-27 (tests/corpus/m1-pro-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
       "text": "0 1\n"
@@ -375,7 +375,7 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy2/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the M1 on 2026-09-12: M1 Pro: 2 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M1 on 2026-09-27 (tests/corpus/m1-pro-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy2/related_cpus": {
       "text": "2 3 4 5\n"
@@ -391,7 +391,7 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy6/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the M1 on 2026-09-12: M1 Pro: 2 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M1 on 2026-09-27 (tests/corpus/m1-pro-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy6/related_cpus": {
       "text": "6 7 8 9\n"
@@ -430,5 +430,5 @@
     ],
     "/sys/bus/iio/devices": null
   },
-  "dirs_note": "Directories other than /home are reconstructed (t600x's GPU sits at 406400000, as on the M2 Max); the v0.1 dogfood run records the real ones. /sys/bus/iio/devices is a stand-in (recorded as absent): the M1 evidence doesn't include the ambient light sensor."
+  "dirs_note": "Directories other than /home are reconstructed; the M1's converged run (tests/corpus/m1-pro-converged, 2026-09-27) confirms the GPU at 406400000 and the three cpufreq policies. /sys/bus/iio/devices is a stand-in (recorded as absent): the M1 evidence doesn't include the ambient light sensor."
 }

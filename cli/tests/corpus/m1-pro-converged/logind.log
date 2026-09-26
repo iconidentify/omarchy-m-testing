@@ -2109,3 +2109,72 @@ Sep 27 00:04:03 omarchy-m1-pro systemd-logind[915]: New session '703' of user 'k
 Sep 27 00:04:06 omarchy-m1-pro systemd-logind[915]: Session 703 logged out. Waiting for processes to exit.
 Sep 27 00:04:06 omarchy-m1-pro systemd-logind[915]: Removed session 703.
 Sep 27 00:04:13 omarchy-m1-pro systemd-logind[915]: New session '704' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:04:27 omarchy-m1-pro systemd-logind[915]: Session 704 logged out. Waiting for processes to exit.
+Sep 27 00:04:27 omarchy-m1-pro systemd-logind[915]: Removed session 704.
+Sep 27 00:04:34 omarchy-m1-pro systemd-logind[915]: New session '705' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:04:34 omarchy-m1-pro systemd-logind[915]: Session 705 logged out. Waiting for processes to exit.
+Sep 27 00:04:34 omarchy-m1-pro systemd-logind[915]: Removed session 705.
+Sep 27 00:04:50 omarchy-m1-pro systemd-logind[915]: New session '706' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:04:51 omarchy-m1-pro systemd-logind[915]: Session 706 logged out. Waiting for processes to exit.
+Sep 27 00:04:51 omarchy-m1-pro systemd-logind[915]: Removed session 706.
+Sep 27 00:04:54 omarchy-m1-pro systemd-logind[915]: New session '707' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:04:54 omarchy-m1-pro systemd-logind[915]: Session 707 logged out. Waiting for processes to exit.
+Sep 27 00:04:54 omarchy-m1-pro systemd-logind[915]: Removed session 707.
+Sep 27 00:05:16 omarchy-m1-pro systemd-logind[915]: New session '708' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:05:16 omarchy-m1-pro systemd-logind[915]: Session 708 logged out. Waiting for processes to exit.
+Sep 27 00:05:16 omarchy-m1-pro systemd-logind[915]: Removed session 708.
+Sep 27 00:05:23 omarchy-m1-pro systemd-logind[915]: New session '709' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:05:23 omarchy-m1-pro systemd-logind[915]: Session 709 logged out. Waiting for processes to exit.
+Sep 27 00:05:23 omarchy-m1-pro systemd-logind[915]: Removed session 709.
+Sep 27 00:05:54 omarchy-m1-pro systemd-logind[915]: New session '710' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:05:54 omarchy-m1-pro systemd-logind[915]: Session 710 logged out. Waiting for processes to exit.
+Sep 27 00:05:54 omarchy-m1-pro systemd-logind[915]: Removed session 710.
+Sep 27 00:06:13 omarchy-m1-pro systemd-logind[915]: New session '711' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:06:13 omarchy-m1-pro systemd-logind[915]: Session 711 logged out. Waiting for processes to exit.
+Sep 27 00:06:13 omarchy-m1-pro systemd-logind[915]: Removed session 711.
+Sep 27 00:06:39 omarchy-m1-pro systemd-logind[915]: New session '712' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:06:50 omarchy-m1-pro systemd-logind[915]: Session 712 logged out. Waiting for processes to exit.
+Sep 27 00:06:50 omarchy-m1-pro systemd-logind[915]: Removed session 712.
+Sep 27 00:06:50 omarchy-m1-pro systemd-logind[915]: New session '713' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:06:50 omarchy-m1-pro systemd-logind[915]: Session 713 logged out. Waiting for processes to exit.
+Sep 27 00:06:50 omarchy-m1-pro systemd-logind[915]: Removed session 713.
+Sep 27 00:06:55 omarchy-m1-pro systemd-logind[915]: New session '714' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:06:55 omarchy-m1-pro systemd-logind[915]: Session 714 logged out. Waiting for processes to exit.
+Sep 27 00:06:55 omarchy-m1-pro systemd-logind[915]: Removed session 714.
+Sep 27 00:07:56 omarchy-m1-pro systemd-logind[915]: New session '715' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:07:56 omarchy-m1-pro systemd-logind[915]: Session 715 logged out. Waiting for processes to exit.
+Sep 27 00:07:56 omarchy-m1-pro systemd-logind[915]: Removed session 715.
+Sep 27 00:08:12 omarchy-m1-pro systemd-logind[915]: New session '716' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:08:12 omarchy-m1-pro systemd-logind[915]: Session 716 logged out. Waiting for processes to exit.
+Sep 27 00:08:12 omarchy-m1-pro systemd-logind[915]: Removed session 716.
+Sep 27 00:08:18 omarchy-m1-pro systemd-logind[915]: New session '717' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:08:18 omarchy-m1-pro systemd-logind[915]: Session 717 logged out. Waiting for processes to exit.
+Sep 27 00:08:18 omarchy-m1-pro systemd-logind[915]: Removed session 717.
+Sep 27 00:08:56 omarchy-m1-pro systemd-logind[915]: New session '718' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:08:56 omarchy-m1-pro systemd-logind[915]: Session 718 logged out. Waiting for processes to exit.
+Sep 27 00:08:56 omarchy-m1-pro systemd-logind[915]: Removed session 718.
+Sep 27 00:09:56 omarchy-m1-pro systemd-logind[915]: New session '719' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:09:56 omarchy-m1-pro systemd-logind[915]: Session 719 logged out. Waiting for processes to exit.
+Sep 27 00:09:56 omarchy-m1-pro systemd-logind[915]: Removed session 719.
+Sep 27 00:10:57 omarchy-m1-pro systemd-logind[915]: New session '720' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:10:57 omarchy-m1-pro systemd-logind[915]: Session 720 logged out. Waiting for processes to exit.
+Sep 27 00:10:57 omarchy-m1-pro systemd-logind[915]: Removed session 720.
+Sep 27 00:11:57 omarchy-m1-pro systemd-logind[915]: New session '721' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:11:57 omarchy-m1-pro systemd-logind[915]: Session 721 logged out. Waiting for processes to exit.
+Sep 27 00:11:57 omarchy-m1-pro systemd-logind[915]: Removed session 721.
+Sep 27 00:12:17 omarchy-m1-pro systemd-logind[915]: New session '722' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:12:17 omarchy-m1-pro systemd-logind[915]: Session 722 logged out. Waiting for processes to exit.
+Sep 27 00:12:17 omarchy-m1-pro systemd-logind[915]: Removed session 722.
+Sep 27 00:12:26 omarchy-m1-pro systemd-logind[915]: New session '723' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:12:27 omarchy-m1-pro systemd-logind[915]: Session 723 logged out. Waiting for processes to exit.
+Sep 27 00:12:27 omarchy-m1-pro systemd-logind[915]: Removed session 723.
+Sep 27 00:12:57 omarchy-m1-pro systemd-logind[915]: New session '724' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:12:57 omarchy-m1-pro systemd-logind[915]: Session 724 logged out. Waiting for processes to exit.
+Sep 27 00:12:57 omarchy-m1-pro systemd-logind[915]: Removed session 724.
+Sep 27 00:13:58 omarchy-m1-pro systemd-logind[915]: New session '725' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:13:58 omarchy-m1-pro systemd-logind[915]: Session 725 logged out. Waiting for processes to exit.
+Sep 27 00:13:58 omarchy-m1-pro systemd-logind[915]: Removed session 725.
+Sep 27 00:14:58 omarchy-m1-pro systemd-logind[915]: New session '726' of user 'kestrel' with class 'user' and type 'tty'.
+Sep 27 00:14:58 omarchy-m1-pro systemd-logind[915]: Session 726 logged out. Waiting for processes to exit.
+Sep 27 00:14:58 omarchy-m1-pro systemd-logind[915]: Removed session 726.
+Sep 27 00:15:02 omarchy-m1-pro systemd-logind[915]: New session '727' of user 'kestrel' with class 'user' and type 'tty'.

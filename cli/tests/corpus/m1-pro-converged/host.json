@@ -1,6 +1,6 @@
 {
   "description": "MacBook Pro (14-inch, M1 Pro, 2021) on the converged image, over SSH: raw host answers for record mode",
-  "source": "Real run of omarchy-m-test 0.1.1 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave; nothing is reconstructed.",
+  "source": "Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave; nothing is reconstructed.",
   "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a tunnel and a bridge). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname.",
   "forbidden": [
     "omarchy-m1-pro",
@@ -17,8 +17,8 @@
     "maint@example.org"
   ],
   "env": {
-    "SSH_CONNECTION": "10.200.4.9 64943 10.88.0.12 22",
-    "XDG_SESSION_ID": "704",
+    "SSH_CONNECTION": "10.200.4.9 49281 10.88.0.12 22",
+    "XDG_SESSION_ID": "727",
     "HOME": "/home/kestrel"
   },
   "commands": [
@@ -276,7 +276,7 @@
         "effect_output.j314-mic"
       ],
       "returncode": 0,
-      "stdout": "samples 65536 peak 65 rms 14.4\n",
+      "stdout": "samples 65536 peak 87 rms 21.0\n",
       "stderr": ""
     },
     {
@@ -367,7 +367,7 @@
       "argv": [
         "loginctl",
         "show-session",
-        "704",
+        "727",
         "--property=Remote",
         "--property=Seat",
         "--property=Active"
@@ -484,7 +484,7 @@
     "/var/lib/omarchy/image/target.booted": null,
     "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
     "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
-      "text": "19\n"
+      "text": "20\n"
     },
     "/sys/class/power_supply/macsmc-ac/type": {
       "text": "Mains\n"
