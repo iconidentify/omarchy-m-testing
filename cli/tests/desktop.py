@@ -31,11 +31,12 @@ TERMINAL = Terminal(120, 40)
 # report: at a plain prompt (end of input) and at gum (Esc). A run that
 # needs no answer after them ends its answers with ENDED instead.
 UNANSWERED = [EOF] * 7
-# How many human checks each corpus machine's run asks (the M1's stand-ins skip three without asking).
-HUMAN_QUESTIONS = {"m2-max-image2": 7, "m1-pro-mx-mac": 4}
+# How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
+# the converged M1 ran over SSH, where brightness can't be set, so that one isn't asked).
+HUMAN_QUESTIONS = {"m2-max-image2": 7, "m1-pro-mx-mac": 4, "m1-pro-converged": 6}
 GUM_UNANSWERED = [CommandResult(1, "", "")] * 7
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
-BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4}
+BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6}
 
 
 def at_the_seat(machine: str, reload: str | object = EOF) -> list:

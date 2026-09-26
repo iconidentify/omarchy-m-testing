@@ -1,0 +1,12 @@
+PASS audio stack installed
+PASS speakersafetyd enabled and active
+speakersafetyd presets: /usr/lib/systemd/system-preset/80-omarchy-apple.preset /usr/lib/systemd/system-preset/80-omarchy-mac-audio.preset /usr/lib/systemd/system-preset/80-omarchy-mac.preset 
+speakersafetyd enable links: /etc/systemd/system/multi-user.target.wants/speakersafetyd.service 
+FAIL only omarchy-mac presets speakersafetyd
+PASS speakersafetyd enabled by exactly one link
+PASS speaker amps unlocked this boot
+PASS speaker DSP sink present
+PASS speaker and headphone sinks never suspend
+FAIL mic mapper running
+default source: effect_output.j314-mic
+-- No entries --

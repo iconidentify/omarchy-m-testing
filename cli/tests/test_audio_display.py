@@ -274,7 +274,8 @@ class BrightnessTest(unittest.TestCase):
         self.assertTrue(all(level > 0 for value in range(0, 501, 7) for level in display.steps(value, 500)))
 
     def test_a_backlight_that_cant_be_set_is_skipped_and_left_as_it_was(self):
-        rec = answer(live_recording(), STEPS[0], 1, stderr="Failed to set brightness: Permission denied\n")
+        # The first step took, the second didn't: put back once, then nothing is pending.
+        rec = answer(live_recording(), STEPS[1], 1, stderr="Failed to set brightness: Permission denied\n")
         host = run("display", ["s", "s"], rec=rec)
 
         result = check(host, "display.brightness-steps")
@@ -282,6 +283,17 @@ class BrightnessTest(unittest.TestCase):
         self.assertIn("brightnessctl couldn't set the backlight (Failed to set brightness: Permission denied)", result["evidence"][-1])
         self.assertNotIn(BRIGHTNESS_PROMPT, prompts(host))
         self.assertEqual(host.commands_run.count(PANEL_BACK), 1)
+
+    def test_a_backlight_it_may_not_set_at_all_is_skipped_with_nothing_to_put_back(self):
+        # Over SSH brightnessctl gets no seat: no step takes, and putting it back would fail the same way.
+        denied = "Failed to set brightness: Operation not permitted\n"
+        rec = answer(answer(live_recording(), STEPS[0], 1, stderr=denied), PANEL_BACK, 1, stderr=denied)
+        host = run("display", ["s", "s"], rec=rec)
+
+        result = check(host, "display.brightness-steps")
+        self.assertEqual(result["status"], "skip")
+        self.assertNotIn(PANEL_BACK, host.commands_run)
+        self.assertNotIn("Couldn't undo", host.output)
 
     def test_a_backlight_that_doesnt_take_its_value_fails_without_asking(self):
         rec = answer(live_recording(), STEPS[1], stdout="apple-panel-bl,backlight,175,35%,500\n")

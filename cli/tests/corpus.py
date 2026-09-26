@@ -2,7 +2,8 @@
 
 tests/corpus/<machine>/host.json is a recording whose outputs may point at
 evidence files beside it ({"corpus": "kernel.log"}) and whose entries may
-carry a "note" on provenance. It is what the Mac answered before scrubbing,
+carry a "note" on provenance, and "env" the environment variables the run
+read (m1-pro-converged ran over SSH). It is what the Mac answered before scrubbing,
 so record mode can be run against it; "forbidden" lists the identifiers in
 it that must never reach a recording or a report.
 
@@ -21,7 +22,7 @@ from omarchy_m_test.recording import RECORDING_VERSION, RecordedHost
 HERE = os.path.dirname(os.path.abspath(__file__))
 CORPUS = os.path.join(HERE, "corpus")
 RECORDINGS = os.path.join(HERE, "recordings")
-MACHINES = ("m2-max-image2", "m1-pro-mx-mac")
+MACHINES = ("m2-max-image2", "m1-pro-mx-mac", "m1-pro-converged")
 
 
 def _manifest(machine: str) -> dict[str, Any]:
@@ -53,6 +54,8 @@ def raw_recording(machine: str) -> dict[str, Any]:
         "commands": commands,
         "files": files,
         "dirs": manifest["dirs"],
+        # The environment the run saw (a run over SSH skips its disruptive sections).
+        **({"env": manifest["env"]} if "env" in manifest else {}),
     }
 
 

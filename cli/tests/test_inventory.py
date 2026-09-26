@@ -124,6 +124,25 @@ class GoldenInventoryTest(unittest.TestCase):
         self.assertEqual(differences["CONFIG_FUNCTION_TRACER"], ("y", "n"))
         self.assertFalse([o for o, (asahi, ours) in differences.items() if ours in "ym" and asahi not in "ym"])
 
+    def test_the_m1_pro_on_the_converged_image_lists_only_what_really_lacks_a_driver(self):
+        rec = json.loads(open(os.path.join(HERE, "recordings", "m1-pro-converged.json"), encoding="utf-8").read())
+        rec["files"][f"{rec['env']['HOME']}/.local/state/omarchy-m-test/checkpoint.json"] = None
+        status, mac, report = run(rec)
+
+        self.assertEqual(status, 0)
+        self.assertEqual(mac.written[REPORT_FILE], golden("m1-pro-converged"))
+        # The real M1: its video decoder's firmware is missing. The CPU frequency clusters, the
+        # architected timer and U-Boot's SMBIOS node have unbound devices, by design: not unclaimed.
+        self.assertEqual(report["inventory"]["unclaimed"], [
+            {"compatible": "apple,t6000-avd", "count": 1, "outcome": "fails", "feature": "video-decoder", "layer": "asahi"},
+        ])
+        nodes = {(n["compatible"], n["status"], n["driver"]): n["count"] for n in report["inventory"]["nodes"]}
+        self.assertEqual(nodes[("apple,t6000-cluster-cpufreq", "okay", "unbound")], 3)
+        self.assertEqual(results(report)["cpu.frequency-scaling"]["status"], "pass")
+        self.assertEqual(hardware(report)["hardware.drivers"]["evidence"][0],
+                         "361 hardware nodes: 310 claimed by a driver, 31 with no device of their own, "
+                         "5 that no driver binds by design (CPU frequency clusters, timer, SMBIOS), 14 disabled, 1 unclaimed")
+
 
 class PrivacyTest(unittest.TestCase):
     def test_the_inventory_holds_only_node_types_statuses_and_driver_states(self):

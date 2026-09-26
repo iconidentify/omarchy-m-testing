@@ -1,0 +1,587 @@
+{
+  "description": "MacBook Pro (14-inch, M1 Pro, 2021) on the converged image, over SSH: raw host answers for record mode",
+  "source": "Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave; nothing is reconstructed.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a tunnel and a bridge). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname.",
+  "forbidden": [
+    "omarchy-m1-pro",
+    "kestrel",
+    "/home/kestrel",
+    "Bellbird7C21-5G",
+    "Currawong-Tun",
+    "Magpie-Bridge",
+    "10.61.23.147",
+    "10.61.23.1",
+    "10.200.4.9",
+    "10.88.0.12",
+    "7a:3e:51:c0:9d:24",
+    "3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0",
+    "d4c2a8f1e6b3907a5c1d",
+    "5e2b9c14-7a3d-4f68-b1e0-c9d2a4f7e316",
+    "maint@example.org"
+  ],
+  "env": {
+    "SSH_CONNECTION": "10.200.4.9 49281 10.88.0.12 22",
+    "XDG_SESSION_ID": "727",
+    "HOME": "/home/kestrel"
+  },
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.12-2-10-ARCH\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 0,
+      "stdout": "Bellbird7C21-5G\nCurrawong-Tun\nMagpie-Bridge\nlo\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-settings 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001\nomarchy-mac 0.1.0-5.361571887310001\nomarchy-mac-boot 20260926-1.45\nlinux-aurora 7.1.12.aurora2-10\nlinux-aurora 7.1.12.aurora2-10\nm1n1-aurora 1.6.1.aurora1-3\nm1n1-aurora 1.6.1.aurora1-3\nuboot-asahi 2026.07.asahi2-4\nlimine 12.9.0-1\nmesa 1:26.2.3-1\nvulkan-asahi 1:26.2.3-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy-dev' was not found\nerror: package 'omarchy-settings-dev' was not found\nerror: package 'omarchy-mac-keyring' was not found\n"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/mapper/root[/@]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/mapper/root"
+      ],
+      "returncode": 0,
+      "stdout": "crypt btrfs\npart crypto_LUKS\ndisk \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "mac-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "-- No entries --\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-a",
+        "-H",
+        "",
+        "--include=compatible",
+        "--include=status",
+        "/sys/firmware/devicetree/base"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree-properties.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-H",
+        "-E",
+        "^(OF_FULLNAME|DRIVER)=",
+        "--include=uevent",
+        "/sys/devices"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uevents.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "zcat",
+        "/proc/config.gz"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel-config.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 0,
+      "stdout": "==========\nVULKANINFO\n==========\n\nVulkan Instance Version: 1.4.357\n\n\nInstance Extensions: count = 26\n-------------------------------\nVK_EXT_acquire_drm_display             : extension revision 1\nVK_EXT_acquire_xlib_display            : extension revision 1\nVK_EXT_debug_report                    : extension revision 10\nVK_EXT_debug_utils                     : extension revision 2\nVK_EXT_direct_mode_display             : extension revision 1\nVK_EXT_display_surface_counter         : extension revision 1\nVK_EXT_headless_surface                : extension revision 1\nVK_EXT_layer_settings                  : extension revision 2\nVK_EXT_surface_maintenance1            : extension revision 1\nVK_EXT_swapchain_colorspace            : extension revision 5\nVK_KHR_device_group_creation           : extension revision 1\nVK_KHR_display                         : extension revision 23\nVK_KHR_external_fence_capabilities     : extension revision 1\nVK_KHR_external_memory_capabilities    : extension revision 1\nVK_KHR_external_semaphore_capabilities : extension revision 1\nVK_KHR_get_display_properties2         : extension revision 1\nVK_KHR_get_physical_device_properties2 : extension revision 2\nVK_KHR_get_surface_capabilities2       : extension revision 1\nVK_KHR_portability_enumeration         : extension revision 1\nVK_KHR_surface                         : extension revision 25\nVK_KHR_surface_maintenance1            : extension revision 1\nVK_KHR_surface_protected_capabilities  : extension revision 1\nVK_KHR_wayland_surface                 : extension revision 6\nVK_KHR_xcb_surface                     : extension revision 6\nVK_KHR_xlib_surface                    : extension revision 6\nVK_LUNARG_direct_driver_loading        : extension revision 1\n\nInstance Layers: count = 2\n--------------------------\nVK_LAYER_MESA_anti_lag      Open-source implementation of the VK_AMD_anti_lag extension. 1.4.303  version 1\nVK_LAYER_MESA_device_select Linux device selection layer                                 1.4.303  version 1\n\nDevices:\n========\nGPU0:\n\tapiVersion         = 1.4.354\n\tdriverVersion      = 26.2.3\n\tvendorID           = 0x10005\n\tdeviceID           = 0x0000\n\tdeviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU\n\tdeviceName         = Apple M1 Pro (G13S C0)\n\tdriverID           = DRIVER_ID_MESA_HONEYKRISP\n\tdriverName         = Honeykrisp\n\tdriverInfo         = Mesa 26.2.3-arch1.1\n\tconformanceVersion = 10.61.23.147\n\tdeviceUUID         = 3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0\n\tdriverUUID         = 3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0\nGPU1:\n\tapiVersion         = 1.4.354\n\tdriverVersion      = 26.2.3\n\tvendorID           = 0x10005\n\tdeviceID           = 0x0000\n\tdeviceType         = PHYSICAL_DEVICE_TYPE_CPU\n\tdeviceName         = llvmpipe (LLVM 22.1.8, 128 bits)\n\tdriverID           = DRIVER_ID_MESA_LLVMPIPE\n\tdriverName         = llvmpipe\n\tdriverInfo         = Mesa 26.2.3-arch1.1 (LLVM 22.1.8)\n\tconformanceVersion = 10.61.23.1\n\tdeviceUUID         = 3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0\n\tdriverUUID         = 3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0\n",
+      "stderr": "'DISPLAY' environment variable not set... skipping surface info\nWARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!\nWARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPlanePropertiesKHR!\nWARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!\n"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 2,
+      "stdout": "GBM platform:\nEGL API version: 1.5\nEGL vendor string: Mesa Project\nEGL version string: 1.5\nEGL client APIs: OpenGL OpenGL_ES \nOpenGL core profile vendor: Mesa\nOpenGL core profile renderer: Apple M1 Pro (G13S C0)\nOpenGL core profile version: 4.6 (Core Profile) Mesa 26.2.3-arch1.1\nOpenGL core profile shading language version: 4.60\nOpenGL compatibility profile vendor: Mesa\nOpenGL compatibility profile renderer: Apple M1 Pro (G13S C0)\nOpenGL compatibility profile version: 4.6 (Compatibility Profile) Mesa 26.2.3-arch1.1\nOpenGL compatibility profile shading language version: 4.60\nOpenGL ES profile vendor: Mesa\nOpenGL ES profile renderer: Apple M1 Pro (G13S C0)\nOpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3-arch1.1\nOpenGL ES profile shading language version: OpenGL ES GLSL ES 3.20\n\nWayland platform:\neglinfo: eglInitialize failed\n\nX11 platform:\neglinfo: eglInitialize failed\n\nSurfaceless platform:\nEGL API version: 1.5\nEGL vendor string: Mesa Project\nEGL version string: 1.5\nEGL client APIs: OpenGL OpenGL_ES \nOpenGL core profile vendor: Mesa\nOpenGL core profile renderer: Apple M1 Pro (G13S C0)\nOpenGL core profile version: 4.6 (Core Profile) Mesa 26.2.3-arch1.1\nOpenGL core profile shading language version: 4.60\nOpenGL compatibility profile vendor: Mesa\nOpenGL compatibility profile renderer: Apple M1 Pro (G13S C0)\nOpenGL compatibility profile version: 4.6 (Compatibility Profile) Mesa 26.2.3-arch1.1\nOpenGL compatibility profile shading language version: 4.60\nOpenGL ES profile vendor: Mesa\nOpenGL ES profile renderer: Apple M1 Pro (G13S C0)\nOpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3-arch1.1\nOpenGL ES profile shading language version: OpenGL ES GLSL ES 3.20\n\nDevice platform:\nDevice #0:\n\nPlatform Device platform:\nEGL API version: 1.5\nEGL vendor string: Mesa Project\nEGL version string: 1.5\nEGL client APIs: OpenGL OpenGL_ES \nOpenGL core profile vendor: Mesa\nOpenGL core profile renderer: Apple M1 Pro (G13S C0)\nOpenGL core profile version: 4.6 (Core Profile) Mesa 26.2.3-arch1.1\nOpenGL core profile shading language version: 4.60\nOpenGL compatibility profile vendor: Mesa\nOpenGL compatibility profile renderer: Apple M1 Pro (G13S C0)\nOpenGL compatibility profile version: 4.6 (Compatibility Profile) Mesa 26.2.3-arch1.1\nOpenGL compatibility profile shading language version: 4.60\nOpenGL ES profile vendor: Mesa\nOpenGL ES profile renderer: Apple M1 Pro (G13S C0)\nOpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3-arch1.1\nOpenGL ES profile shading language version: OpenGL ES GLSL ES 3.20\n\nDevice #1:\n\nPlatform Device platform:\nEGL API version: 1.5\nEGL vendor string: Mesa Project\nEGL version string: 1.5\nEGL client APIs: OpenGL OpenGL_ES \nOpenGL core profile vendor: Mesa\nOpenGL core profile renderer: llvmpipe (LLVM 22.1.8, 128 bits)\nOpenGL core profile version: 4.6 (Core Profile) Mesa 26.2.3-arch1.1\nOpenGL core profile shading language version: 4.60\nOpenGL compatibility profile vendor: Mesa\nOpenGL compatibility profile renderer: llvmpipe (LLVM 22.1.8, 128 bits)\nOpenGL compatibility profile version: 4.6 (Compatibility Profile) Mesa 26.2.3-arch1.1\nOpenGL compatibility profile shading language version: 4.60\nOpenGL ES profile vendor: Mesa\nOpenGL ES profile renderer: llvmpipe (LLVM 22.1.8, 128 bits)\nOpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3-arch1.1\nOpenGL ES profile shading language version: OpenGL ES GLSL ES 3.20\n\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:apple-display-check",
+        "--read-only"
+      ],
+      "returncode": 1,
+      "stdout": {
+        "corpus": "display-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,390,78%,500\ninput3::kana,leds,0,0%,1\ninput3::numlock,leds,1,100%,1\nkbd_backlight,leds,0,0%,255\ninput3::capslock,leds,0,0%,1\ninput3::compose,leds,0,0%,1\ninput3::scrolllock,leds,0,0%,1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "273"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Failed to set brightness: Operation not permitted\n"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "390"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Failed to set brightness: Operation not permitted\n"
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 1,
+      "stdout": {
+        "corpus": "audio-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 0,
+      "stdout": "effect_output.j314-mic\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 3 parec --raw --format=s16le --channels=1 --rate=48000 --device=\"$2\" | python3 -c \"$1\"",
+        "sh",
+        "import array, math, sys\ndata = sys.stdin.buffer.read()\nsamples = array.array('h', data[: len(data) // 2 * 2])\nif sys.byteorder == 'big':\n    samples.byteswap()\npeak = max(map(abs, samples), default=0)\nrms = math.sqrt(sum(v * v for v in samples) / len(samples)) if samples else 0.0\nprint(f'samples {len(samples)} peak {peak} rms {rms:.1f}')\n",
+        "effect_output.j314-mic"
+      ],
+      "returncode": 0,
+      "stdout": "samples 65536 peak 87 rms 21.0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j314-convolver\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "inspect",
+        "@DEFAULT_AUDIO_SINK@"
+      ],
+      "returncode": 0,
+      "stdout": "id 78, type PipeWire:Interface:Node\n    adapt.follower.spa-node = \"\"\n    audio.allowed-rates = \"[96000, 88200, 48000, 44100]\"\n    audio.channels = \"2\"\n    audio.position = \"[\"FL\", \"FR\"]\"\n  * client.id = \"77\"\n    clock.quantum-limit = \"8192\"\n    device.api = \"dsp\"\n    device.icon-name = \"audio-speakers\"\n  * factory.id = \"10\"\n    library.name = \"audioconvert/libspa-audioconvert\"\n  * media.class = \"Audio/Sink\"\n    media.name = \"MacBook Pro J314 Speakers\"\n    node.autoconnect = \"true\"\n  * node.description = \"MacBook Pro J314 Speakers\"\n    node.driver-id = \"54\"\n    node.group = \"filter-chain-2372-19\"\n    node.link-group = \"filter-chain-2372-19\"\n    node.loop.name = \"data-loop.0\"\n  * node.name = \"audio_effect.j314-convolver\"\n    node.pause-on-idle = \"false\"\n    node.virtual = \"false\"\n    node.want-driver = \"true\"\n    object.register = \"false\"\n  * object.serial = \"78\"\n    port.group = \"stream.0\"\n  * priority.session = \"850\"\n    resample.disable = \"true\"\n    resample.prefill = \"true\"\n    session.suspend-timeout-seconds = \"0\"\n    state.default-volume = \"0.343\"\n    stream.is-live = \"true\"\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "get-volume",
+        "78"
+      ],
+      "returncode": 0,
+      "stdout": "Volume: 0.70\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "78",
+        "0.30"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "python3 -c \"$1\" | pacat --raw --format=s16le --channels=2 --rate=48000 --device=\"$2\"",
+        "sh",
+        "import math, struct, sys\nrate = 48000\nn = 2 * rate\nfade = rate // 20\ndef level(i):\n    return min(1.0, i / fade, (n - i) / fade)\nwave = (int(8000 * level(i) * math.sin(2 * math.pi * 440 * i / rate)) for i in range(n))\nsys.stdout.buffer.write(b''.join(struct.pack('<hh', v, v) for v in wave))\n",
+        "audio_effect.j314-convolver"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "78",
+        "0.70"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c \"^Device \""
+      ],
+      "returncode": 1,
+      "stdout": "0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "727",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=kbd_backlight",
+        "info"
+      ],
+      "returncode": 0,
+      "stdout": "kbd_backlight,leds,0,0%,255\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "dtc",
+        "-I",
+        "fs",
+        "-O",
+        "dts",
+        "/proc/device-tree"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "<stdout>: ERROR (node_name_not_empty): /reserved-memory/@103d2310000: Empty node name\nERROR: Input tree has errors, aborting (use -f to force output)\n"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=NetworkManager.service",
+        "--unit=iwd.service",
+        "--output=short-precise",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "wifi.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=systemd-logind.service",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "logind.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": "Linux omarchy-m1-pro 7.1.12-2-10-ARCH #1 SMP PREEMPT_DYNAMIC Fri, 25 Sep 2026 07:35:14 +0000 aarch64 GNU/Linux\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lspci",
+        "-nn"
+      ],
+      "returncode": 0,
+      "stdout": "00:00.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n00:01.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n01:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4387 802.11ax Dual Band Wireless LAN Controller [14e4:4433] (rev 07)\n01:00.1 Network controller [0280]: Broadcom Inc. and subsidiaries BRCM4387 Bluetooth Controller [14e4:5f71] (rev 07)\n02:00.0 SD Host controller [0805]: Genesys Logic, Inc GL9755 SD Host Controller [17a0:9755] (rev 01)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "devices",
+        "-j"
+      ],
+      "returncode": 1,
+      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ip",
+        "-brief",
+        "address"
+      ],
+      "returncode": 0,
+      "stdout": "lo               UNKNOWN        10.61.23.1/8 10.200.4.9/128 \nwlan0            UP             10.88.0.12/24 10.61.23.147/64 \nBellbird7C21-5G       UNKNOWN        10.61.23.1/32 10.200.4.9/128 10.88.0.12/64 \nBellbird7C21-5G          DOWN           10.61.23.147/16 10.61.23.1/64 \n",
+      "stderr": ""
+    }
+  ],
+  "files": {
+    "/proc/device-tree/compatible": {
+      "text": "apple,j314s\u0000apple,t6000\u0000apple,arm-platform\u0000"
+    },
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "omarchy-m1-pro\n"
+    },
+    "/etc/os-release": {
+      "text": "NAME=\"Arch Linux ARM\"\nPRETTY_NAME=\"Arch Linux ARM\"\nID=archarm\nID_LIKE=arch\nBUILD_ID=rolling\nANSI_COLOR=\"38;2;23;147;209\"\nHOME_URL=\"https://archlinuxarm.org/\"\nDOCUMENTATION_URL=\"https://archlinuxarm.org/wiki\"\nSUPPORT_URL=\"https://archlinuxarm.org/forum\"\nBUG_REPORT_URL=\"https://github.com/archlinuxarm/PKGBUILDs/issues\"\nLOGO=archlinux-logo\n"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/image/target.booted": null,
+    "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
+    "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
+      "text": "20\n"
+    },
+    "/sys/class/power_supply/macsmc-ac/type": {
+      "text": "Mains\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Full\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "100\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2064000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_max_freq": {
+      "text": "3036000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/related_cpus": {
+      "text": "2 3 4 5\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq": {
+      "text": "3036000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/related_cpus": {
+      "text": "6 7 8 9\n"
+    }
+  },
+  "dirs": {
+    "/home": [
+      "kestrel"
+    ],
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.json",
+      "lvp_icd.json",
+      "virtio_icd.json"
+    ],
+    "/sys/bus/iio/devices": [
+      "iio:device0",
+      "iio:device1"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-ac",
+      "macsmc-battery",
+      "tps6598x-source-psy-0-0038",
+      "tps6598x-source-psy-0-003a",
+      "tps6598x-source-psy-0-003b",
+      "tps6598x-source-psy-0-003f"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "boost",
+      "policy0",
+      "policy2",
+      "policy6"
+    ]
+  }
+}

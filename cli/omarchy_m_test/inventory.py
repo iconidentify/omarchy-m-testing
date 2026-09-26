@@ -22,7 +22,11 @@ no driver claimed is unclaimed, and is explained against the catalogue's
 hardware map: the feature it is, failing, or unknown hardware. Bus and
 register-block containers (simple-bus, simple-mfd, syscon: their children are
 the hardware, e.g. the power manager's power domains) usually have no driver
-of their own and are never unclaimed.
+of their own and are never unclaimed. Nor are the nodes no driver ever binds
+by design: the CPU frequency clusters (apple-soc-cpufreq drives them through
+the CPUs' performance domains; the CPU section checks it works), the
+architected timer (the kernel core sets it up) and U-Boot's SMBIOS node
+(the boot loader's, nothing for Linux).
 
 The report's inventory block carries only node types, statuses, driver-bound
 states and counts, never a property value or a node's path; kernel-log lines
@@ -53,6 +57,8 @@ KERNEL_CONFIG = ["zcat", "/proc/config.gz"]
 SKIPPED_SUBTREES = ("/cpus", "/chosen", "/reserved-memory")
 # Containers: their children are the hardware; simple-pm-bus binds them only when this is their first compatible.
 CONTAINERS = frozenset({"simple-bus", "simple-mfd", "simple-pm-bus", "syscon"})
+# Nodes whose device no driver binds by design (seen unbound on the M1 Pro, 2026-09-27).
+UNBOUND_BY_DESIGN = frozenset({"apple,cluster-cpufreq", "arm,armv8-timer", "u-boot,sysinfo-smbios"})
 
 LOG_LINES_PER_CHECK = 20
 EVIDENCE_DIFFERENCES = 40
@@ -92,7 +98,11 @@ class Node:
 
     @property
     def unclaimed(self) -> bool:
-        return self.status == "okay" and self.driver == "unbound" and not self.container
+        return self.status == "okay" and self.driver == "unbound" and not self.container and not self.unbound_by_design
+
+    @property
+    def unbound_by_design(self) -> bool:
+        return bool(UNBOUND_BY_DESIGN.intersection(self.compatibles))
 
 
 @dataclass
@@ -159,12 +169,11 @@ class Inventory:
     def _drivers(self, catalogue: Catalogue) -> dict:
         if self.nodes is None:
             return _result("hardware.drivers", "skip", [self.missing])
-        states = Counter(
-            "disabled" if node.status != "okay" else "container" if node.driver == "unbound" and node.container else node.driver
-            for node in self.nodes
-        )
+        states = Counter(_state(node) for node in self.nodes)
         unclaimed = sum(entry["count"] for entry in self.unclaimed)
         containers = f"{states['container']} bus or register containers with no driver of their own, " if states["container"] else ""
+        if states["by-design"]:
+            containers += f"{states['by-design']} that no driver binds by design (CPU frequency clusters, timer, SMBIOS), "
         evidence = [
             f"{len(self.nodes)} hardware nodes: {states['bound']} claimed by a driver, "
             f"{states['none']} with no device of their own, {containers}{states['disabled']} disabled, {unclaimed} unclaimed"
@@ -309,3 +318,13 @@ def _reference() -> tuple[tuple[str, dict[str, str]] | None, str]:
     except (OSError, ValueError, KeyError, AttributeError) as problem:
         return None, f"Asahi's reference kernel config can't be used ({problem})"
     return (label, parse_config(config.decode("utf-8", "replace"))), ""
+
+
+def _state(node: Node) -> str:
+    if node.status != "okay":
+        return "disabled"
+    if node.driver == "unbound" and node.container:
+        return "container"
+    if node.driver == "unbound" and node.unbound_by_design:
+        return "by-design"
+    return node.driver
