@@ -1,0 +1,48 @@
+name: Release
+
+# Push a tag v<TOOL_VERSION> on main to publish a signed CLI release. The
+# installer downloads releases/latest/download/omarchy-m-test.tar.gz and its
+# .sig, and the CLI's newer-release check reads VERSION.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Tag matches the CLI's version
+        run: |
+          version="$(python3 -c 'import sys; sys.path.insert(0, "cli"); import omarchy_m_test as t; print(t.TOOL_VERSION)')"
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME doesn't match TOOL_VERSION $version"; exit 1; }
+      - name: Tests
+        run: |
+          python cli/scripts/check_boundary.py
+          (cd cli && python -m unittest discover -s tests -t .)
+      - name: Build
+        run: release/build.sh dist
+      - name: Sign
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          umask 077
+          key="$RUNNER_TEMP/release-key"
+          printf '%s\n' "$RELEASE_SIGNING_KEY" > "$key"
+          ssh-keygen -q -Y sign -f "$key" -n omarchy-m-test-release dist/omarchy-m-test.tar.gz
+          shred -u "$key"
+          ssh-keygen -Y verify -f release/allowed_signers -I release@omarchy-m-testing.org \
+            -n omarchy-m-test-release -s dist/omarchy-m-test.tar.gz.sig < dist/omarchy-m-test.tar.gz
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "omarchy-m-test ${GITHUB_REF_NAME#v}" --generate-notes --latest \
+            dist/omarchy-m-test.tar.gz dist/omarchy-m-test.tar.gz.sig dist/VERSION

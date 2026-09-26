@@ -1,0 +1,13 @@
+.git
+.github
+**/__pycache__
+cli/
+docs/
+release/
+site/.bundle
+site/log/*
+site/tmp/*
+site/storage
+site/vendor/bundle
+site/config/master.key
+site/.env*

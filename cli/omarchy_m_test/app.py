@@ -6,7 +6,7 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, checks, report
+from . import TOOL_NAME, TOOL_VERSION, checks, report, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
@@ -62,6 +62,8 @@ def main(argv: Sequence[str], host: Host) -> int:
         args = _parse(argv, host)
     except _Exit as done:
         return done.status
+
+    updates.notify(host)
 
     try:
         catalogue = load_catalogue(host, args.catalogue)
