@@ -8,7 +8,7 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Known test card generated or bundled; played for H.264 and HEVC with hardware decode
-- [ ] Screenshot sampled in known regions for expected colours (standard-library PNG decoding)
-- [ ] Hardware decode confirmed from the player log; mode recorded
-- [ ] Seam A tests with the recorded green-frame capture (fails) and a correct capture (passes)
+- [x] Known test card generated or bundled; played for H.264 and HEVC with hardware decode
+- [x] Screenshot sampled in known regions for expected colours (standard-library PNG decoding)
+- [x] Hardware decode confirmed from the player log; mode recorded
+- [x] Seam A tests with the recorded green-frame capture (fails) and a correct capture (passes)

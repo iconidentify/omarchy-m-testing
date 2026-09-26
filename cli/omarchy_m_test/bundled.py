@@ -4,8 +4,9 @@ The feature catalogue sits next to the package in a release
 (omarchy_m_test/catalogue.json) and at catalogue/catalogue.json in the
 repository; Asahi's reference kernel config likewise
 (omarchy_m_test/asahi-kernel/ and catalogue/asahi-kernel/). omarchy-mac's check scripts are vendored under
-omarchy_m_test/vendor/omarchy-mac/ (see ORIGIN there); the real host runs them
-by name (Host.run_bundled). This is the only module besides the hosts that
+omarchy_m_test/vendor/omarchy-mac/ (see ORIGIN there), and the tool's own
+on-screen video check script under omarchy_m_test/testcard/; the real host runs
+them by name (Host.run_bundled). This is the only module besides the hosts that
 touches files (scripts/check_boundary.py allows it), and only these paths.
 """
 
@@ -26,17 +27,19 @@ ASAHI_KERNEL_FILES = ("source.json", "config")
 
 
 VENDOR = os.path.join(_PACKAGE, "vendor", "omarchy-mac")
-# Bundled script name -> file under VENDOR.
+TESTCARD = os.path.join(_PACKAGE, "testcard")
+# Bundled script name -> its file.
 SCRIPTS = {
-    "mac-check": "mac-check",
-    "apple-audio-check": "apple-audio-check.sh",
-    "apple-display-check": "apple-display-check.sh",
+    "mac-check": os.path.join(VENDOR, "mac-check"),
+    "apple-audio-check": os.path.join(VENDOR, "apple-audio-check.sh"),
+    "apple-display-check": os.path.join(VENDOR, "apple-display-check.sh"),
+    "video-card": os.path.join(TESTCARD, "video-card.sh"),  # with testcard.lua beside it
 }
 
 
 def script_path(name: str) -> str:
     """Where a bundled script is; FileNotFoundError if the tool was installed without it."""
-    path = os.path.join(VENDOR, SCRIPTS[name])
+    path = SCRIPTS[name]
     if not os.path.isfile(path):
         raise FileNotFoundError(f"{name} isn't installed next to omarchy-m-test")
     return path

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import checks
+from . import checks, video
 from .session import Context, Section
 
 
@@ -31,6 +31,8 @@ APPLE: tuple[Section, ...] = (
         "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     ), checks.hardware_inventory),
     _section("graphics", "Graphics", "The GPU driver, Vulkan and OpenGL.", ("gpu.driver", "gpu.vulkan", "gpu.opengl"), checks.graphics),
+    _section("video", "Video", "Plays a test card full screen on the built-in screen with hardware decode (H.264, HEVC) and checks its colours in a screenshot.",
+             video.CHECK_IDS, video.run),
     _section("display", "Display", "Outputs, the display controller, the backlight and the notch strip; then you look: the bar and the notch, brightness steps, the cursor.", (
         "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
         "display.notch-bar", "display.brightness-steps", "display.cursor",

@@ -2,8 +2,8 @@
 # Build the release tarball and check what it ships: release/check.sh
 #
 # Fails unless the tarball holds the launcher, every module of the package,
-# the bundled feature catalogue, Asahi's reference kernel config and every
-# vendored omarchy-mac check script
+# the bundled feature catalogue, Asahi's reference kernel config, every
+# vendored omarchy-mac check script and the video test card script
 # byte for byte (executable where the source is), and unless the unpacked
 # CLI finds its catalogue and scripts from where it was unpacked.
 set -euo pipefail
@@ -32,7 +32,7 @@ while read -r f; do
   cmp -s "$repo/cli/omarchy_m_test/$f" "$pkg/$f" || fail "$f missing or different"
   if [[ -x $repo/cli/omarchy_m_test/$f && ! -x $pkg/$f ]]; then fail "$f lost its executable bit"; fi
   count=$((count + 1))
-done < <(cd "$repo/cli/omarchy_m_test" && find vendor -type f | sort)
+done < <(cd "$repo/cli/omarchy_m_test" && find vendor testcard -type f | sort)
 (( count > 0 )) || fail "no vendored files found in the source tree"
 
 # The unpacked CLI resolves its own data, not the repository's.
@@ -46,5 +46,6 @@ assert bundled.ASAHI_KERNEL_DIRS[0].startswith(sys.argv[1]) and os.path.isdir(bu
 for name in bundled.SCRIPTS:
     path = bundled.script_path(name)
     assert path.startswith(os.path.realpath(sys.argv[1])) or path.startswith(sys.argv[1]), path
+assert os.path.isfile(os.path.join(os.path.dirname(bundled.script_path("video-card")), "testcard.lua"))
 PY
-echo "release ok: launcher, $(ls "$pkg"/*.py | wc -l | tr -d ' ') modules, catalogue, Asahi kernel config and $count vendored files"
+echo "release ok: launcher, $(ls "$pkg"/*.py | wc -l | tr -d ' ') modules, catalogue, Asahi kernel config and $count vendored and test card files"

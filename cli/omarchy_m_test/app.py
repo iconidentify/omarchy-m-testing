@@ -178,6 +178,8 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     state = _resume(ui, saved, key, sections, skip | set(blocked))
     if state is None:
         state = State(_choose(ui, sections, skip, blocked), key=key)
+    for value in state.serials:  # serials an interrupted run's checks named, to remove from this run's too
+        scrubber.learn_serials(f"serial: {value}")
     # Anything an earlier run left that couldn't be put back yet stays registered.
     state.restorers[:0] = changes.pending
     changes.pending = state.restorers
@@ -201,6 +203,7 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
                 changes.restore()
                 _report_failed_restores(host, changes)
             state.done[section.id] = [privacy.scrub_check(result, scrubber) for result in results]
+            state.serials = scrubber.serials
             checkpoint.save(state)
             for result in state.done[section.id]:
                 classification = catalogue.classify(result, machine.soc, machine.board)
@@ -264,7 +267,7 @@ def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section],
     ui.text(f"An earlier run stopped with {len(saved.done)} section(s) done; left to run: {', '.join(left)}.")
     if ui.confirm("Resume where it stopped?", default=True):
         selected = [s for s in saved.selected if s in saved.done or s not in skip]
-        return State(selected, dict(saved.done), [], key, dict(saved.shared))
+        return State(selected, dict(saved.done), [], key, dict(saved.shared), list(saved.serials))
     return None
 
 

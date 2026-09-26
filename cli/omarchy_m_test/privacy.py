@@ -7,7 +7,8 @@ Two rules, applied to every report before it is written, shown or uploaded:
    mirrors schema/report-v1.schema.json (a Seam A test keeps them equal).
 2. Scrubbed, text-only, bounded evidence. Every evidence line passes the
    Scrubber, which replaces MAC addresses, IP addresses, Wi-Fi network names,
-   home paths, hostnames, usernames, e-mail addresses, serial numbers, disk
+   home paths, hostnames, usernames, e-mail addresses, serial numbers (of the
+   Mac, displays, audio and USB or Thunderbolt devices), Bluetooth addresses, disk
    identifiers, UUIDs and long hex identifiers with placeholders such as <mac> or <ssid>.
    Evidence is text only (non-text lines are replaced by a note) and at most
    EVIDENCE_BUDGET_BYTES (64 KiB) per report.
@@ -96,6 +97,22 @@ _ISO_TIME = r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:[.,]\d+)?(?:[+-]\d\d:?\d\d|Z)?
 _USER = r"[a-z_][a-z0-9_.-]*"
 _UNIT_SUFFIX = re.compile(r"\.(service|socket|target|timer|mount|slice|scope|device|path|swap|automount)$")
 
+# A serial-like key, its separator (quotes kept) and its value: group 4 is the value.
+_SERIAL_KEY = (
+    r"(?:(?-i:serial)|(?:device[._]|ID_(?:USB_)?)serial(?:_short)?|i?serial[ _-]?(?:number|num|no)|iserial|unique[_-]id)"
+)  # a bare "serial" only in lowercase: the kernel's "Serial: 8250/16550 driver" isn't one
+SERIAL_FIELD = re.compile(
+    rf"(?i)(?<![\w.-])({_SERIAL_KEY}[\"']?)(\s*(?:=>|[:=])\s*)([\"']?)(?!<|[\"',;}}\]]|\s|$)((?:(?<=[\"'])[^\"'\n]*|[^\s\"',;}}\]]+(?:\s+\(0x{_HEX}+\))?))(?=\3)"
+)
+# A serial value removed wherever it appears in the text: identifier-shaped, so a
+# USB root hub's "SerialNumber: xhci-hcd.3.auto" doesn't wipe the controller's name.
+# Placeholder serials cheap devices report (0000000000, 12345678, 0x0000) aren't: every
+# "0x0000" in lspci would go. So: a digit, 5+ characters, not one repeated character,
+# and 8+ digits when it's only digits.
+_LEARNED_SERIAL = re.compile(r"(?!(?:0x)?(.)\1*$)(?!\d{1,7}$)(?!(?:0x)?0+$)(?!0?123456789?0?$)(?=[^\s]*\d)[A-Za-z0-9_-]{5,}")
+# Files whose whole content is a serial (sysfs), kept only as <serial> in a recording.
+SERIAL_FILES = ("/serial", "/unique_id", "/serial_number")
+
 # (pattern, replacement) in the order they are applied. Replacements only
 # use characters none of the later patterns can match.
 _RULES: list[tuple[re.Pattern, Any]] = []
@@ -128,9 +145,17 @@ _rule(r"(?<![\w/])~/[^\s'\"`:;,()\[\]{}<>]*", "<home>")
 _rule(r"(?<![\w.%+-])([A-Za-z0-9._%+-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)", _email)
 # Device-tree properties that carry per-unit values (dtc output).
 _rule(r"(?i)\b((?:local-)?(?:mac|bd)-address|[\w,-]*serial-?(?:number|no)[\w,-]*|[\w,-]*uuid|[\w,-]*nonce|[\w,-]*ecid|mlb-[\w-]+)(\s*=\s*)(\[[^\]]*\]|\"[^\"]*\"(?:\s*,\s*\"[^\"]*\")*|<[^>]*>)", r"\1\2<redacted>")
+# Serial-like fields in any key-value or JSON form: hyprctl monitors ("serial": "9RKXZN3",
+# serial: 9RKXZN3), EDID decoders (Serial Number: 1112231500 (0x424b4c4c)), PipeWire and
+# PulseAudio properties (device.serial = "..."), udev (ID_USB_SERIAL=...), Thunderbolt
+# (unique_id). The value is replaced whole, quoted or bare; the values found are also
+# removed wherever else they appear in the same text (Scrubber.scrub).
+_rule(SERIAL_FIELD, r"\1\2\3<serial>")
 # Serial numbers in tool output (lsusb, SerialNumber:, serial=...).
-_rule(r"(?i)\b(serial[ _-]?(?:number|no|num)|ID_SERIAL(?:_SHORT)?)(\s*[:=]\s*)(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
+_rule(r"(?i)\b(serial[ _-]?(?:number|no|num)|ID_SERIAL(?:_SHORT)?)(\s*[:=]\s*)(?!['<])(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
 _rule(r"\b(iSerial\s+\d+\s+)(\S.*)$", r"\1<serial>")
+# Bluetooth addresses with underscores (BlueZ D-Bus paths dev_7C_C1_..., PipeWire bluez_output.7C_C1_...).
+_rule(rf"(?<![0-9A-Fa-f]){_HEX}{{2}}(?:_{_HEX}{{2}}){{5}}(?!_?[0-9A-Fa-f])", "<mac>")
 # Disk identifiers: /dev/disk/by-* names and FAT volume ids (UUID=ABCD-1234).
 _rule(r"(/dev/disk/by-(?:uuid|partuuid|id|label|partlabel|diskseq|path)/)[^\s'\"`:;,()\[\]{}<>]+", r"\1<disk>")
 _rule(r"(?i)\b((?:PART)?UUID=\"?)[0-9A-F]{4}-[0-9A-F]{4}\b", r"\1<disk>")
@@ -200,6 +225,8 @@ class Scrubber:
             (re.compile(rf"(?<![\w-]){re.escape(value)}(?![\w-])", flags), placeholder)
             for value, placeholder, flags in hints
         ]
+        self._serial_values: set[str] = set()
+        self._serials: list[re.Pattern] = []
 
     @classmethod
     def for_host(cls, host: Host) -> "Scrubber":
@@ -217,8 +244,31 @@ class Scrubber:
         networks = saved.stdout.splitlines() if saved.returncode == 0 else []
         return cls(hostnames=hostnames, users=users, networks=networks)
 
+    def learn_serials(self, text: str) -> None:
+        """Remember the serial values in `text`'s serial-like fields, to remove them wherever they appear.
+
+        hyprctl repeats a monitor's serial in its description ("Dell Inc. DELL
+        U3423WE 9RKXZN3"), PipeWire a USB card's in its name. Only
+        identifier-shaped values (_LEARNED_SERIAL) are remembered. scrub()
+        learns from the text it is given; a caller scrubbing many texts (a
+        recording, a report's evidence) learns from all of them first.
+        """
+        for m in SERIAL_FIELD.finditer(text):
+            if _LEARNED_SERIAL.fullmatch(m.group(4)) and m.group(4) not in self._serial_values:
+                self._serial_values.add(m.group(4))
+                self._serials = [
+                    re.compile(rf"(?<![A-Za-z0-9]){re.escape(value)}(?![A-Za-z0-9])")
+                    for value in sorted(self._serial_values, key=len, reverse=True)
+                ]
+
+    @property
+    def serials(self) -> list[str]:
+        """The serial values learned so far, for a checkpoint to hand the next run (learn_serials)."""
+        return sorted(self._serial_values)
+
     def scrub(self, text: str) -> str:
-        """Scrub each line on its own, so no pattern can reach across lines."""
+        """Scrub each line on its own, so no pattern can reach across lines (serials learned from the whole text)."""
+        self.learn_serials(text)
         return "".join(self._scrub_line(line) for line in text.splitlines(keepends=True))
 
     def _scrub_line(self, line: str) -> str:
@@ -228,6 +278,8 @@ class Scrubber:
             body = pattern.sub(replacement, body)
         for pattern, placeholder in self._hints:
             body = pattern.sub(placeholder, body)
+        for pattern in self._serials:
+            body = pattern.sub("<serial>", body)
         return body + end
 
 
@@ -259,6 +311,7 @@ def scrub_check(check: dict, scrubber: Scrubber) -> dict:
     evidence = check.get("evidence")
     if not isinstance(evidence, list):
         return dict(check)
+    scrubber.learn_serials("\n".join(line for line in evidence if isinstance(line, str)))
     return {**check, "evidence": [_evidence_line(line, scrubber) for line in evidence]}
 
 
@@ -270,6 +323,9 @@ def enforce(report: dict, scrubber: Scrubber) -> dict:
         if isinstance(machine.get(name), str):
             machine[name] = scrubber.scrub(machine[name])
 
+    for check in report.get("checks", []):
+        if isinstance(check.get("evidence"), list):
+            scrubber.learn_serials("\n".join(line for line in check["evidence"] if isinstance(line, str)))
     # The truncation note is always reserved, so the total never exceeds the budget.
     budget = EVIDENCE_BUDGET_BYTES - len(TRUNCATED_NOTE.encode("utf-8"))
     exhausted = False
