@@ -1,6 +1,6 @@
 {
   "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install: raw host answers for record mode",
-  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe.",
+  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted.",
   "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m2-max",
@@ -290,6 +290,193 @@
       },
       "stderr": "",
       "note": "linux-aurora-headers 7.1.12.aurora2-2's build/.config: the exact build options of the booted kernel, which /proc/config.gz holds"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,250,50%,500\nkbd_backlight,leds,0,0%,255\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: the panel's level and range; the keyboard light at 0/255 is 39-display-check-session.txt's 'keys 0/255'"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "175"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,175,35%,500\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: brightnessctl's machine-readable line after a set"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "112"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,112,22%,500\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: brightnessctl's machine-readable line after a set"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "62"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,62,12%,500\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: brightnessctl's machine-readable line after a set"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "250"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,250,50%,500\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: brightnessctl's machine-readable line after a set"
+    },
+    {
+      "argv": [
+        "sleep",
+        "1"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 0,
+      "stdout": "omarchy_asahi_mic.monitor\n",
+      "stderr": "",
+      "note": "37-audio-state.txt: 'default source: omarchy_asahi_mic.monitor'"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 3 parec --raw --format=s16le --channels=1 --rate=48000 --device=\"$2\" | python3 -c \"$1\"",
+        "sh",
+        "import array, math, sys\ndata = sys.stdin.buffer.read()\nsamples = array.array('h', data[: len(data) // 2 * 2])\nif sys.byteorder == 'big':\n    samples.byteswap()\npeak = max(map(abs, samples), default=0)\nrms = math.sqrt(sum(v * v for v in samples) / len(samples)) if samples else 0.0\nprint(f'samples {len(samples)} peak {peak} rms {rms:.1f}')\n",
+        "omarchy_asahi_mic.monitor"
+      ],
+      "returncode": 0,
+      "stdout": "samples 144000 peak 178 rms 39.4\n",
+      "stderr": "",
+      "note": "37-mic-capture.txt: omarchy_asahi_mic.monitor peak 178 rms 39.4 (that capture's own sample count differed: 2 channels)"
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": "",
+      "note": "37-speakersafetyd-unit.txt: active (running) since 08:49:17"
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j416-convolver\n",
+      "stderr": "",
+      "note": "37-audio-state.txt: 'default sink: audio_effect.j416-convolver'"
+    },
+    {
+      "argv": [
+        "wpctl",
+        "inspect",
+        "@DEFAULT_AUDIO_SINK@"
+      ],
+      "returncode": 0,
+      "stdout": "id 1154, type PipeWire:Interface:Node\n    node.name = \"audio_effect.j416-convolver\"\n",
+      "stderr": "",
+      "note": "the convolver sink's node id from 37-audio-state.txt's sink list (1154); the rest of wpctl's properties trimmed"
+    },
+    {
+      "argv": [
+        "wpctl",
+        "get-volume",
+        "1154"
+      ],
+      "returncode": 0,
+      "stdout": "Volume: 0.40\n",
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: the volume before the tone (owner-look-listen.sh logged it to its own run log, not kept)"
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "1154",
+        "0.30"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "1154",
+        "0.40"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "python3 -c \"$1\" | pacat --raw --format=s16le --channels=2 --rate=48000 --device=\"$2\"",
+        "sh",
+        "import math, struct, sys\nrate = 48000\nn = 2 * rate\nfade = rate // 20\ndef level(i):\n    return min(1.0, i / fade, (n - i) / fade)\nwave = (int(8000 * level(i) * math.sin(2 * math.pi * 440 * i / rate)) for i in range(n))\nsys.stdout.buffer.write(b''.join(struct.pack('<hh', v, v) for v in wave))\n",
+        "audio_effect.j416-convolver"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "",
+      "note": "owner-look-listen.sh played its tone the same way (python3 | pacat) on 2026-09-26"
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=kbd_backlight",
+        "info"
+      ],
+      "returncode": 0,
+      "stdout": "kbd_backlight,leds,0,0%,255\n",
+      "stderr": "",
+      "note": "39-display-check-session.txt: 'keys 0/255' (a recording keeps one answer per command, so the covered reading replays the uncovered one)"
     }
   ],
   "files": {
@@ -374,6 +561,10 @@
     "/var/lib/omarchy/image/target.booted": {
       "text": "format=1\nplatform=apple-silicon\n",
       "note": "41-deferred-evidence.txt: the first boot retired the target record to target.booted (32 bytes); its content is the manifest image 2's inspection found (outputs/image2/INSPECTION), which names no candidate set"
+    },
+    "/sys/bus/iio/devices/iio:device0/in_illuminance_input": {
+      "text": "733\n",
+      "note": "39-display-check-session.txt: 'lux 733'"
     }
   },
   "dirs": {
@@ -397,7 +588,10 @@
       "policy0",
       "policy4",
       "policy8"
+    ],
+    "/sys/bus/iio/devices": [
+      "iio:device0"
     ]
   },
-  "dirs_note": "Directories: the asahi GPU device name is the kernel log's (406400000.gpu); the Vulkan ICD is vulkan-asahi's; power_supply lists only the battery 62-battery-before.txt read; the cpufreq policies and ranges are reconstructed. Reconstructed answers are replaced by the v0.1 dogfood recording."
+  "dirs_note": "Directories: the asahi GPU device name is the kernel log's (406400000.gpu); the Vulkan ICD is vulkan-asahi's; power_supply lists only the battery 62-battery-before.txt read; the cpufreq policies and ranges are reconstructed. Reconstructed answers are replaced by the v0.1 dogfood recording. The ambient light sensor's iio device number is reconstructed (the display check globbed iio:device*)."
 }

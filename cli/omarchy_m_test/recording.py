@@ -38,7 +38,9 @@ human typed and uploads are not recorded.
 Replay: a RecordedHost answers from a recording. Anything the CLI asks for
 that the recording doesn't mention raises RecordingMiss, so a test can never
 pass by silently reading this machine. The human side is scripted: `answers`
-are returned by prompt() in order (EOF ends input like Ctrl-D). Uploads get
+are returned by prompt() in order (EOF ends input like Ctrl-D; ENDED, left
+last, is input that stays closed: every later prompt gets end of input and
+every later interactive command exits 1, as gum does with no answer). Uploads get
 the scripted `responses` in order. GETs (the latest-release lookup) get
 the scripted `fetches` by URL; a URL that isn't scripted behaves like a
 machine with no network (NetworkError). The answer INTERRUPT at a prompt or an
@@ -96,6 +98,14 @@ class _Eof:
 
 
 EOF = _Eof()
+
+
+class _Ended:
+    def __repr__(self) -> str:
+        return "ENDED"
+
+
+ENDED = _Ended()
 
 
 class _Interrupt:
@@ -192,6 +202,9 @@ class RecordedHost:
     def prompt(self, message: str) -> str:
         if not self.answers:
             raise RecordingMiss(f"no scripted answer left for prompt: {message!r}")
+        if self.answers[0] is ENDED:
+            self.transcript.append(("prompt", message, ENDED))
+            raise EOFError
         answer = self.answers.pop(0)
         self.transcript.append(("prompt", message, answer))
         if answer is EOF:
@@ -203,6 +216,9 @@ class RecordedHost:
     def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
         if not self.answers:
             raise RecordingMiss(f"no scripted answer left for interactive command: {list(argv)}")
+        if self.answers[0] is ENDED:
+            self.transcript.append(("tty", list(argv), ENDED))
+            return CommandResult(1, "", "")
         answer = self.answers.pop(0)
         self.transcript.append(("tty", list(argv), answer))
         if answer is INTERRUPT:
@@ -254,7 +270,7 @@ class RecordedHost:
         return "\n".join(event[1] for event in self.transcript if isinstance(event[1], str))
 
     def unused_script(self) -> list[Any]:
-        return self.answers + self.responses
+        return [answer for answer in self.answers if answer is not ENDED] + self.responses
 
 
 class RecordingHost:

@@ -12,8 +12,8 @@ import json
 import os
 from typing import Any
 
-from omarchy_m_test.host import Terminal
-from omarchy_m_test.recording import RecordedHost
+from omarchy_m_test.host import CommandResult, Terminal
+from omarchy_m_test.recording import EOF, RecordedHost
 from omarchy_m_test.sections import APPLE
 from omarchy_m_test.session import Context, Section
 
@@ -25,6 +25,15 @@ OLD_THEME = f"{HOME}/.config/omarchy/current/theme"
 TITLES = "\n".join(section.title for section in APPLE) + "\n"
 LOGO_PATHS = ("/usr/share/omarchy/logo.txt", f"{HOME}/.local/share/omarchy/logo.txt")
 TERMINAL = Terminal(120, 40)
+
+# The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
+# tone, headphone jack, keyboard light), left unanswered as in its golden
+# report: at a plain prompt (end of input) and at gum (Esc). A run that
+# needs no answer after them ends its answers with ENDED instead.
+UNANSWERED = [EOF] * 6
+# How many human checks each corpus machine's run asks (the M1's stand-ins skip three without asking).
+HUMAN_QUESTIONS = {"m2-max-image2": 6, "m1-pro-mx-mac": 3}
+GUM_UNANSWERED = [CommandResult(1, "", "")] * 6
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
 SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "

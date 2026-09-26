@@ -37,6 +37,15 @@ def check(ctx: Context, check_id: str, question: str, evidence: Sequence[str] = 
     return {"id": check_id, "kind": "human", "status": STATUSES.get(answer or "skip", "skip"), "evidence": lines}
 
 
+def absent(ctx: Context, check_id: str) -> bool:
+    """The catalogue says this Mac doesn't have what the check tests (no notch, no headphone jack): don't ask."""
+    feature = ctx.catalogue.feature_for_check(check_id)
+    if feature is None:
+        return False
+    states = ctx.catalogue.expected(feature, ctx.catalogue.chip_for_soc(ctx.machine.soc), ctx.machine.board)
+    return any(state.get("status") == "absent" for state in (states or {}).values())
+
+
 def skip(check_id: str, reason: str, evidence: Sequence[str] = ()) -> dict:
     """A human check that wasn't asked (its setup failed, the human declined a package): skipped, with why."""
     return {"id": check_id, "kind": "human", "status": "skip", "evidence": [*evidence, f"skipped: {reason}"]}

@@ -14,8 +14,9 @@ from . import checks
 from .session import Context, Section
 
 
-def _section(id: str, title: str, description: str, check_ids: tuple[str, ...], run: Callable[[Context], list[dict]]) -> Section:
-    return Section(id, title, description, check_ids, lambda ctx: checks.only(check_ids, run(ctx), ctx))
+def _section(id: str, title: str, description: str, check_ids: tuple[str, ...], run: Callable[[Context], list[dict]],
+             human_checks: tuple[str, ...] = ()) -> Section:
+    return Section(id, title, description, check_ids, lambda ctx: checks.only(check_ids, run(ctx), ctx), human_checks)
 
 
 APPLE: tuple[Section, ...] = (
@@ -30,15 +31,19 @@ APPLE: tuple[Section, ...] = (
         "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     ), checks.hardware_inventory),
     _section("graphics", "Graphics", "The GPU driver, Vulkan and OpenGL.", ("gpu.driver", "gpu.vulkan", "gpu.opengl"), checks.graphics),
-    _section("display", "Display", "Outputs, the display controller, the backlight and the notch strip.", (
+    _section("display", "Display", "Outputs, the display controller, the backlight and the notch strip; then you look: the bar and the notch, brightness steps, the cursor.", (
         "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
-    ), checks.display),
-    _section("audio", "Audio", "Sound cards, the default sink, speaker DSP and protection, the microphone. Plays nothing.", (
+        "display.notch-bar", "display.brightness-steps", "display.cursor",
+    ), checks.display, ("display.notch-bar", "display.brightness-steps", "display.cursor")),
+    _section("audio", "Audio", "Sound cards, the default sink, speaker DSP and protection, the microphone mapping; then the microphone, a short tone at 30% volume (only once speaker protection is confirmed) and the headphone jack.", (
         "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
         "audio.speaker-amps-unlocked", "audio.microphone-mapping",
-    ), checks.audio),
+        "audio.microphone-signal", "audio.speaker-tone", "audio.headphone-detection",
+    ), checks.audio, ("audio.speaker-tone", "audio.headphone-detection")),
     _section("network", "Network", "Wi-Fi, its backend and Bluetooth.", ("network.wifi", "network.wifi-backend", "network.bluetooth"), checks.network),
-    _section("input", "Input", "The ambient light sensor and the automatic keyboard light.", ("input.ambient-light", "input.auto-keyboard-light"), checks.input_devices),
+    _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light.", (
+        "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
+    ), checks.input_devices, ("input.keyboard-light-follows-room",)),
     _section("power", "Power", "The battery.", ("power.battery",), checks.power),
     _section("cpu", "CPU", "CPU frequency scaling.", ("cpu.frequency-scaling",), checks.cpu),
 )

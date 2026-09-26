@@ -8,7 +8,7 @@ import unittest
 from omarchy_m_test import TOOL_VERSION
 from omarchy_m_test.app import main
 from omarchy_m_test.host import HttpResponse
-from omarchy_m_test.recording import RecordedHost
+from omarchy_m_test.recording import ENDED, RecordedHost
 from omarchy_m_test.updates import INSTALL_COMMAND, LATEST_VERSION_URL
 
 RECORDINGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "recordings")
@@ -24,7 +24,7 @@ def bumped(part: int) -> str:
 
 def run(latest=None, recording="m2-max-image2", argv=("--dry-run",)):
     fetches = {} if latest is None else {LATEST_VERSION_URL: latest}
-    mac = RecordedHost.load(os.path.join(RECORDINGS, f"{recording}.json"), answers=[ENTER], fetches=fetches)
+    mac = RecordedHost.load(os.path.join(RECORDINGS, f"{recording}.json"), answers=[ENTER, ENDED], fetches=fetches)
     status = main(list(argv), mac)
     return status, mac
 

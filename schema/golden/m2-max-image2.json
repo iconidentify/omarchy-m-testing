@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 2,
-  "catalogue_version": 3,
+  "catalogue_version": 4,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1101,6 +1101,64 @@
       }
     },
     {
+      "id": "display.notch-bar",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Look at the top bar on the built-in screen: is every icon and label clear of the camera notch?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "notch-bar",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "display.brightness-steps",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "backlight apple-panel-bl: 250/500 at the start",
+        "stepped to 175 (read back 175), 112 (read back 112), 62 (read back 62)",
+        "put back to 250",
+        "asked: Did the built-in screen dim (or brighten) in three steps, then go back to how it was?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "brightness",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.cursor",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Move the pointer all over the built-in screen, over the top bar too: is it visible everywhere, without trails or flicker?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "audio.sound-cards",
       "kind": "automatic",
       "status": "pass",
@@ -1206,6 +1264,65 @@
       }
     },
     {
+      "id": "audio.microphone-signal",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "default input: omarchy_asahi_mic.monitor",
+        "captured 144000 samples: peak 178, rms 39.4 (16-bit)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "microphones",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-tone",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "speakersafetyd: active",
+        "kernel log: Speaker volumes unlocked",
+        "default output: audio_effect.j416-convolver (the speakers' DSP sink)",
+        "played a 2 s 440 Hz tone at 30% volume on audio_effect.j416-convolver",
+        "asked: Did you hear a short tone from the built-in speakers, without crackling or a pop?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.headphone-detection",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Plug headphones into the headphone jack now (s if you have none). Did the Mac switch its sound to them?",
+        "answer: none (counted as skipped)",
+        "default output after: audio_effect.j416-convolver (the speakers' DSP sink)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "headphone-jack",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "network.wifi",
       "kind": "automatic",
       "status": "pass",
@@ -1282,6 +1399,27 @@
       ],
       "classification": {
         "outcome": "works",
+        "feature": "auto-keyboard-light",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.keyboard-light-follows-room",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "before: ambient light 733 lux, keyboard light 0/255",
+        "asked: Keep it covered: did the keyboard light come on, or get brighter, within about 10 seconds?",
+        "answer: none (counted as skipped)",
+        "while covered: ambient light 733 lux, keyboard light 0/255"
+      ],
+      "classification": {
+        "outcome": "not-tested",
         "feature": "auto-keyboard-light",
         "layer": "omarchy",
         "expected": {

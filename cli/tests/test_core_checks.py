@@ -15,7 +15,7 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.consent import ACCEPT_PROMPT
-from omarchy_m_test.recording import RecordedHost
+from omarchy_m_test.recording import ENDED, RecordedHost
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, RECORDINGS, REPORT_FILE, SCHEMA, golden, read
 
@@ -44,7 +44,7 @@ def edit_lines(rec: dict, argv: list[str], change) -> None:
 
 
 def run(rec: dict) -> tuple[int, RecordedHost, dict]:
-    mac = RecordedHost(copy.deepcopy(rec), answers=[ENTER])
+    mac = RecordedHost(copy.deepcopy(rec), answers=[ENTER, ENDED])
     status = main(["--dry-run"], mac)
     report = json.loads(mac.written[REPORT_FILE])
     return status, mac, report
@@ -92,7 +92,9 @@ class GoldenRunsTest(unittest.TestCase):
 
         prefixes = {check["id"].split(".")[0] for check in report["checks"]}
         self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "display", "audio", "network", "input", "power", "cpu"})
-        self.assertTrue(all(check["kind"] == "automatic" for check in report["checks"]))
+        humans = {check["id"] for check in report["checks"] if check["kind"] == "human"}
+        self.assertEqual(humans, {"display.notch-bar", "display.brightness-steps", "display.cursor",
+                                  "audio.speaker-tone", "audio.headphone-detection", "input.keyboard-light-follows-room"})
 
     def test_the_offline_first_boot_failure_on_the_m2_is_a_failure_even_after_the_rerun(self):
         _, mac, report = run(M2_MAX)
@@ -185,7 +187,9 @@ class RootChecksTest(unittest.TestCase):
             self.assertEqual(found[check_id]["classification"]["outcome"], "not-tested")
             self.assertIn("passwordless sudo", found[check_id]["evidence"][0])
         self.assertFalse(any(argv[0] == "sudo" for argv in mac.commands_run))
-        self.assertEqual([e[1] for e in mac.transcript if e[0] == "prompt"], [ACCEPT_PROMPT])  # never asks for a password
+        asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
+        self.assertEqual(asked[0], ACCEPT_PROMPT)
+        self.assertFalse(any("password" in prompt.lower() for prompt in asked))  # never asks for a password
         self.assertIn("passwordless sudo", mac.output)
 
     def test_when_mac_check_cant_run_its_checks_are_skipped_with_the_reason(self):

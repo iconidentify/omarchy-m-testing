@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import hardware, inventory, scripts
+from . import audio as live_audio, display as live_display, hardware, inventory, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -20,7 +20,7 @@ DISPLAY_CHECK_RESULTS = "display_check"
 BOOT_LOADER = "boot_loader"
 INVENTORY = "inventory"
 
-# Every automatic check id, in report order (the sections' order). Each is in the catalogue's checks.
+# Every check id, in report order (the sections' order). Each is in the catalogue's checks.
 ORDER = (
     "system.identity",
     "boot.kernel-package", "boot.chain", "boot.files", "boot.encryption",
@@ -30,10 +30,12 @@ ORDER = (
     "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     "gpu.driver", "gpu.vulkan", "gpu.opengl",
     "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
+    "display.notch-bar", "display.brightness-steps", "display.cursor",
     "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
     "audio.speaker-amps-unlocked", "audio.microphone-mapping",
+    "audio.microphone-signal", "audio.speaker-tone", "audio.headphone-detection",
     "network.wifi", "network.wifi-backend", "network.bluetooth",
-    "input.ambient-light", "input.auto-keyboard-light",
+    "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
     "power.battery",
     "cpu.frequency-scaling",
 )
@@ -100,11 +102,12 @@ def graphics(ctx: Context) -> list[dict]:
 
 
 def display(ctx: Context) -> list[dict]:
-    return [*mac_check(ctx), *display_check(ctx)]
+    return [*mac_check(ctx), *display_check(ctx), *live_display.display(ctx)]
 
 
 def audio(ctx: Context) -> list[dict]:
-    return [*mac_check(ctx), *scripts.audio_check(ctx.host, _system(ctx))]
+    """The automatic audio checks (which play nothing) first, then the microphone, the tone and the jack."""
+    return [*mac_check(ctx), *scripts.audio_check(ctx.host, _system(ctx)), *live_audio.run(ctx)]
 
 
 def network(ctx: Context) -> list[dict]:
@@ -112,7 +115,7 @@ def network(ctx: Context) -> list[dict]:
 
 
 def input_devices(ctx: Context) -> list[dict]:
-    return display_check(ctx)
+    return [*display_check(ctx), live_display.keyboard_light(ctx)]
 
 
 def power(ctx: Context) -> list[dict]:
