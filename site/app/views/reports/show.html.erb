@@ -9,13 +9,13 @@
     <p class="prompt-line"><span class="prompt">$</span> omarchy-m-test</p>
     <h1><%= @report.machine["model"] %></h1>
     <p class="report-badges">
-      <span class="badge badge-community" title="Uploaded anonymously. It shows here right away, and counts toward the matrix once another machine agrees.">community report</span>
+      <%= run_badge(@report, long: true) %>
       <% if @report.hidden? %><span class="badge badge-regression">hidden by the admin</span><% end %>
     </p>
     <dl class="machine">
       <dt>chip</dt><dd><%= @report.machine["chip"] %> (<%= @report.machine["soc"] %>, board <%= @report.machine["board"] %>)</dd>
       <dt>kernel</dt><dd><%= @report.machine["kernel"] %></dd>
-      <dt>stack</dt><dd><%= @report.stack_words %> <%= @report.omarchy_version %><% if @report.candidate_set %>, candidate set <%= @report.candidate_set %><% end %></dd>
+      <dt>stack</dt><dd><%= @report.stack_words %> <%= @report.omarchy_version %><% if @report.candidate_set %>, candidate set <a href="<%= candidate_path(@report.candidate_set) %>"><%= @report.candidate_set %></a><% end %></dd>
       <dt>system</dt><dd><%= @report.system["distro"] %>, <%= @report.system["boot_loader"] %>, encryption <%= @report.system["encryption"] %></dd>
       <dt>tool</dt><dd><%= @report.body.dig("tool", "name") %> <%= @report.body.dig("tool", "version") %></dd>
       <dt>catalogue</dt><dd>feature catalogue v<%= @report.body["catalogue_version"] %></dd>

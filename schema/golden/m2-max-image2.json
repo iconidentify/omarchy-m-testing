@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.2"
+    "version": "0.1.3"
   },
   "consent_version": 3,
   "catalogue_version": 7,
@@ -1592,9 +1592,9 @@
       "kind": "automatic",
       "status": "pass",
       "evidence": [
-        "policy0: CPUs 0-3, apple-cpufreq, 600-2424 MHz, schedutil",
-        "policy4: CPUs 4-7, apple-cpufreq, 660-3504 MHz, schedutil",
-        "policy8: CPUs 8-11, apple-cpufreq, 660-3504 MHz, schedutil"
+        "policy0: CPUs 0-3, apple-cpufreq, 912-2424 MHz, schedutil",
+        "policy4: CPUs 4-7, apple-cpufreq, 702-3264 MHz, schedutil",
+        "policy8: CPUs 8-11, apple-cpufreq, 702-3264 MHz, schedutil"
       ],
       "classification": {
         "outcome": "works",

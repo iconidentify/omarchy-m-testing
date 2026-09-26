@@ -1,0 +1,50 @@
+<% content_for :title, "Testers" %>
+<h1>Testers</h1>
+<p class="subtitle"><a href="<%= admin_root_path %>">Reports</a> · signed in as @<%= admin_login || "admin" %> <%= button_to "Sign out", admin_session_path, method: :delete, class: "button button-small", form: { class: "inline" } %></p>
+<%= card "allowlist (#{@testers.size})" do %>
+  <p class="dim">Runs from machines signed in (<code>omarchy-m-test --sign-in</code>) as one of these GitHub handles get the tester badge, colour the matrix on their own and count toward candidate sets.</p>
+  <table class="list">
+    <thead><tr><th>GitHub handle</th><th>Machines</th><th>Added</th><th></th></tr></thead>
+    <tbody>
+      <% @testers.each do |tester| %>
+        <tr class="tester-row" id="tester-<%= tester.login %>">
+          <td><a href="https://github.com/<%= tester.login %>">@<%= tester.login %></a></td>
+          <td><%= @bindings.count { |binding| binding.github_login == tester.login } %></td>
+          <td class="nowrap"><%= tester.created_at.utc.strftime("%Y-%m-%d") %></td>
+          <td class="actions">
+            <%= button_to "Remove", admin_tester_path(tester), method: :delete, class: "button button-small button-danger",
+                  form: { onsubmit: "return confirm('Remove @#{tester.login}? Their runs stop counting as tester runs.')" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= form_with model: @tester, url: admin_testers_path, class: "form form-inline" do |form| %>
+    <%= form.label :login, "GitHub handle" %>
+    <%= form.text_field :login, required: true, autocomplete: "off", spellcheck: false, placeholder: "handle" %>
+    <%= form.submit "Add tester", class: "button button-small" %>
+  <% end %>
+<% end %>
+<%= card "signed-in machines (#{@bindings.size})" do %>
+  <% if @bindings.empty? %>
+    <p class="dim">No machine has signed in yet.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>GitHub handle</th><th>Tester</th><th>Signed in</th><th>Reports</th><th></th></tr></thead>
+      <tbody>
+        <% @bindings.each do |binding| %>
+          <tr class="binding-row" id="binding-<%= binding.id %>">
+            <td>@<%= binding.github_login %></td>
+            <td><%= binding.tester? ? tag.span("tester", class: "badge badge-tester") : tag.span("not on the allowlist", class: "badge badge-not-tested") %></td>
+            <td class="nowrap"><%= binding.updated_at.utc.strftime("%Y-%m-%d %H:%M UTC") %></td>
+            <td><%= @report_counts.fetch(binding.machine_id, 0) %></td>
+            <td class="actions">
+              <%= button_to "Unbind", admin_tester_binding_path(binding), method: :delete, class: "button button-small button-danger",
+                    form: { onsubmit: "return confirm('Unbind this machine from @#{binding.github_login}?')" } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>

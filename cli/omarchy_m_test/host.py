@@ -18,6 +18,9 @@ Operations:
                              write a file the CLI produces (the report); private: only this
                              user can read it (0600, in a 0700 directory: the checkpoint)
   post_json(url, body)       POST a JSON text body; returns the HTTP response
+  post_form(url, fields)     POST form fields, asking for JSON back (GitHub's device flow); returns
+                             the HTTP response
+  sleep(seconds)             wait (between polls of GitHub's device flow)
   get(url)                   GET a small text (the latest release's version); NetworkError if unreachable
   env(name)                  an environment variable's value; None when unset
   terminal()                 the terminal's size when the human is at one (stdin and stdout
@@ -38,7 +41,9 @@ import http.client
 import os
 import subprocess
 import sys
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Protocol, Sequence
@@ -111,6 +116,10 @@ class Host(Protocol):
     def write_file(self, path: str, text: str, private: bool = False) -> None: ...
 
     def post_json(self, url: str, body: str) -> HttpResponse: ...
+
+    def post_form(self, url: str, fields: dict[str, str]) -> HttpResponse: ...
+
+    def sleep(self, seconds: float) -> None: ...
 
     def get(self, url: str) -> HttpResponse: ...
 
@@ -224,11 +233,20 @@ class RealHost:
         return CommandResult(done.returncode, done.stdout, "")
 
     def post_json(self, url: str, body: str) -> HttpResponse:
+        return self._post(url, body.encode("utf-8"), "application/json")
+
+    def post_form(self, url: str, fields: dict[str, str]) -> HttpResponse:
+        return self._post(url, urllib.parse.urlencode(fields).encode("ascii"), "application/x-www-form-urlencoded")
+
+    def sleep(self, seconds: float) -> None:
+        time.sleep(seconds)
+
+    def _post(self, url: str, data: bytes, content_type: str) -> HttpResponse:
         request = urllib.request.Request(
             url,
-            data=body.encode("utf-8"),
+            data=data,
             method="POST",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={"Content-Type": content_type, "Accept": "application/json"},
         )
         try:
             with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:

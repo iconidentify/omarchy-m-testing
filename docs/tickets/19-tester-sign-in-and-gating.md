@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] GitHub device-flow sign-in in the CLI using only the OAuth app's client ID; the site binds the handle to the machine key
-- [ ] Admin sign-in with GitHub replaces the admin token; admin manages the tester allowlist
-- [ ] Tester badge; matrix colours from tester runs even without a second machine
-- [ ] Candidate-set view: per candidate set, tester results per model and feature
-- [ ] Seam A and B tests for sign-in, binding, allowlist and gating
+- [x] GitHub device-flow sign-in in the CLI using only the OAuth app's client ID; the site binds the handle to the machine key
+- [x] Admin sign-in with GitHub replaces the admin token; admin manages the tester allowlist
+- [x] Tester badge; matrix colours from tester runs even without a second machine
+- [x] Candidate-set view: per candidate set, tester results per model and feature
+- [x] Seam A and B tests for sign-in, binding, allowlist and gating

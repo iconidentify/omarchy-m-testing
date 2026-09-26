@@ -1,38 +1,46 @@
 # One feature on one configuration (model x stack/version), aggregated over
 # the visible reports. Each machine counts once, with the latest state it
-# tested. The cell only takes a colour when two or more distinct machines
-# agree; until then it shows the community reports, labelled as unconfirmed.
-# Machines agreeing on different states make it partial. Tester runs colour a
-# cell on their own once tester sign-in exists (ticket 19).
+# tested. Tester runs (Report#tester?) colour the cell on their own: the state
+# the tester machines agree on, partial when they disagree. Without tester
+# runs, the cell only takes a colour when two or more distinct machines agree;
+# until then it shows the community reports, labelled as unconfirmed.
+# Machines agreeing on different states make it partial.
 class MatrixCell
   AGREEMENT = 2
 
-  attr_reader :tallies, :reports
+  attr_reader :tallies, :tester_tallies, :reports
 
-  # reports: oldest first, all on the same configuration.
-  def self.from(reports, feature_id)
-    latest = {}
+  # reports: oldest first, all on the same configuration. only_testers: count tester runs only.
+  def self.from(reports, feature_id, only_testers: false)
+    latest = {} # machine => [state, tester run?], from its latest report that tested the feature
     tested = []
     reports.each do |report|
+      tester = report.tester?
+      next if only_testers && !tester
+
       state = report.feature_states[feature_id]
       next if state.nil? || state == "not-tested"
 
       tested << report
-      latest[report.machine_key] = state
+      latest[report.machine_key] = [ state, tester ]
     end
-    new(latest.values.tally, tested.reverse)
+    new(latest.values.map(&:first).tally, tested.reverse, latest.values.select(&:last).map(&:first).tally)
   end
 
-  def initialize(tallies, reports)
+  def initialize(tallies, reports, tester_tallies = {})
     @tallies = tallies
     @reports = reports
+    @tester_tallies = tester_tallies
   end
 
   def machines = tallies.values.sum
+  def tester_machines = tester_tallies.values.sum
+  def tester? = tester_tallies.any?
 
   # The colour state, or nil while the community reports don't agree yet.
   def state
     return "not-tested" if tallies.empty?
+    return (tester_tallies.one? ? tester_tallies.keys.first : "partial") if tester?
 
     agreed = tallies.select { |_state, count| count >= AGREEMENT }.keys
     return agreed.first if agreed.one?
@@ -55,6 +63,7 @@ class MatrixCell
 
   def css_class
     if unconfirmed? then "cell cell-unconfirmed cell-hint-#{tentative}"
+    elsif tester? then "cell cell-#{state} cell-tester"
     else "cell cell-#{state}"
     end
   end
@@ -62,18 +71,21 @@ class MatrixCell
   def summary
     if tallies.empty?
       "not tested"
+    elsif tester?
+      "#{ResultState.words(state)}: tester-verified, #{describe(tester_tallies, "tester machine")}" +
+        (machines > tester_machines ? "; #{machines} machines in all" : "")
     elsif confirmed?
-      "#{ResultState.words(state)}: #{describe_tallies}"
+      "#{ResultState.words(state)}: #{describe(tallies, "machine")}"
     else
-      "community, unconfirmed: #{describe_tallies}; colours once #{AGREEMENT} machines agree"
+      "community, unconfirmed: #{describe(tallies, "machine")}; colours once #{AGREEMENT} machines agree or a tester confirms"
     end
   end
 
   private
 
-  def describe_tallies
+  def describe(tallies, noun)
     tallies.sort_by { |state, _| ResultState::ORDER.index(state) }
-           .map { |state, count| "#{count} #{count == 1 ? "machine" : "machines"} #{ResultState.words(state)}" }
+           .map { |state, count| "#{count} #{count == 1 ? noun : noun.pluralize} #{ResultState.words(state)}" }
            .join(", ")
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_26_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_27_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_26_120000) do
     t.datetime "updated_at", null: false
     t.datetime "hidden_at"
     t.string "machine_id"
+    t.string "tester_login"
     t.index ["public_id"], name: "index_reports_on_public_id", unique: true
+  end
+
+  create_table "tester_bindings", force: :cascade do |t|
+    t.string "machine_id", null: false
+    t.string "github_login", null: false
+    t.bigint "github_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["github_login"], name: "index_tester_bindings_on_github_login"
+    t.index ["machine_id"], name: "index_tester_bindings_on_machine_id", unique: true
+  end
+
+  create_table "testers", force: :cascade do |t|
+    t.string "login", null: false
+    t.bigint "github_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["login"], name: "index_testers_on_login", unique: true
   end
 end

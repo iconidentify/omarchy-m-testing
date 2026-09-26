@@ -13,7 +13,7 @@
           <td><%= report.configuration.label %></td>
           <td class="dim"><%= report.kernel %></td>
           <td class="nowrap"><span class="ok"><%= statuses.fetch("pass", 0) %> pass</span> <span class="bad"><%= statuses.fetch("fail", 0) %> fail</span> <span class="dim"><%= statuses.fetch("skip", 0) %> skip</span></td>
-          <td><span class="badge badge-community">community</span></td>
+          <td><%= run_badge(report) %></td>
         </tr>
       <% end %>
     </tbody>

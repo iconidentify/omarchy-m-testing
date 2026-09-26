@@ -1,7 +1,7 @@
 {
   "recording_version": 1,
   "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install",
-  "source": "omarchy-m-test --record against tests/corpus/m2-max-image2/ (scrubbed). Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted.",
+  "source": "omarchy-m-test --record against tests/corpus/m2-max-image2/ (scrubbed). Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted. The M2 has since been reinstalled with converged image 4, so image 2's own answers (mac-check, encryption, the backlight level, the volume) can no longer be captured and stay reconstructed; tests/corpus/m2-max-converged is its real run.",
   "commands": [
     {
       "argv": [
@@ -462,7 +462,7 @@
       "text": "apple-cpufreq\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
-      "text": "600000\n"
+      "text": "912000\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
       "text": "2424000\n"
@@ -477,10 +477,10 @@
       "text": "apple-cpufreq\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq": {
-      "text": "660000\n"
+      "text": "702000\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq": {
-      "text": "3504000\n"
+      "text": "3264000\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": {
       "text": "schedutil\n"
@@ -492,10 +492,10 @@
       "text": "apple-cpufreq\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_min_freq": {
-      "text": "660000\n"
+      "text": "702000\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_max_freq": {
-      "text": "3504000\n"
+      "text": "3264000\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/scaling_governor": {
       "text": "schedutil\n"

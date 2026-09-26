@@ -457,7 +457,7 @@ class PresenceTest(unittest.TestCase):
     def test_the_recorded_runs_over_ssh_skip_the_sleep_section_with_the_reason(self):
         from tests.test_audio_display import golden
 
-        for name in ("m2-max-image2", "m1-pro-mx-mac", "m1-pro-converged"):
+        for name in ("m2-max-image2", "m1-pro-mx-mac", "m1-pro-converged", "m2-max-converged"):
             with self.subTest(name=name):
                 checks = golden(name)
                 for check_id in sleep.CHECK_IDS:
