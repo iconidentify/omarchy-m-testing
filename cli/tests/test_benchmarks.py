@@ -312,6 +312,15 @@ class FailuresTest(unittest.TestCase):
         self.assertEqual(checks["benchmark.hevc-decode"]["status"], "skip")
         self.assertIn("skipped: ffmpeg couldn't make the HEVC clip (Unknown encoder 'libx265')", checks["benchmark.hevc-decode"]["evidence"])
 
+    def test_the_tools_memory_addresses_never_reach_the_evidence(self):
+        failed = FFMPEG_BANNER + "[hevc @ 0xaaab0c1f2e40] Failed to end picture decode issue: 23 (internal decoding error).\n"
+        _, checks = run(bench_mac(hardware={"hevc": command([], "", 187, failed)}))
+
+        check = checks["benchmark.hevc-decode"]
+        self.assertEqual(check["status"], "fail")
+        self.assertIn("hardware decode (VA-API) failed (Failed to end picture decode issue: 23 (internal decoding error).)", check["evidence"])
+        self.assertFalse(any("0xaaab" in line for line in check["evidence"]))
+
 
 class WhereItRunsTest(unittest.TestCase):
     def test_over_ssh_glmark2_uses_the_desktops_own_wayland_socket(self):

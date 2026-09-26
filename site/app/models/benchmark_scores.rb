@@ -27,7 +27,7 @@ class BenchmarkScores
     def high = values.last
     def latest = latest_per_machine.first
     def tools = latest_per_machine.map(&:tool).uniq
-    def tester? = scores.any? { |score| score.report.tester? }
+    def tester? = latest_per_machine.any? { |score| score.report.tester? }
 
     def median
       middle = values.size / 2

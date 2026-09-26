@@ -23,7 +23,7 @@ def line(check: dict, classification: dict, catalogue: Catalogue) -> str:
     feature = catalogue.feature_for_check(check["id"])
     name = feature["name"] if feature else classification["feature"]
     score = check.get("score")
-    measured = f", score {score['value']:g} {score['unit']} ({score['tool']})" if isinstance(score, dict) else ""
+    measured = f", score {score['value']} {score['unit']} ({score['tool']})" if isinstance(score, dict) else ""
     return f"  {check['status'].upper():4}  {check['id']}  {catalogue.words(classification['outcome'])} ({name}){measured}"
 
 

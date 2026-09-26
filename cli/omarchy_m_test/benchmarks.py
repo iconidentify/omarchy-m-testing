@@ -89,12 +89,13 @@ _SOCKET = re.compile(r"wayland-[0-9]+")
 _TOOL_VERSION = re.compile(r"^\s*(glmark2|vkmark) (\d[\w.+~-]*)\s*$", re.M)
 _SCORE = re.compile(r"^\s*(?:glmark2|vkmark) Score: (\d+)\s*$", re.M)
 _SCENE = re.compile(r"^\[([\w-]+)\] (.*?): FPS: (\d+) FrameTime: ([\d.]+) ms", re.M)
-_FAILED_SCENE = re.compile(r"^\[([\w-]+)\] (.*?): (?:Failed with exception: |Unsupported)(.*)$", re.M)
+_FAILED_SCENE = re.compile(r"^\[([\w-]+)\] (.*?): (?:Failed with exception: |Unsupported|Set up failed)(.*)$", re.M)
 _GL = re.compile(r"^\s*GL_(RENDERER|VERSION):\s*(\S.*?)\s*$", re.M)
 _VK_DEVICE = re.compile(r"^\s*Device Name:\s*(\S.*?)\s*$", re.M)
 _SOFTWARE_RENDERER = re.compile(r"llvmpipe|softpipe|lavapipe|swrast|software", re.I)
 _NO_WAYLAND = re.compile(r"Failed to connect to (?:the )?Wayland display|wl_display_connect|Couldn't connect to Wayland", re.I)
 _CONTEXT = re.compile(r"^\[[^\]]* @ 0x[0-9a-fA-F]+\]\s*")
+_POINTER = re.compile(r"\b0x[0-9a-fA-F]{8,}\b")
 _FFMPEG_VERSION = re.compile(r"^ffmpeg version (\S+)", re.M)
 _FRAMES = re.compile(r"frame=\s*(\d+)")
 _RTIME = re.compile(r"\brtime=([\d.]+)s")
@@ -175,7 +176,7 @@ def opengl(ctx: Context, wayland: Wayland, evidence: list[str]) -> dict:
     if done.returncode == NOT_INSTALLED:
         return _skip(OPENGL, f"{GLMARK2} isn't installed", lines)
     if _NO_WAYLAND.search(done.stdout + done.stderr):
-        return _skip(OPENGL, f"glmark2 couldn't connect to the Wayland session ({_last_line(done.stderr) or 'no reason given'})", lines)
+        return _skip(OPENGL, "glmark2 couldn't connect to the Wayland session", lines)  # its message names the socket's path
     info = {key: value for key, value in _GL.findall(done.stdout)}
     renderer = info.get("RENDERER")
     if renderer:
@@ -202,7 +203,8 @@ def _scored(check_id: str, name: str, done: CommandResult, renderer: str | None,
         lines.append(f"[{scene}] {options}: {fps} fps ({frame_time} ms a frame)")
     failed = _FAILED_SCENE.findall(done.stdout + "\n" + done.stderr)
     for scene, options, why in failed:
-        lines.append(f"[{scene}] {options}: failed{f' ({why.strip()[:200]})' if why.strip() else ''}")
+        why = _clean(why)
+        lines.append(f"[{scene}] {options}: failed{f' ({why[:200]})' if why else ''}")
     score = _SCORE.search(done.stdout)
     if done.returncode == TIMED_OUT:
         return _result(check_id, "fail", [*lines, f"{name} didn't finish in time"])
@@ -248,8 +250,7 @@ def _decode(ctx: Context, directory: str, codec: str, label: str, check_id: str,
     found = _FFMPEG_VERSION.search(hardware.stderr)
     tool = f"ffmpeg {found.group(1)}" if found else "ffmpeg"
     if _NO_VAAPI.search(hardware.stderr):
-        line = next((line for line in hardware.stderr.splitlines() if _NO_VAAPI.search(line)), "")
-        line = _CONTEXT.sub("", line.strip())  # "[AVHWDeviceContext @ 0x...] ": no pointers in evidence
+        line = _clean(next((line for line in hardware.stderr.splitlines() if _NO_VAAPI.search(line)), ""))
         return _skip(check_id, f"ffmpeg couldn't set up VA-API hardware decode ({line[:200]})", lines)
     if hardware.returncode == TIMED_OUT:
         return _result(check_id, "fail", [*lines, "hardware decode didn't finish in time"])
@@ -288,8 +289,13 @@ def _score(value: int, unit: str, tool: str) -> dict:
     return {"value": value, "unit": unit, "tool": tool[:80], "suite": SUITE}
 
 
+def _clean(line: str) -> str:
+    """A tool's message without the memory addresses ffmpeg and Mesa print ("[libx265 @ 0xaaab0c1f2e40] ...")."""
+    return _POINTER.sub("0x…", _CONTEXT.sub("", line.strip())).strip()
+
+
 def _last_line(text: str) -> str:
-    lines = [line.strip() for line in text.replace("\r", "\n").splitlines() if line.strip()]
+    lines = [_clean(line) for line in text.replace("\r", "\n").splitlines() if line.strip()]
     return lines[-1][:200] if lines else ""
 
 
