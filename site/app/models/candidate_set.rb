@@ -4,8 +4,9 @@
 # listed but don't count.
 #
 #   waiting  no tester run yet
-#   blocked  a tester run found a regression (red: it should work there)
-#   ready    tester runs on at least one model, and none found a regression
+#   blocked  tester runs found a feature failing where it should work (a
+#            regression, or a failure with no verified earlier pass)
+#   ready    tester runs on at least one model, and none found a failure
 class CandidateSet
   NAME = /[A-Za-z0-9._-]{1,128}/
 
@@ -49,11 +50,12 @@ class CandidateSet
   end
 
   def regressions = findings("regression")
+  def failures = regressions + findings("fails")
   def partials = findings("partial")
 
   def verdict
     if tester_reports.empty? then "waiting"
-    elsif regressions.any? then "blocked"
+    elsif failures.any? then "blocked"
     else "ready"
     end
   end
@@ -61,8 +63,10 @@ class CandidateSet
   def verdict_words
     case verdict
     when "waiting" then "Waiting for tester runs"
-    when "blocked" then "Not ready: tester runs found #{regressions.size} #{"regression".pluralize(regressions.size)}"
-    else "Ready for promotion: tester runs on #{tested_rows.map(&:model_name).uniq.size} #{"model".pluralize(tested_rows.map(&:model_name).uniq.size)}, no regressions"
+    when "blocked"
+      "Not ready: tester runs found #{failures.size} #{"failure".pluralize(failures.size)}" +
+        (regressions.any? ? ", #{regressions.size} of them #{regressions.one? ? "a regression" : "regressions"}" : "")
+    else "Ready for promotion: tester runs on #{tested_rows.map(&:model_name).uniq.size} #{"model".pluralize(tested_rows.map(&:model_name).uniq.size)}, nothing failing"
     end
   end
 

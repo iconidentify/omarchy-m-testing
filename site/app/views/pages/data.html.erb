@@ -9,6 +9,7 @@
       <tr><td><a href="<%= api_v1_checks_path(format: :csv) %>">checks.csv</a></td><td>one row per check result, with its outcome, feature, layer, expected states and any benchmark score</td></tr>
       <tr><td><a href="<%= api_v1_matrix_path(format: :json) %>">matrix.json</a></td><td>the compatibility matrix, with each cell's agreement per machine</td></tr>
       <tr><td><a href="<%= api_v1_benchmarks_path(format: :json) %>">benchmarks.json</a></td><td>benchmark scores per Mac model and stack/version: median, range, machines and runs</td></tr>
+      <tr><td><a href="<%= api_v1_aurora_path(format: :json) %>">aurora.json</a></td><td>the Aurora feature-support table per chip generation, from tester-verified runs, with each cell's runs and the catalogue's expected states</td></tr>
     </tbody>
   </table>
   <p class="dim">The expected Asahi states inside come from the <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature-support tables</a>, CC BY 3.0: credit Asahi Linux when you reuse them.</p>

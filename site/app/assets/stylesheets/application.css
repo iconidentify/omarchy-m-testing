@@ -41,6 +41,7 @@
   /* the rest of the Tokyo Night palette, for the colour code */
   --yellow: #e0af68;
   --red: #f7768e;
+  --orange: #ff9e64;
   --magenta: #bb9af7;
   --comment: #565f89;
   --fg-dim: #a9b1d6;
@@ -149,6 +150,11 @@ code { color: var(--white); }
 .button-danger:hover { background: var(--red); color: var(--night); }
 .button-small { font-size: 0.85em; padding: 0.15em 0.6em; }
 
+/* the admin's prefilled GitHub issue */
+.issue-link { color: var(--cyan); font-size: 0.8em; white-space: nowrap; }
+.issue-link::before { content: "+ "; color: var(--comment); }
+a.badge-regression { text-decoration: none; }
+
 /* layout */
 
 .site-main {
@@ -244,6 +250,7 @@ code { color: var(--white); }
 .cell-works { --state: var(--green); }
 .cell-partial { --state: var(--yellow); }
 .cell-regression { --state: var(--red); }
+.cell-fails { --state: var(--orange); }
 .cell-missing { --state: var(--blue); }
 .cell-unknown { --state: var(--magenta); }
 .cell-not-applicable { --state: transparent; }
@@ -251,6 +258,7 @@ code { color: var(--white); }
 .cell-hint-works { --hint: var(--green); }
 .cell-hint-partial { --hint: var(--yellow); }
 .cell-hint-regression { --hint: var(--red); }
+.cell-hint-fails { --hint: var(--orange); }
 .cell-hint-missing { --hint: var(--blue); }
 .cell-hint-unknown { --hint: var(--magenta); }
 .cell-hint-not-applicable, .cell-hint-not-tested { --hint: var(--comment); }
@@ -311,6 +319,7 @@ code { color: var(--white); }
 .badge-works { color: var(--green); }
 .badge-partial { color: var(--yellow); }
 .badge-regression { color: var(--red); }
+.badge-fails { color: var(--orange); }
 .badge-missing { color: var(--blue); }
 .badge-unknown { color: var(--magenta); }
 .badge-not-applicable, .badge-not-tested { color: var(--comment); }

@@ -54,7 +54,7 @@ class TesterGatingTest < ActionDispatch::IntegrationTest
     upload_report golden("m2-max-image2"), machine: "c"
 
     get "/matrix"
-    assert_equal "regression", cell(M2, "gpu")["data-state"]
+    assert_equal "fails", cell(M2, "gpu")["data-state"]
     assert_match "; 3 machines in all", cell(M2, "gpu")["title"]
 
     bind_machine "d", "tester-two"
@@ -113,22 +113,22 @@ class TesterGatingTest < ActionDispatch::IntegrationTest
     upload_report golden_with("m2-max-image2", GPU_FAILS), machine: "a"
 
     get "/candidates/#{CANDIDATE}"
-    assert_select %(#verdict[data-verdict="ready"]), "Ready for promotion: tester runs on 1 model, no regressions"
+    assert_select %(#verdict[data-verdict="ready"]), "Ready for promotion: tester runs on 1 model, nothing failing"
     assert_select %(tr.matrix-row[data-board="#{M2}"] td[data-feature="gpu"][data-state="works"][data-verified="tester"])
     assert_select "tr.report-row", 2, "only the set's runs"
     assert_select "tr.report-row .badge-tester", 1
   end
 
-  test "a tester's regression blocks the set and is listed" do
+  test "a tester's failure blocks the set and is listed" do
     bind_machine "a", "tester-one"
     bind_machine "b", "tester-two"
     upload_report on_candidate(working("m2-max-image2")), machine: "a"
     upload_report on_candidate(working("m1-pro-mx-mac", GPU_FAILS)), machine: "b"
 
     get "/candidates/#{CANDIDATE}"
-    assert_select %(#verdict[data-verdict="blocked"]), "Not ready: tester runs found 1 regression"
-    assert_select "#regressions li.finding", 1
-    assert_select "#regressions li.finding", /MacBook Pro.*GPU/m
+    assert_select %(#verdict[data-verdict="blocked"]), "Not ready: tester runs found 1 failure"
+    assert_select "#failures li.finding[data-state=fails]", 1
+    assert_select "#failures li.finding", /MacBook Pro.*GPU/m
     get "/candidates"
     assert_select %(tr.candidate-row[data-verdict="blocked"])
   end

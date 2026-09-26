@@ -49,18 +49,19 @@ class MatrixTest < ActionDispatch::IntegrationTest
     assert_select %(td[data-feature="gpu"] a[href^="/reports/"])
   end
 
-  test "agreeing failures are red, missing support blue and unknown hardware magenta" do
+  test "agreeing failures are orange, missing support blue and unknown hardware magenta" do
     outcomes = { "display.backlight" => "fails", "input.ambient-light" => "not-in-aurora", "power.battery" => "unknown-hardware",
                  "network.bluetooth" => "not-applicable" }
     upload_report golden_with("m2-max-image2", outcomes), machine: "a"
     upload_report golden_with("m2-max-image2", outcomes), machine: "b"
 
     get "/matrix"
-    assert_equal "regression", state(M2, "brightness")
+    assert_equal "fails", state(M2, "brightness")
     assert_equal "missing", state(M2, "aop")
     assert_equal "unknown", state(M2, "battery-info")
     assert_equal "not-applicable", state(M2, "bluetooth")
     assert_select ".legend li", /regression/
+    assert_select ".legend li", /doesn't work/
     assert_select ".legend li", /expected missing/
     assert_select ".legend li", /unknown hardware/
   end
@@ -71,7 +72,7 @@ class MatrixTest < ActionDispatch::IntegrationTest
 
     get "/matrix"
     assert_equal "unconfirmed", state(M2, "brightness")
-    assert_match "1 machine works, 1 machine regression", cell(M2, "brightness")["title"]
+    assert_match "1 machine works, 1 machine doesn't work", cell(M2, "brightness")["title"]
     assert_includes cell(M2, "brightness")["class"], "cell-hint-partial", "a tie hints partial, not the better state"
 
     upload_report golden("m2-max-image2"), machine: "c"
@@ -99,7 +100,7 @@ class MatrixTest < ActionDispatch::IntegrationTest
 
     get "/matrix"
     assert_equal "not-tested", state(M1, "dcp")
-    assert_equal "regression", state(M1, "vendor-firmware")
+    assert_equal "fails", state(M1, "vendor-firmware")
   end
 
   test "rows are per model and stack/version, and the stack filter narrows them" do
