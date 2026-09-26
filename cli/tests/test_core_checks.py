@@ -188,8 +188,8 @@ class RootChecksTest(unittest.TestCase):
             self.assertIn("passwordless sudo", found[check_id]["evidence"][0])
         self.assertFalse(any(argv[0] == "sudo" for argv in mac.commands_run))
         asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
-        self.assertEqual(asked[0], ACCEPT_PROMPT)
-        self.assertFalse(any("password" in prompt.lower() for prompt in asked))  # never asks for a password
+        # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions.
+        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")], [ACCEPT_PROMPT])
         self.assertIn("passwordless sudo", mac.output)
 
     def test_when_mac_check_cant_run_its_checks_are_skipped_with_the_reason(self):

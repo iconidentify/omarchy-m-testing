@@ -9,9 +9,9 @@ else the first backlight brightnessctl lists) is stepped three times, a
 second apart, then put back; its restorer is registered before the first
 step and runs again when the section ends if putting it back failed. It
 steps down to 70%, 45% and 25% of where it was (never below a tenth of its
-range, never off), or up when it's already dim. brightnessctl works for the
-user at the local seat (logind); where it can't set the backlight the check
-is skipped. A backlight that doesn't read back the value it was set to
+range, never off), or up when it's already dim. brightnessctl sets it as the
+user through its udev rules or setuid bit, or logind; where it can't, the
+check is skipped. A backlight that doesn't read back the value it was set to
 fails without asking.
 
 Cursor (human): is the pointer visible everywhere on the built-in screen,
@@ -212,10 +212,9 @@ def keyboard_light(ctx: Context) -> dict:
     known = lights(ctx)
     if isinstance(known, str):
         return human.skip(check_id, known)
-    keys = known.get(KEYBOARD)
-    if keys is None:
+    if KEYBOARD not in known:
         return human.skip(check_id, "no keyboard light (brightnessctl lists no kbd_backlight)")
-    before = f"before: ambient light {read_lux(ctx, sensor)} lux, keyboard light {keys.describe()}"
+    before = f"before: ambient light {read_lux(ctx, sensor)} lux, keyboard light {keyboard_now(ctx)}"
     _say(ctx, "Cover the camera and notch at the top of the screen with your hand, where the light sensor is, and keep it covered.")
     result = human.check(ctx, check_id, KEYBOARD_QUESTION, [before])
     result["evidence"].append(f"while covered: ambient light {read_lux(ctx, sensor)} lux, keyboard light {keyboard_now(ctx)}")
