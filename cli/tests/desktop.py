@@ -30,13 +30,15 @@ TERMINAL = Terminal(120, 40)
 
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
 # tone, headphone jack, Bluetooth pairing, keyboard light), left unanswered as in its golden
-# report: at a plain prompt (end of input) and at gum (Esc). A run that
+# report, then the Benchmarks section's offer to install vkmark, unanswered and so
+# declined: at a plain prompt (end of input) and at gum (Esc). A run that
 # needs no answer after them ends its answers with ENDED instead.
-UNANSWERED = [EOF] * 7
+BENCHMARK_OFFER = [EOF]
+UNANSWERED = [EOF] * 7 + BENCHMARK_OFFER
 # How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
 # the converged M1 ran over SSH, where brightness can't be set, so that one isn't asked).
 HUMAN_QUESTIONS = {"m2-max-image2": 7, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6}
-GUM_UNANSWERED = [CommandResult(1, "", "")] * 7
+GUM_UNANSWERED = [CommandResult(1, "", "")] * 8
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
 BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6}
 
@@ -48,9 +50,9 @@ SLEEP_DECLINED = (EOF, EOF)
 
 def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_DECLINED) -> list:
     """A whole run's answers at the Mac, after the disclaimer: its human checks unanswered, `reload` at the
-    driver-reload question, `sleep` at the Sleep section's."""
+    driver-reload question, `sleep` at the Sleep section's, and the benchmarks' package offer unanswered."""
     before = BEFORE_RELOAD[machine]
-    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before)]
+    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before), *BENCHMARK_OFFER]
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
 SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "

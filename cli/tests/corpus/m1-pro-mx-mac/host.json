@@ -326,6 +326,44 @@
       "stdout": "0\n",
       "stderr": "",
       "note": "stand-in: the paired-device count wasn't captured (grep -c prints 0 and exits 1 with none); the v0.1 dogfood run records it"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "vkmark",
+        "ffmpeg"
+      ],
+      "returncode": 1,
+      "stdout": "ffmpeg 2:9.0.2-1\n",
+      "stderr": "error: package 'vkmark' was not found\n",
+      "note": "stand-in: this run had no benchmark section (omarchy-m-test 0.1.3); what pacman answers on a Mac without vkmark and with ffmpeg (mpv needs it), with Arch Linux ARM extra's vkmark 2025.01 and its assimp dependency, so the benchmarks are offered and, with no answer, declined"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "assimp\nvkmark\n",
+      "stderr": "",
+      "note": "stand-in: this run had no benchmark section (omarchy-m-test 0.1.3); what pacman answers on a Mac without vkmark and with ffmpeg (mpv needs it), with Arch Linux ARM extra's vkmark 2025.01 and its assimp dependency, so the benchmarks are offered and, with no answer, declined"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "assimp",
+        "vkmark"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'assimp' was not found\nerror: package 'vkmark' was not found\n",
+      "note": "stand-in: this run had no benchmark section (omarchy-m-test 0.1.3); what pacman answers on a Mac without vkmark and with ffmpeg (mpv needs it), with Arch Linux ARM extra's vkmark 2025.01 and its assimp dependency, so the benchmarks are offered and, with no answer, declined"
     }
   ],
   "files": {

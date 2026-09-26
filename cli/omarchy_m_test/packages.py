@@ -112,7 +112,7 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     ui = ctx.ui or Ui(ctx.host)
     extra = [name for name in plan if name not in missing]
     ui.text(
-        f"{purpose} need{'s' if len(missing) == 1 else ''} packages that aren't installed: {' '.join(missing)}"
+        f"{purpose} needs {'a package that isn' if len(missing) == 1 else 'packages that aren'}'t installed: {' '.join(missing)}"
         + (f" (with {' '.join(extra)})" if extra else "")
         + ". They're installed from this system's package repositories with sudo pacman for this run only, "
         "and exactly these are removed when the section ends."

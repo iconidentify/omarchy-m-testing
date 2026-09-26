@@ -425,6 +425,24 @@ code { color: var(--white); }
 .filters { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; margin-bottom: 0.5rem; }
 .credit { font-size: 0.85em; margin-top: 1rem; }
 
+/* benchmarks: a bar per row, against the best Mac on the same benchmark */
+
+.benchmark-table .score-head { min-width: 16rem; }
+.score-cell { min-width: 16rem; position: relative; }
+.score-bar {
+  background: linear-gradient(90deg, rgb(158 206 106 / 0.35), rgb(158 206 106 / 0.12));
+  border-left: 2px solid var(--green);
+  bottom: 0.3rem;
+  left: 0;
+  position: absolute;
+  top: 0.3rem;
+  width: calc(var(--share) * 0.95);
+}
+.score-value { color: var(--white); position: relative; padding-left: 0.4rem; }
+.score-range { font-size: 0.85em; position: relative; padding-left: 0.4rem; }
+.check .score { color: var(--green); }
+.check .score strong { color: var(--white); }
+
 /* report pages: terminal output */
 
 .terminal {

@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   get "install" => "installer#show", as: :install
   get "matrix" => "matrix#show", as: :matrix
   get "gaps" => "gaps#show", as: :gaps
+  get "benchmarks" => "benchmarks#show", as: :benchmarks
   get "data" => "pages#data", as: :data
   resources :models, only: %i[index show], param: :board
   resources :features, only: %i[index show]
@@ -22,6 +23,7 @@ Rails.application.routes.draw do
       resources :tester_bindings, only: :create
       get "checks" => "exports#checks", as: :checks
       get "matrix" => "exports#matrix", as: :matrix
+      get "benchmarks" => "exports#benchmarks", as: :benchmarks
     end
   end
 

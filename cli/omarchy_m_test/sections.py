@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import checks, sleep, video
+from . import benchmarks, checks, sleep, video
 from .session import Context, Section
 
 
@@ -52,4 +52,6 @@ APPLE: tuple[Section, ...] = (
     ), checks.input_devices, ("input.keyboard-light-follows-room",)),
     _section("power", "Power", "The battery.", ("power.battery",), checks.power),
     _section("cpu", "CPU", "CPU frequency scaling.", ("cpu.frequency-scaling",), checks.cpu),
+    _section("benchmarks", "Benchmarks", "About a minute of short benchmarks for comparing Macs: OpenGL (glmark2, off-screen), Vulkan (vkmark, headless) and H.264 and HEVC hardware decode (ffmpeg). Leave the Mac alone while they run.",
+             benchmarks.CHECK_IDS, benchmarks.run),
 )

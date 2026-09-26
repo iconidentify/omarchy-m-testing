@@ -389,6 +389,41 @@
     },
     {
       "argv": [
+        "pacman",
+        "-Q",
+        "vkmark",
+        "ffmpeg"
+      ],
+      "returncode": 1,
+      "stdout": "ffmpeg 2:9.0.2-1\n",
+      "stderr": "error: package 'vkmark' was not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "assimp\nvkmark\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "assimp",
+        "vkmark"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'assimp' was not found\nerror: package 'vkmark' was not found\n"
+    },
+    {
+      "argv": [
         "dtc",
         "-I",
         "fs",
