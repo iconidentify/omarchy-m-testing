@@ -4,8 +4,8 @@
     "name": "omarchy-m-test",
     "version": "0.1.2"
   },
-  "consent_version": 2,
-  "catalogue_version": 6,
+  "consent_version": 3,
+  "catalogue_version": 7,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1447,6 +1447,75 @@
       }
     },
     {
+      "id": "sleep.lid-suspend",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "suspend-sleep",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "sleep.clamshell",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "clamshell",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "sleep.wifi-after-resume",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "wifi",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "sleep.thunderbolt-after-resume",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "thunderbolt",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "input.ambient-light",
       "kind": "automatic",
       "status": "pass",
@@ -1540,6 +1609,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFLGLY+iuZqG9/Mp/ysfjhd3E2Ld1pLL3jPO6Ahmxh\nvo/b3djAIUzBnMF4Xn2+6bd7/2tiHXAVbxadDA2dfr8QE=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQEFQP1KHK/gCGRZsuK8lAtt0QThqsFoYKS58SsU/qM\ntbyvh0bGQ92cJhAe+ZgbpHio6UImRw0LAT5+n2LJ6S6Ao=\n-----END SSH SIGNATURE-----"
   }
 }

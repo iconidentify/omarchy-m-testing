@@ -23,6 +23,8 @@ CHECKPOINT = f"{HOME}/.local/state/omarchy-m-test/checkpoint.json"
 THEME = f"{HOME}/.local/state/omarchy/current/theme"
 OLD_THEME = f"{HOME}/.config/omarchy/current/theme"
 TITLES = "\n".join(section.title for section in APPLE) + "\n"
+# The recorded runs are over SSH: the picker doesn't offer the disruptive sections (Sleep).
+OFFERED_OVER_SSH = [section.title for section in APPLE if not section.disruptive]
 LOGO_PATHS = ("/usr/share/omarchy/logo.txt", f"{HOME}/.local/share/omarchy/logo.txt")
 TERMINAL = Terminal(120, 40)
 
@@ -39,10 +41,16 @@ GUM_UNANSWERED = [CommandResult(1, "", "")] * 7
 BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6}
 
 
-def at_the_seat(machine: str, reload: str | object = EOF) -> list:
-    """A whole run's answers at the Mac, after the disclaimer: its human checks unanswered, `reload` at the driver-reload question."""
+# The Sleep section (after the reload question) asks whether to close the lid for the suspend step, then
+# whether an external display is showing, then (only after a yes) whether to close the lid with it on.
+SLEEP_DECLINED = (EOF, EOF)
+
+
+def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_DECLINED) -> list:
+    """A whole run's answers at the Mac, after the disclaimer: its human checks unanswered, `reload` at the
+    driver-reload question, `sleep` at the Sleep section's."""
     before = BEFORE_RELOAD[machine]
-    return [*[EOF] * before, reload, *[EOF] * (HUMAN_QUESTIONS[machine] - before)]
+    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before)]
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
 SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "

@@ -11,8 +11,12 @@ Refused, after unwrapping sudo, env, timeout and similar launchers (and in
   - rebooting or powering off: reboot, poweroff, shutdown, halt, kexec,
     anything named like them (omarchy-system-reboot), systemctl's
     reboot/poweroff/halt/kexec/isolate/hibernate verbs and targets, logind's
-    Reboot, PowerOff, Halt and KExec methods over D-Bus, rtcwake -m off/disk
-    (suspending is allowed: the sleep section needs it);
+    Reboot, PowerOff, Halt and KExec methods over D-Bus, rtcwake -m off/disk;
+  - putting the Mac to sleep: only the human does that, by closing the lid
+    when the Sleep section asks (sleep.py). Refused: systemctl and loginctl
+    suspend/sleep verbs and targets, logind's Suspend, Hibernate and Sleep
+    methods over D-Bus, rtcwake (other than -m show), anything named like
+    suspend, and writes to /sys/power/state;
   - disk encryption: cryptsetup other than status/isLuks, systemd-cryptenroll,
     clevis, anything with "luks" in its name;
   - boot files and disks: initramfs, UKI and boot loader tools (mkinitcpio,
@@ -25,7 +29,7 @@ Refused, after unwrapping sudo, env, timeout and similar launchers (and in
     that is_boot_package() names (a kernel, firmware, m1n1, boot loaders,
     initramfs tools: their hooks rewrite /boot).
 
-Writes are refused under PROTECTED_PATHS, to /proc/sysrq-trigger and to
+Writes are refused under PROTECTED_PATHS, to /proc/sysrq-trigger, /sys/power's sleep files and to
 devices (/dev, except the standard streams), whether through the host's
 write_file, a file tool's argument or a `sh -c` redirection. Bundled
 scripts (run_bundled) are the tool's own, reviewed with it, and not
@@ -86,6 +90,12 @@ _SYSTEMCTL_POWER = {
 }
 _POWER_TARGETS = re.compile(r"^(reboot|poweroff|halt|kexec|shutdown|soft-reboot|rescue|emergency|hibernate|hybrid-sleep|suspend-then-hibernate)\.target$")
 _RTCWAKE_OFF = {"off", "disk", "no"}
+_SYSTEMCTL_SLEEP = {"suspend", "sleep"}
+_SLEEP_TARGETS = re.compile(r"^(suspend|sleep)\.target$")
+_LOGIND_SLEEP = re.compile(r"(^|\.)(Suspend|Hibernate|HybridSleep|SuspendThenHibernate|Sleep)$")
+_SUSPEND_PROGRAM = re.compile(r"[\w.+-]*suspend[\w.+-]*")  # a command's name, not a word in a script's text
+_SLEEP_FILES = ("/sys/power/state", "/sys/power/disk", "/sys/power/mem_sleep")
+_SLEEPS = "it never puts the Mac to sleep itself: you do, by closing the lid when asked"
 _DBUS_TOOLS = {"busctl", "dbus-send", "gdbus", "qdbus", "dbus-daemon"}
 _LOGIND_POWER = re.compile(r"(Reboot|PowerOff|Halt|KExec|SoftReboot|ScheduleShutdown)")
 _BOOT_TOOLS = {
@@ -142,6 +152,17 @@ def refusal(argv: Sequence[str]) -> str | None:
         return "it never reboots or powers off the Mac"
     if program in _DBUS_TOOLS and any("login1" in a for a in args) and any(_LOGIND_POWER.search(a) for a in args):
         return "it never reboots or powers off the Mac"
+
+    if _SUSPEND_PROGRAM.fullmatch(program):
+        return _SLEEPS
+    if program in ("systemctl", "loginctl"):
+        verbs = [a for a in args if not a.startswith("-")]
+        if (verbs and verbs[0] in _SYSTEMCTL_SLEEP) or any(_SLEEP_TARGETS.match(a) for a in verbs):
+            return _SLEEPS
+    if program == "rtcwake" and not any(a in ("show", "--list-modes") or a.split("=")[-1] == "show" for a in args):
+        return _SLEEPS
+    if program in _DBUS_TOOLS and any("login1" in a for a in args) and any(_LOGIND_SLEEP.search(a) for a in args):
+        return _SLEEPS
 
     if program in _READ_ONLY_VERBS:
         verbs = [a for a in args if not a.startswith("-")]
@@ -206,6 +227,8 @@ def _unwrap(argv: list[str]) -> list[str]:
 
 
 def write_refusal(path: str) -> str | None:
+    if path.startswith("/") and posixpath.normpath(path) in _SLEEP_FILES:
+        return _SLEEPS
     if protected(path) or path == "/proc/sysrq-trigger":
         return "it never touches disk encryption, boot files or disks"
     if path.startswith("/dev/") and not (path in WRITABLE_DEVICES or path.startswith("/dev/fd/")):

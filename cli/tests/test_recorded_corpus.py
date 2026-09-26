@@ -224,6 +224,26 @@ class RecordModeTest(unittest.TestCase):
         self.assertIn('compatible = "apple,j416c", "apple,t6021", "apple,arm-platform";', dts)
         self.assertIn("local-mac-address = <redacted>;", dts)
 
+    def test_interfaces_named_like_their_connections_arent_scrubbed_as_networks(self):
+        # The converged M1's NetworkManager keeps connections for its tailscale0 tunnel and docker0 bridge:
+        # only the Wi-Fi network's name is learned, so the interfaces keep their names.
+        m1 = json.loads(read(seeded_recording_path("m1-pro-converged")))
+        outputs = {tuple(entry["argv"]): entry["stdout"] for entry in m1["commands"]}
+
+        addresses = outputs[("ip", "-brief", "address")]
+        self.assertIn("tailscale0       UNKNOWN", addresses)
+        self.assertIn("docker0          DOWN", addresses)
+        self.assertNotIn("<ssid>", addresses)
+        self.assertEqual(outputs[tuple(privacy.SAVED_CONNECTIONS)], "<ssid>:802-11-wireless\ntailscale0:tun\ndocker0:bridge\nlo:loopback\n")
+
+    def test_saved_wi_fi_vpn_and_ethernet_names_are_learned_and_virtual_interfaces_arent(self):
+        names = privacy.saved_connection_names(
+            "Bellbird:802-11-wireless\nKestrel\\:Home VPN:vpn\nWired connection 1:802-3-ethernet\n"
+            "tailscale0:tun\ndocker0:bridge\nlo:loopback\nvirbr0:bridge\n"
+        )
+
+        self.assertEqual(names, ["Bellbird", "Kestrel:Home VPN", "Wired connection 1"])
+
 
 class ZeroLeakTest(unittest.TestCase):
     """Real M1/M2 kernel logs and device-tree dumps go in; no identifier comes out."""

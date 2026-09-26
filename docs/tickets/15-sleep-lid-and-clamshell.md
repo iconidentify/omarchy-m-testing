@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Lid-close/open prompts; suspend and resume detected from the system log
-- [ ] Clamshell with external display: no suspend, built-in off, external on
-- [ ] Wi-Fi and Thunderbolt link state checked after resume
-- [ ] Run resumes across the suspend via checkpoints
-- [ ] Seam A tests with the recorded lid-sleep failure (suspend with USB-C display) and a good clamshell
+- [x] Lid-close/open prompts; suspend and resume detected from the system log
+- [x] Clamshell with external display: no suspend, built-in off, external on
+- [x] Wi-Fi and Thunderbolt link state checked after resume
+- [x] Run resumes across the suspend via checkpoints
+- [x] Seam A tests with the recorded lid-sleep failure (suspend with USB-C display) and a good clamshell

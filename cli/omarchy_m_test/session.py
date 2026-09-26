@@ -26,7 +26,8 @@ Checkpoint: after each section, the run's state (the sections chosen, the
 results of the finished ones, pending restorers) is written to
 $XDG_STATE_HOME/omarchy-m-test/checkpoint.json (~/.local/state/...). A run that
 finds one for the same tool, catalogue, Mac and kernel offers to resume: the
-finished sections aren't run again, the interrupted one starts over. It also
+finished sections aren't run again, the interrupted one starts over (from the
+step it checkpointed, if it keeps its progress: Context.progress). It also
 keeps the serial values and device names the scrubber learned from the finished sections, so the
 resumed run removes them from its own evidence too. The checkpoint is removed
 once the report is written.
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 
 CHECKPOINT_VERSION = 1
 CHECKPOINT_NAME = "omarchy-m-test/checkpoint.json"
+PROGRESS = "progress"  # in the shared state: each section's own progress (Context.progress)
 SKIPPED_EVIDENCE = "skipped: this section wasn't run"
 
 
@@ -158,6 +160,15 @@ class Context:
     cache: dict[str, Any] = field(default_factory=dict)
     # How the section asks the human (human.py, packages.py); plain text when None.
     ui: "Ui | None" = None
+
+    def progress(self, section_id: str) -> dict[str, Any]:
+        """Where a section keeps how far it got (JSON values only), checkpointed with ctx.changes.persist().
+
+        A section that asks the human to do something long or disruptive (closing
+        the lid) keeps its finished steps here, so a resumed run carries on from the
+        step it stopped in instead of starting the section over.
+        """
+        return self.shared.setdefault(PROGRESS, {}).setdefault(section_id, {})
 
     def change(self, description: str, change: Sequence[str], restore: Sequence[str]) -> CommandResult:
         """Change the machine: `restore` is registered first, and runs when the section ends."""

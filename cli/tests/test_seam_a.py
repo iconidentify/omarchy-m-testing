@@ -81,7 +81,7 @@ class FullRunTest(unittest.TestCase):
 
         main(["--dry-run"], mac)
 
-        self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], 2)
+        self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], 3)
 
     def test_output_option_chooses_where_the_report_is_written(self):
         mac = host("m2-max-image2", answers=[ENTER, ENDED])
