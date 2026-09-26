@@ -2,9 +2,13 @@
 <%= card "admin", klass: "narrow" do %>
   <h1>Admin sign-in</h1>
   <% if response.status == 429 %><p class="bad">Too many attempts. Try again later.</p><% end %>
-  <%= form_with url: admin_session_path, method: :post, class: "form" do |form| %>
-    <%= form.label :token, "Admin token" %>
-    <%= form.password_field :token, autocomplete: "current-password", required: true %>
-    <%= form.submit "Sign in", class: "button" %>
+  <% if AdminAuthentication.github? %>
+    <%= button_to "Sign in with GitHub", admin_session_path, method: :post, class: "button", form: { class: "form" } %>
+  <% else %>
+    <%= form_with url: admin_session_path, method: :post, class: "form" do |form| %>
+      <%= form.label :token, "Admin token" %>
+      <%= form.password_field :token, autocomplete: "current-password", required: true %>
+      <%= form.submit "Sign in", class: "button" %>
+    <% end %>
   <% end %>
 <% end %>

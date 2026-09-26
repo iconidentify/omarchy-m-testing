@@ -38,11 +38,17 @@ def key_path(host: Host) -> str | None:
 
 def sign(host: Host, report: dict) -> tuple[dict, str | None]:
     """The report with its signature, or the report as it was and why it couldn't be signed."""
+    return sign_document(host, report, NAMESPACE)
+
+
+def sign_document(host: Host, document: dict, namespace: str) -> tuple[dict, str | None]:
+    """`document` with the machine key's signature over its canonical form under
+    `namespace` (a report, or a tester sign-in), or as it was and why not."""
     path = key_path(host)
     if path is None:
-        return report, "there's no home directory to keep this Mac's key in"
+        return document, "there's no home directory to keep this Mac's key in"
     try:
-        signed = host.machine_sign(path, NAMESPACE, canonical(report))
+        signed = host.machine_sign(path, namespace, canonical(document))
     except SigningError as problem:
-        return report, str(problem)
-    return {**report, "signature": {"public_key": signed.public_key, "signature": signed.signature}}, None
+        return document, str(problem)
+    return {**document, "signature": {"public_key": signed.public_key, "signature": signed.signature}}, None

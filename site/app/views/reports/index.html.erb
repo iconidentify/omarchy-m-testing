@@ -1,6 +1,6 @@
 <% content_for :title, "Reports" %>
 <h1>Reports</h1>
-<p class="subtitle">Every run, newest first. Community reports show up right away; they colour the matrix once another machine agrees.</p>
+<p class="subtitle">Every run, newest first. Community reports show up right away; they colour the matrix once another machine agrees. Tester runs colour it on their own.</p>
 <%= card "#{@reports.size} reports" do %>
   <%= render "shared/report_list", reports: @reports %>
 <% end %>

@@ -8,6 +8,10 @@
 # (MachineSignature), never shown, never exported. Reports from before machine
 # keys have "ip:" and a keyed digest of the uploader's network instead, and
 # those without either (the very first ones) all count as a single machine.
+#
+# tester_login is the GitHub handle the machine was bound to when the report
+# was uploaded (TesterBinding): the report is a tester run while that handle
+# is on the allowlist (Tester). The handle is shown only to the admin.
 class Report < ApplicationRecord
   has_secure_token :public_id, length: 24
 
@@ -77,6 +81,8 @@ class Report < ApplicationRecord
   def machine_key = machine_id || "unknown"
 
   def hidden? = hidden_at.present?
+
+  def tester? = Tester.allowlisted?(tester_login)
 
   # Result per catalogue feature this report tested: feature id => ResultState.
   def feature_states

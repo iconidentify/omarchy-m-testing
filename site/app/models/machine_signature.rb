@@ -14,15 +14,18 @@ class MachineSignature
   class Invalid < StandardError; end
 
   NAMESPACE = "omarchy-m-test-report"
+  # A tester's sign-in, binding their GitHub account to the machine (TesterBinding).
+  TESTER_NAMESPACE = "omarchy-m-test-tester"
   KEY_TYPE = "ssh-ed25519"
   HASHES = { "sha512" => OpenSSL::Digest::SHA512, "sha256" => OpenSSL::Digest::SHA256 }.freeze
   ARMOR = /\A-----BEGIN SSH SIGNATURE-----\n([A-Za-z0-9+\/=\n]+)\n-----END SSH SIGNATURE-----\z/
 
   attr_reader :machine_id
 
-  # The verified signature of `payload`, a parsed report; Invalid says why not.
-  def self.verify!(payload)
-    new(payload.fetch("signature"), canonical(payload.except("signature")))
+  # The verified signature of `payload`, a parsed report (or, with
+  # TESTER_NAMESPACE, a tester sign-in); Invalid says why not.
+  def self.verify!(payload, namespace: NAMESPACE)
+    new(payload.fetch("signature"), canonical(payload.except("signature")), namespace)
   end
 
   # The bytes the signature covers: the report as JSON with keys sorted, no
@@ -47,13 +50,15 @@ class MachineSignature
     '"' + text.gsub(/["\\\x00-\x1f]/) { |char| ESCAPES[char] || format("\\u%04x", char.ord) } + '"'
   end
 
-  def initialize(signature, message)
+  def initialize(signature, message, expected_namespace = NAMESPACE)
+    raise Invalid, "it isn't a signature object" unless signature.is_a?(Hash)
+
     public_key, armored = signature.values_at("public_key", "signature")
     key_blob = parse_public_key(public_key)
     sig = SshReader.new(decode(armored))
     raise Invalid, "it isn't an SSH signature" unless sig.raw(6) == "SSHSIG" && sig.uint32 == 1
     raise Invalid, "it was made with a different key than the report's public_key" unless sig.string == key_blob
-    raise Invalid, "it isn't a report signature (namespace)" unless (namespace = sig.string) == NAMESPACE
+    raise Invalid, "it isn't a #{expected_namespace == NAMESPACE ? "report" : "sign-in"} signature (namespace)" unless (namespace = sig.string) == expected_namespace
     reserved = sig.string
     hash_name = sig.string
     digest = HASHES[hash_name] or raise Invalid, "it uses an unknown hash (#{hash_name})"

@@ -70,9 +70,9 @@ class ExportsTest < ActionDispatch::IntegrationTest
     body = response.parsed_body
     assert_equal "CC0-1.0", body.dig("license", "id")
     m2 = body["rows"].find { |row| row["board"] == "j416c" }
-    assert_equal({ "state" => "works", "tentative" => "works", "machines" => { "works" => 2 } }, m2.dig("cells", "gpu"))
+    assert_equal({ "state" => "works", "tentative" => "works", "machines" => { "works" => 2 }, "tester_machines" => {} }, m2.dig("cells", "gpu"))
     m1 = body["rows"].find { |row| row["board"] == "j314s" }
-    assert_equal({ "state" => nil, "tentative" => "regression", "machines" => { "regression" => 1 } }, m1.dig("cells", "vendor-firmware"))
+    assert_equal({ "state" => nil, "tentative" => "regression", "machines" => { "regression" => 1 }, "tester_machines" => {} }, m1.dig("cells", "vendor-firmware"))
   end
 
   test "the data page links every export" do

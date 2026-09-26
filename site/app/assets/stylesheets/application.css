@@ -315,6 +315,10 @@ code { color: var(--white); }
 .badge-unknown { color: var(--magenta); }
 .badge-not-applicable, .badge-not-tested { color: var(--comment); }
 .badge-community { color: var(--cyan); }
+.badge-tester { color: var(--green); font-weight: 700; }
+
+/* a cell coloured by tester runs */
+.cell-tester { box-shadow: inset 0 0 0 2px var(--night); }
 
 .layer {
   color: var(--comment);
@@ -519,7 +523,7 @@ code { color: var(--white); }
 /* forms */
 
 .form { display: grid; gap: 0.6rem; max-width: 24rem; }
-.form input[type="password"] {
+.form input[type="password"], .form input[type="text"] {
   background: var(--deep);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -527,8 +531,10 @@ code { color: var(--white); }
   font: inherit;
   padding: 0.45em 0.7em;
 }
-.form input[type="password"]:focus { border-color: var(--green); outline: none; }
+.form input[type="password"]:focus, .form input[type="text"]:focus { border-color: var(--green); outline: none; }
 .form .button { justify-self: start; }
+.form-inline { align-items: center; display: flex; flex-wrap: wrap; margin-top: 1rem; max-width: none; }
+form.inline { display: inline; }
 
 @media (max-width: 40rem) {
   .button-install { margin-left: 0; }
@@ -536,3 +542,10 @@ code { color: var(--white); }
   .evidence { margin-left: 0; }
   .matrix .row-head { min-width: 10rem; }
 }
+
+/* candidate sets */
+
+.verdict { font-weight: 700; }
+.verdict-ready { color: var(--green); }
+.verdict-blocked { color: var(--red); }
+.verdict-waiting { color: var(--yellow); }

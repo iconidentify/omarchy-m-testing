@@ -6,5 +6,7 @@
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
   # A report's machine signature embeds the machine's public key, which would link its reports.
-  :signature
+  :signature,
+  # GitHub sign-in: the web flow's one-time code and state.
+  :code, :state
 ]
