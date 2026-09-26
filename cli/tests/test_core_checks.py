@@ -188,7 +188,8 @@ class RootChecksTest(unittest.TestCase):
             self.assertEqual(found[check_id]["status"], "skip", check_id)
             self.assertEqual(found[check_id]["classification"]["outcome"], "not-tested")
             self.assertIn("passwordless sudo", found[check_id]["evidence"][0])
-        self.assertFalse(any(argv[0] == "sudo" for argv in mac.commands_run))
+        # Nothing ran as root: sudo was only asked whether it has cached credentials (the charge limit's probe).
+        self.assertEqual([argv for argv in mac.commands_run if argv[0] == "sudo"], [["sudo", "-n", "true"]])
         asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
         # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions and the
         # benchmarks' package offer (declined).

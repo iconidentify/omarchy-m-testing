@@ -110,7 +110,7 @@ _SERIAL_KEY = (
     r"(?:(?-i:serial)|(?:device[._]|ID_(?:USB_)?)serial(?:_short)?|i?serial[ _-]?(?:number|num|no)|iserial|unique[_-]id)"
 )  # a bare "serial" only in lowercase: the kernel's "Serial: 8250/16550 driver" isn't one
 SERIAL_FIELD = re.compile(
-    rf"(?i)(?<![\w.-])({_SERIAL_KEY}[\"']?)(\s*(?:=>|[:=])\s*)([\"']?)(?!<|[\"',;}}\]]|\s|$)((?:(?<=[\"'])[^\"'\n]*|[^\s\"',;}}\]]+(?:\s+\(0x{_HEX}+\))?))(?=\3)"
+    rf"(?i)(?<![\w.-])((?:POWER_SUPPLY_)?{_SERIAL_KEY}[\"']?)(\s*(?:=>|[:=])\s*)([\"']?)(?!<|[\"',;}}\]]|\s|$)((?:(?<=[\"'])[^\"'\n]*|[^\s\"',;}}\]]+(?:\s+\(0x{_HEX}+\))?))(?=\3)"
 )
 # A serial value removed wherever it appears in the text: identifier-shaped, so a
 # USB root hub's "SerialNumber: xhci-hcd.3.auto" doesn't wipe the controller's name.
@@ -120,6 +120,9 @@ SERIAL_FIELD = re.compile(
 _LEARNED_SERIAL = re.compile(r"(?!(?:0x)?(.)\1*$)(?!\d{1,7}$)(?!(?:0x)?0+$)(?!0?123456789?0?$)(?=[^\s]*\d)[A-Za-z0-9_-]{5,}")
 # Files whose whole content is a serial (sysfs), kept only as <serial> in a recording.
 SERIAL_FILES = ("/serial", "/unique_id", "/serial_number")
+# A battery's manufacture date and cycle count (power_supply uevents: the SMC battery's, as
+# POWER_SUPPLY_MANUFACTURE_YEAR=...): with the model they narrow a battery down to a few.
+BATTERY_HISTORY = re.compile(r"(?i)(?<![\w.-])((?:POWER_SUPPLY_)?(?:MANUFACTURE_(?:YEAR|MONTH|DAY)|CYCLE_COUNT)\s*[:=]\s*)(?!<)(\S+)")
 SENSOR_SERIAL = re.compile(r"\b(found sensor \d+ )(?!<)([A-Za-z0-9]{8,})")
 
 # Names people give their devices ("Marcelo's AirPods", "Kestrel's MacBook Pro"): the
@@ -198,6 +201,7 @@ _rule(r"(?i)\b((?:local-)?(?:mac|bd)-address|[\w,-]*serial-?(?:number|no)[\w,-]*
 # (unique_id). The value is replaced whole, quoted or bare; the values found are also
 # removed wherever else they appear in the same text (Scrubber.scrub).
 _rule(SERIAL_FIELD, r"\1\2\3<serial>")
+_rule(BATTERY_HISTORY.pattern, r"\1<redacted>")
 # Serial numbers in tool output (lsusb, SerialNumber:, serial=...).
 _rule(r"(?i)\b(serial[ _-]?(?:number|no|num)|ID_SERIAL(?:_SHORT)?)(\s*[:=]\s*)(?!['<])(\"?)([^\s\",;]+)\3", r"\1\2<serial>")
 _rule(r"\b(iSerial\s+\d+\s+)(\S.*)$", r"\1<serial>")

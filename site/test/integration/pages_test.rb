@@ -100,7 +100,7 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal [ second["id"], first["id"] ].map { |id| "report-#{id}" }, css_select("tr.report-row").map { |row| row["id"] }
     assert_select "tr#report-#{second["id"]} td", "converged 4.0.0"
-    assert_select "tr#report-#{second["id"]} td", /37 pass 4 fail 24 skip/
+    assert_select "tr#report-#{second["id"]} td", /37 pass 4 fail 28 skip/
   end
 
   test "the report page reads like terminal output, grouped by section" do

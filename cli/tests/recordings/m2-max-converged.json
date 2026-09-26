@@ -437,6 +437,24 @@
     },
     {
       "argv": [
+        "omarchy-battery-charge-limit"
+      ],
+      "returncode": 0,
+      "stdout": "Charge limit: 100% (restart charging at 100%)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
         "pacman",
         "-Q",
         "vkmark",
@@ -573,6 +591,16 @@
     },
     "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
       "text": "100\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_start_threshold": {
+      "text": "100\n"
+    },
+    "/etc/udev/macsmc-battery.conf": null,
+    "/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules": {
+      "text": "# Reapply the charge limit saved by omarchy-battery-charge-limit when the Apple SMC battery appears.\nACTION==\"add\", SUBSYSTEM==\"power_supply\", KERNEL==\"macsmc-battery\", RUN+=\"/usr/lib/omarchy-mac/battery-charge-limit-restore\"\n"
+    },
+    "/usr/lib/omarchy-mac/battery-charge-limit-restore": {
+      "text": "#!/bin/bash\n# udev runs this as the SMC battery appears, so a saved charge limit survives\n# reboots. It never fails the event: anything unexpected leaves the SMC alone.\nset -euo pipefail\n\nsaved_file=\"/etc/udev/macsmc-battery.conf\"\nend_file=\"/sys/class/power_supply/macsmc-battery/charge_control_end_threshold\"\n\n[[ $(omarchy-hw-platform 2>/dev/null) == \"apple-silicon\" ]] || exit 0\n[[ -r $saved_file && -w $end_file ]] || exit 0\n\nlimit=\"\"\nwhile IFS= read -r line || [[ -n $line ]]; do\n  if [[ $line == CHARGE_CONTROL_END_THRESHOLD=* ]]; then\n    limit=${line#*=}\n  fi\ndone <\"$saved_file\"\n\nif [[ $limit == \"80\" || $limit == \"100\" ]]; then\n  printf '%s\\n' \"$limit\" >\"$end_file\" || true\nfi\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
       "text": "apple-cpufreq\n"
