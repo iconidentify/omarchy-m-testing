@@ -389,12 +389,12 @@
     },
     {
       "argv": [
-        "hyprctl",
-        "devices",
-        "-j"
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
       ],
-      "returncode": 1,
-      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
+      "returncode": 0,
+      "stdout": "unavailable\n",
       "stderr": ""
     },
     {

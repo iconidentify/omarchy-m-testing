@@ -115,6 +115,8 @@ def frames(ctx: Context, node: str | None) -> dict:
 def image(ctx: Context, node: str | None, captured: dict) -> dict:
     if node is None:
         return human.skip(IMAGE, "no camera device (see camera.isp)")
+    if captured["status"] == "skip":
+        return human.skip(IMAGE, "no frames were read (see camera.frames)")
     if captured["status"] != "pass":
         return human.skip(IMAGE, "the camera gave no frames (see camera.frames)")
     why = _blocked(ctx)

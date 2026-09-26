@@ -248,12 +248,12 @@
     },
     {
       "argv": [
-        "hyprctl",
-        "devices",
-        "-j"
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
       ],
       "returncode": 0,
-      "stdout": "{\n\"mice\": [\n    {\n        \"address\": \"0xaaab1fe8d4f0\",\n        \"name\": \"apple-spi-trackpad\",\n        \"defaultSpeed\": 0.00000,\n        \"scrollFactor\": -1.00\n    }\n],\n\"keyboards\": [\n    {\n        \"address\": \"0xaaab1fe63220\",\n        \"name\": \"apple-smc-power/lid-events\",\n        \"rules\": \"\",\n        \"model\": \"\",\n        \"layout\": \"us\",\n        \"variant\": \"\",\n        \"options\": \"compose:caps,shift:both_capslock_cancel\",\n        \"active_layout_index\": 0,\n        \"active_keymap\": \"English (US)\",\n        \"capsLock\": false,\n        \"numLock\": true,\n        \"main\": false\n    },    {\n        \"address\": \"0xaaab1fe2a8d0\",\n        \"name\": \"apple-spi-keyboard\",\n        \"rules\": \"\",\n        \"model\": \"\",\n        \"layout\": \"us\",\n        \"variant\": \"\",\n        \"options\": \"compose:caps,shift:both_capslock_cancel\",\n        \"active_layout_index\": 0,\n        \"active_keymap\": \"English (US)\",\n        \"capsLock\": false,\n        \"numLock\": true,\n        \"main\": true\n    }\n],\n\"tablets\": [\n\n],\n\"touch\": [\n\n],\n\"switches\": [\n    {\n        \"address\": \"0xaaab1fe51280\",\n        \"name\": \"Apple SMC power/lid events\"\n    }\n]\n}\n",
+      "stdout": "apple-spi-keyboard\napple-spi-trackpad\n",
       "stderr": ""
     },
     {

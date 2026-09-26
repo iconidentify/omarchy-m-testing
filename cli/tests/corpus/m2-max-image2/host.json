@@ -505,17 +505,6 @@
     },
     {
       "argv": [
-        "hyprctl",
-        "devices",
-        "-j"
-      ],
-      "returncode": 1,
-      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
-      "stderr": "",
-      "note": "stand-in: the corpus runs are over SSH, where hyprctl can't reach Hyprland (as the converged M1's real run shows)"
-    },
-    {
-      "argv": [
         "sh",
         "-c",
         "for d in /sys/class/video4linux/video*; do [ -e \"$d\" ] || continue; drv=$(readlink \"$d/device/driver\"); echo \"${d##*/} ${drv##*/}\"; done"
@@ -579,6 +568,17 @@
       "stdout": "connector card1-eDP-1 connected enabled 3456x2234\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 connected enabled 3440x1440\nconnector card2-USB-3 disconnected disabled \n",
       "stderr": "",
       "note": "stand-in reconstructed from mac-check.txt ('USB-2 3440x1440@60', 'eDP-1 3456x2234@120') and the DRM connector the display uses (card2-USB-2); the other connectors and card numbers are reconstructed. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
+      ],
+      "returncode": 0,
+      "stdout": "unavailable\n",
+      "stderr": "",
+      "note": "stand-in: the corpus runs are over SSH, where hyprctl can't reach Hyprland (as the converged M1's real run shows), so the script prints 'unavailable'"
     }
   ],
   "files": {

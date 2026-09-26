@@ -2,7 +2,7 @@
 
 The whole CLI runs in record mode against the real M1 and M2 evidence in
 tests/corpus/ (kernel logs, device-tree dump, first-boot, Wi-Fi and lid
-journals, uname, PCI, input devices and addresses), exactly as it would on
+journals, uname, PCI devices and addresses), exactly as it would on
 the Mac. The tests assert on what comes out: the recording it saved, the
 report it wrote, and that replaying the recording gives the same run.
 """

@@ -392,6 +392,17 @@
       "stdout": "connector card1-eDP-1 connected enabled 3024x1964\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \n",
       "stderr": "",
       "note": "stand-in reconstructed from mac-check.txt ('1 active: eDP-1 3024x1964@120', no external display); the other connectors are reconstructed. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
+      ],
+      "returncode": 0,
+      "stdout": "apple-spi-keyboard\napple-spi-trackpad\n",
+      "stderr": "",
+      "note": "derived from hyprctl-devices.json (m1-hardware.log): the built-in names the script keeps from it"
     }
   ],
   "files": {

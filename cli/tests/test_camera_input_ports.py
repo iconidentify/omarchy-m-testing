@@ -15,7 +15,7 @@ import unittest
 
 from omarchy_m_test import camera, inputs, ports
 from omarchy_m_test.app import main
-from omarchy_m_test.recording import EOF, RecordedHost
+from omarchy_m_test.recording import EOF, RECORDED_SOURCES, RecordedHost
 from tests.desktop import command, recording
 from tests.live_mac import LiveMac, live_recording
 from tests.test_audio_display import SECTIONS, answer, run
@@ -168,9 +168,7 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertEqual(host.commands_run.count(inputs.DEVICES), 1)  # read once for both
 
     def test_the_m2s_mtp_keyboard_and_what_the_top_row_sends(self):
-        devices = {"keyboards": [{"name": "apple-mtp-keyboard"}, {"name": "apple-smc-power/lid-events"}],
-                   "mice": [{"name": "apple-mtp-multi-touch"}]}
-        rec = with_command(live_recording(), inputs.DEVICES, stdout=json.dumps(devices))
+        rec = with_command(live_recording(), inputs.DEVICES, stdout="apple-mtp-keyboard\napple-mtp-multi-touch\n")
         rec["files"][inputs.FNMODE] = {"text": "2\n"}
         host = run("input", [EOF, "s", "s"], rec=rec)
 
@@ -180,15 +178,17 @@ class KeysAndTrackpadTest(unittest.TestCase):
         ])
         self.assertEqual(check(host, "input.trackpad-gestures")["evidence"][0], "built-in trackpad (Hyprland): apple-mtp-multi-touch")
 
-    def test_keyboards_and_mice_people_plug_in_or_pair_never_reach_the_evidence(self):
-        devices = {"keyboards": [{"name": "apple-spi-keyboard"}, {"name": "kestrel's-magic-keyboard"}],
-                   "mice": [{"name": "apple-spi-trackpad"}, {"name": "logitech-mx-master-3s"}]}
-        rec = with_command(live_recording(base=recording(M1)), inputs.DEVICES, stdout=json.dumps(devices))
+    def test_keyboards_and_mice_people_plug_in_or_pair_never_leave_the_mac(self):
+        # The script on the Mac keeps only the built-in drivers' names from Hyprland's list, so a
+        # paired "kestrel's-magic-keyboard" never reaches a recording; the CLI filters again.
+        self.assertIn("apple-(spi|mtp|internal)-", inputs.BUILT_IN_SCRIPT)
+        self.assertNotIn("hyprctl devices -j", [" ".join(argv) for argv in RECORDED_SOURCES])
+        rec = with_command(live_recording(base=recording(M1)), inputs.DEVICES,
+                           stdout="apple-spi-keyboard\nkestrel's-magic-keyboard\napple-spi-trackpad\n")
         host = self.run_input(["s", "s"], rec=rec)
 
-        text = json.dumps(report(host))
-        self.assertNotIn("magic-keyboard", text)
-        self.assertNotIn("mx-master", text)
+        self.assertNotIn("magic-keyboard", json.dumps(report(host)))
+        self.assertNotIn(["hyprctl", "devices", "-j"], host.commands_run)
 
     def test_over_ssh_hyprland_cant_list_the_devices_and_the_questions_are_still_asked(self):
         host = over_ssh("input", [EOF, "s", "s"])

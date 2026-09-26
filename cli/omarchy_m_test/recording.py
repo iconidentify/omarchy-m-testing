@@ -30,7 +30,7 @@ doesn't list is unset; "env" is only saved when a run read one that was set.
 Record mode (`omarchy-m-test --record FILE`) wraps the real host in a
 RecordingHost: every command, file and directory the CLI asks for is kept,
 plus the RECORDED_SOURCES that later checks need (kernel log, device tree,
-first-boot, Wi-Fi and lid journals, PCI and input devices). Before the
+first-boot, Wi-Fi and lid journals, PCI devices). Before the
 recording is written it passes the privacy Scrubber (privacy.py), so no
 hostname, username, network name or address is ever saved. Prompts, what the
 human typed and uploads are not recorded.
@@ -80,7 +80,6 @@ RECORDED_SOURCES: tuple[list[str], ...] = (
     ["journalctl", "--boot=0", "--unit=systemd-logind.service", "--no-pager"],
     ["uname", "-a"],
     ["lspci", "-nn"],
-    ["hyprctl", "devices", "-j"],
     ["ip", "-brief", "address"],
 )
 
