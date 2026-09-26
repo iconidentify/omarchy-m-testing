@@ -1,0 +1,1531 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "omarchy-m-test",
+    "version": "0.1.1"
+  },
+  "consent_version": 2,
+  "catalogue_version": 6,
+  "machine": {
+    "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
+    "board": "j314s",
+    "soc": "t6000",
+    "chip": "M1 Pro",
+    "arch": "aarch64",
+    "kernel": "7.1.12-2-10-ARCH"
+  },
+  "system": {
+    "stack": "converged",
+    "distro": "archarm",
+    "boot_loader": "limine",
+    "encryption": "on",
+    "packages": [
+      {
+        "name": "omarchy",
+        "version": "4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001"
+      },
+      {
+        "name": "omarchy-settings",
+        "version": "4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001"
+      },
+      {
+        "name": "omarchy-mac",
+        "version": "0.1.0-5.361571887310001"
+      },
+      {
+        "name": "omarchy-mac-boot",
+        "version": "20260926-1.45"
+      },
+      {
+        "name": "linux-aurora",
+        "version": "7.1.12.aurora2-10"
+      },
+      {
+        "name": "m1n1-aurora",
+        "version": "1.6.1.aurora1-3"
+      },
+      {
+        "name": "uboot-asahi",
+        "version": "2026.07.asahi2-4"
+      },
+      {
+        "name": "limine",
+        "version": "12.9.0-1"
+      },
+      {
+        "name": "mesa",
+        "version": "1:26.2.3-1"
+      },
+      {
+        "name": "vulkan-asahi",
+        "version": "1:26.2.3-1"
+      },
+      {
+        "name": "asahi-audio",
+        "version": "4.1-1"
+      },
+      {
+        "name": "speakersafetyd",
+        "version": "2.0.1-1"
+      },
+      {
+        "name": "alsa-ucm-conf-asahi",
+        "version": "10-1"
+      }
+    ]
+  },
+  "inventory": {
+    "nodes": [
+      {
+        "compatible": "apple,agx-t6000",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,cd321x",
+        "status": "okay",
+        "driver": "bound",
+        "count": 4
+      },
+      {
+        "compatible": "apple,display-subsystem",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,firestorm-pmu",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,icestorm-pmu",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,j314-macaudio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,maverick-pmic",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,panel-j314",
+        "status": "okay",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "apple,s5l-uart",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,sep",
+        "status": "disabled",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "apple,smc-gpio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,smc-hwmon",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,smc-reboot",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,smc-rtc",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,spi-hid-transport",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-admac",
+        "status": "okay",
+        "driver": "bound",
+        "count": 2
+      },
+      {
+        "compatible": "apple,t6000-aic",
+        "status": "okay",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-aop",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-aop-als",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-aop-audio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-aop-las",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-asc-mailbox",
+        "status": "okay",
+        "driver": "bound",
+        "count": 10
+      },
+      {
+        "compatible": "apple,t6000-atcphy",
+        "status": "okay",
+        "driver": "bound",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-avd",
+        "status": "okay",
+        "driver": "unbound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-cio-reset",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-cluster-cpufreq",
+        "status": "okay",
+        "driver": "unbound",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-dart",
+        "status": "disabled",
+        "driver": "none",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-dart",
+        "status": "okay",
+        "driver": "bound",
+        "count": 22
+      },
+      {
+        "compatible": "apple,t6000-dart",
+        "status": "okay",
+        "driver": "none",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-dcp",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-dcpext",
+        "status": "okay",
+        "driver": "bound",
+        "count": 2
+      },
+      {
+        "compatible": "apple,t6000-display-crossbar",
+        "status": "okay",
+        "driver": "bound",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-dpaudio",
+        "status": "disabled",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-dpaudio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 2
+      },
+      {
+        "compatible": "apple,t6000-dwc3",
+        "status": "okay",
+        "driver": "bound",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-fpwm",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-i2c",
+        "status": "disabled",
+        "driver": "none",
+        "count": 2
+      },
+      {
+        "compatible": "apple,t6000-i2c",
+        "status": "okay",
+        "driver": "bound",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-isp",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-m3-mailbox",
+        "status": "okay",
+        "driver": "bound",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-mca",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-nco",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-nvme-ans2",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-pcie",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-pciec",
+        "status": "okay",
+        "driver": "none",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-pinctrl",
+        "status": "okay",
+        "driver": "bound",
+        "count": 4
+      },
+      {
+        "compatible": "apple,t6000-pmgr",
+        "status": "okay",
+        "driver": "bound",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-pmgr-misc",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-pmgr-pwrstate",
+        "status": "okay",
+        "driver": "bound",
+        "count": 187
+      },
+      {
+        "compatible": "apple,t6000-pmp-v2",
+        "status": "disabled",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-pmp-v2-report",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-pmp-v2-report-entry",
+        "status": "disabled",
+        "driver": "none",
+        "count": 5
+      },
+      {
+        "compatible": "apple,t6000-pmp-v2-report-entry",
+        "status": "okay",
+        "driver": "bound",
+        "count": 5
+      },
+      {
+        "compatible": "apple,t6000-sart",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-sio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-smc",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-spi",
+        "status": "okay",
+        "driver": "bound",
+        "count": 2
+      },
+      {
+        "compatible": "apple,t6000-spmi",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t6000-usb4-acio",
+        "status": "okay",
+        "driver": "bound",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-usb4-nhi",
+        "status": "okay",
+        "driver": "none",
+        "count": 3
+      },
+      {
+        "compatible": "apple,t6000-wdt",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t8110-dart",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "apple,t8110-dart",
+        "status": "okay",
+        "driver": "none",
+        "count": 4
+      },
+      {
+        "compatible": "arm,armv8-timer",
+        "status": "okay",
+        "driver": "unbound",
+        "count": 1
+      },
+      {
+        "compatible": "cirrus,cs42l84",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "fixed-clock",
+        "status": "okay",
+        "driver": "none",
+        "count": 8
+      },
+      {
+        "compatible": "fixed-layout",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "fixed-partitions",
+        "status": "okay",
+        "driver": "none",
+        "count": 1
+      },
+      {
+        "compatible": "jedec,spi-nor",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "operating-points-v2",
+        "status": "okay",
+        "driver": "none",
+        "count": 3
+      },
+      {
+        "compatible": "pci14e4,4433",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "pci14e4,5f71",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "pci17a0,9755",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "pwm-leds",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "simple-bus",
+        "status": "okay",
+        "driver": "bound",
+        "count": 1
+      },
+      {
+        "compatible": "ti,sn012776",
+        "status": "okay",
+        "driver": "bound",
+        "count": 6
+      },
+      {
+        "compatible": "u-boot,sysinfo-smbios",
+        "status": "okay",
+        "driver": "unbound",
+        "count": 1
+      },
+      {
+        "compatible": "usb-c-connector",
+        "status": "okay",
+        "driver": "none",
+        "count": 3
+      }
+    ],
+    "unclaimed": [
+      {
+        "compatible": "apple,t6000-avd",
+        "count": 1,
+        "outcome": "fails",
+        "feature": "video-decoder",
+        "layer": "asahi"
+      }
+    ],
+    "kernel_config": {
+      "reference": "linux-asahi 7.1.13.asahi3-2 (asahi-alarm/PKGBUILDs@d585b07)",
+      "differences": [
+        {
+          "option": "CONFIG_APPLE_TUNABLE",
+          "asahi": "m",
+          "kernel": "y"
+        },
+        {
+          "option": "CONFIG_BPF_LSM",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_BUILDTIME_MCOUNT_SORT",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_DYNAMIC_FTRACE",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_DYNAMIC_FTRACE_WITH_ARGS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_DYNAMIC_FTRACE_WITH_CALL_OPS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_FTRACE_MCOUNT_USE_PATCHABLE_FUNCTION_ENTRY",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_FTRACE_SYSCALLS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_FUNCTION_ALIGNMENT",
+          "asahi": "8",
+          "kernel": "4"
+        },
+        {
+          "option": "CONFIG_FUNCTION_ALIGNMENT_8B",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_FUNCTION_GRAPH_TRACER",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_FUNCTION_TRACER",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_GENERIC_TRACER",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_HAVE_DYNAMIC_FTRACE_WITH_CALL_OPS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_HAVE_DYNAMIC_FTRACE_WITH_DIRECT_CALLS",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_RESET_APPLE_CIO",
+          "asahi": "n",
+          "kernel": "y"
+        },
+        {
+          "option": "CONFIG_TASKS_RUDE_RCU",
+          "asahi": "y",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_TRACE_SYSCALL_BUF_SIZE_DEFAULT",
+          "asahi": "63",
+          "kernel": "n"
+        },
+        {
+          "option": "CONFIG_USB4",
+          "asahi": "n",
+          "kernel": "m"
+        },
+        {
+          "option": "CONFIG_USB4_APPLE_SOC",
+          "asahi": "n",
+          "kernel": "m"
+        },
+        {
+          "option": "CONFIG_USB4_NET",
+          "asahi": "n",
+          "kernel": "m"
+        }
+      ],
+      "omitted": 0
+    }
+  },
+  "checks": [
+    {
+      "id": "system.identity",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "model: Apple MacBook Pro (14-inch, M1 Pro, 2021)",
+        "compatible: apple,j314s apple,t6000 apple,arm-platform",
+        "chip: M1 Pro (t6000)",
+        "kernel: 7.1.12-2-10-ARCH"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "devicetree",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "boot.kernel-package",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  kernel           running 7.1.12-2-10-ARCH from linux-aurora 7.1.12.aurora2-10"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.chain",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  boot-check       running linux-aurora 7.1.12-2-10-ARCH; installed boot files match"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.files",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "INFO  boot-file        <hex>  /boot/efi/EFI/Linux/omarchy_linux-aurora.efi",
+        "INFO  boot-file        <hex>  /boot/efi/limine.conf",
+        "INFO  boot-file        <hex>  /boot/efi/m1n1/boot.bin"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "boot-chain",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "boot.encryption",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "the root filesystem is on an unlocked encrypted volume: crypt btrfs < part crypto_LUKS < disk"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "disk-encryption",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.repositories",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  repos            omarchy asahi-alarm core extra alarm aur"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "package-repositories",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.kernel-updates",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  kernel-repo      linux-aurora updates from [omarchy]"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "package-repositories",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "packages.hardware",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "installed: mesa 1:26.2.3-1, vulkan-asahi 1:26.2.3-1, asahi-audio 4.1-1, speakersafetyd 2.0.1-1, alsa-ucm-conf-asahi 10-1"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "first-boot-hardware-setup",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "setup.first-boot-hardware",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "omarchy-provision-hardware.service never ran: this install has no deferred first-boot hardware setup"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "first-boot-hardware-setup",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "setup.vendor-firmware",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  vendor-firmware  omarchy-vendor-firmware.service finished in this boot"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "vendor-firmware",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "system.failed-units",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  units            no failed system or user units"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "system-services",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "system.snapshots",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  snapshots        /.snapshots is a btrfs subvolume holding 3 snapshots"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "snapshots",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "hardware.drivers",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "361 hardware nodes: 310 claimed by a driver, 31 with no device of their own, 5 that no driver binds by design (CPU frequency clusters, timer, SMBIOS), 14 disabled, 1 unclaimed",
+        "unclaimed: apple,t6000-avd (1 node): doesn't work, but should on this Mac (Video decoder)"
+      ],
+      "classification": {
+        "outcome": "not-in-aurora",
+        "feature": "hardware-drivers",
+        "layer": "aurora",
+        "expected": {
+          "aurora": "unknown"
+        }
+      }
+    },
+    {
+      "id": "hardware.firmware",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "avd 287080000.avd: Direct firmware load for apple/avd-fw-v3-t0.bin failed with error -2",
+        "avd 287080000.avd: failed to load firmware: -2"
+      ],
+      "classification": {
+        "outcome": "fails",
+        "feature": "firmware-loading",
+        "layer": "omarchy",
+        "expected": {
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "hardware.probe-errors",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "avd 287080000.avd: probe with driver avd failed with error -2"
+      ],
+      "classification": {
+        "outcome": "not-in-aurora",
+        "feature": "hardware-drivers",
+        "layer": "aurora",
+        "expected": {
+          "aurora": "unknown"
+        }
+      }
+    },
+    {
+      "id": "hardware.kernel-config",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "compared with Asahi's linux-asahi 7.1.13.asahi3-2 (asahi-alarm/PKGBUILDs@d585b07)",
+        "22 options differ: 4 built here but not by Asahi, 15 built by Asahi but not here, 3 set differently",
+        "CONFIG_APPLE_TUNABLE: Asahi m, this kernel y",
+        "CONFIG_BPF_LSM: Asahi y, this kernel n",
+        "CONFIG_BUILDTIME_MCOUNT_SORT: Asahi y, this kernel n",
+        "CONFIG_DYNAMIC_FTRACE: Asahi y, this kernel n",
+        "CONFIG_DYNAMIC_FTRACE_WITH_ARGS: Asahi y, this kernel n",
+        "CONFIG_DYNAMIC_FTRACE_WITH_CALL_OPS: Asahi y, this kernel n",
+        "CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS: Asahi y, this kernel n",
+        "CONFIG_FTRACE_MCOUNT_USE_PATCHABLE_FUNCTION_ENTRY: Asahi y, this kernel n",
+        "CONFIG_FTRACE_SYSCALLS: Asahi y, this kernel n",
+        "CONFIG_FUNCTION_ALIGNMENT: Asahi 8, this kernel 4",
+        "CONFIG_FUNCTION_ALIGNMENT_8B: Asahi y, this kernel n",
+        "CONFIG_FUNCTION_GRAPH_TRACER: Asahi y, this kernel n",
+        "CONFIG_FUNCTION_TRACER: Asahi y, this kernel n",
+        "CONFIG_GENERIC_TRACER: Asahi y, this kernel n",
+        "CONFIG_HAVE_DYNAMIC_FTRACE_WITH_CALL_OPS: Asahi y, this kernel n",
+        "CONFIG_HAVE_DYNAMIC_FTRACE_WITH_DIRECT_CALLS: Asahi y, this kernel n",
+        "CONFIG_RESET_APPLE_CIO: Asahi n, this kernel y",
+        "CONFIG_TASKS_RUDE_RCU: Asahi y, this kernel n",
+        "CONFIG_TRACE_SYSCALL_BUF_SIZE_DEFAULT: Asahi 63, this kernel n",
+        "CONFIG_USB4: Asahi n, this kernel m",
+        "CONFIG_USB4_APPLE_SOC: Asahi n, this kernel m",
+        "CONFIG_USB4_NET: Asahi n, this kernel m"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "kernel-config",
+        "layer": "aurora",
+        "expected": {
+          "aurora": "unknown"
+        }
+      }
+    },
+    {
+      "id": "gpu.driver",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "asahi driver bound to 406400000.gpu"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "gpu.vulkan",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "Apple M1 Pro (G13S C0): Honeykrisp, Mesa 26.2.3-arch1.1, Vulkan 1.4.354"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "gpu.opengl",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "renderer: Apple M1 Pro (G13S C0)",
+        "OpenGL core profile version: 4.6 (Core Profile) Mesa 26.2.3-arch1.1",
+        "OpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3-arch1.1"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "video.h264-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH: the test card is played on this Mac's own screen, for someone at it"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "video.hevc-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH: the test card is played on this Mac's own screen, for someone at it"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.outputs",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  displays         1 active: eDP-1 3024x1964@120"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.controller",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "ok - the display controller card exists"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "dcp",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.backlight",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "ok - the panel backlight is apple-panel-bl"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "brightness",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.notch-strip",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "ok - appledrm is showing the notch strip"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "notch-bar",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "display.notch-bar",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Look at the top bar on the built-in screen: is every icon and label clear of the camera notch?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "notch-bar",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "display.brightness-steps",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "backlight apple-panel-bl: 390/500 at the start",
+        "skipped: brightnessctl couldn't set the backlight (Failed to set brightness: Operation not permitted)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "brightness",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.cursor",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Move the pointer all over the built-in screen, over the top bar too: is it visible everywhere, without trails or flicker?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.sound-cards",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  sound-cards      AppleJ314HPAI, AppleJ314"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "mca",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.default-sink",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-dsp",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS speaker DSP sink present"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-protection",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  speakersafetyd   speakersafetyd is active"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speaker-protection",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-amps-unlocked",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS speaker amps unlocked this boot"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "speaker-protection",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.microphone-mapping",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "FAIL mic mapper running"
+      ],
+      "classification": {
+        "outcome": "fails",
+        "feature": "mic-mapping",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "audio.microphone-signal",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "default input: effect_output.j314-mic",
+        "captured 65536 samples: peak 65, rms 14.4 (16-bit)"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "microphones",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.speaker-tone",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "speakersafetyd: active",
+        "kernel log: Speaker volumes unlocked",
+        "default output: audio_effect.j314-convolver (the speakers' DSP sink)",
+        "played a 2 s 440 Hz tone at 30% volume on audio_effect.j314-convolver",
+        "asked: Did you hear a short tone from the built-in speakers, without crackling or a pop?",
+        "answer: none (counted as skipped)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "speakers",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "audio.headphone-detection",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "asked: Plug headphones into the headphone jack now (s if you have none). Did the Mac switch its sound to them?",
+        "answer: none (counted as skipped)",
+        "default output after: audio_effect.j314-convolver (the speakers' DSP sink)"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "headphone-jack",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.wifi",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  wifi             wlan0 is connected"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "wifi",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.wifi-backend",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  wifi-backend     NetworkManager uses iwd"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "iwd-wifi-backend",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "network.bluetooth",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "PASS  bluetooth        controller powered"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "bluetooth",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.bluetooth-pairing",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "Bluetooth controller powered (mac-check)",
+        "asked: Put a Bluetooth device (headphones, a mouse or a keyboard) in pairing mode and pair it: open Bluetooth (Super+Ctrl+B in Omarchy, or bluetui) and pick it (s if you have none to hand). Did it pair and work?",
+        "answer: none (counted as skipped)",
+        "paired devices: 0 before, 0 after"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "bluetooth",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "network.wifi-first-join",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "wifi-5ghz-first-join",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.ambient-light",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "ok - ALS and keyboard LED are available"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "aop",
+        "layer": "aurora",
+        "expected": {
+          "aurora": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.auto-keyboard-light",
+      "kind": "automatic",
+      "status": "fail",
+      "evidence": [
+        "FAIL - the ALS keyboard loop runs"
+      ],
+      "classification": {
+        "outcome": "fails",
+        "feature": "auto-keyboard-light",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "input.keyboard-light-follows-room",
+      "kind": "human",
+      "status": "skip",
+      "evidence": [
+        "before: ambient light 19 lux, keyboard light 0/255",
+        "asked: Keep it covered: did the keyboard light come on, or get brighter, within about 10 seconds?",
+        "answer: none (counted as skipped)",
+        "while covered: ambient light 19 lux, keyboard light 0/255"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "auto-keyboard-light",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "power.battery",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "macsmc-battery: Full, 100% charged, charge limit 100%"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "battery-info",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "cpu.frequency-scaling",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "policy0: CPUs 0-1, apple-cpufreq, 600-2064 MHz, schedutil",
+        "policy2: CPUs 2-5, apple-cpufreq, 600-3036 MHz, schedutil",
+        "policy6: CPUs 6-9, apple-cpufreq, 600-3036 MHz, schedutil"
+      ],
+      "classification": {
+        "outcome": "works",
+        "feature": "cpufreq",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    }
+  ]
+}

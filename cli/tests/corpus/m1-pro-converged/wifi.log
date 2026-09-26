@@ -1,0 +1,203 @@
+Sep 26 11:11:45.435529 omarchy-m1-pro systemd[1]: Starting Network Manager...
+Sep 26 11:11:45.458370 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4583] NetworkManager (version 1.58.1-1) is starting... (boot:3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 26 11:11:45.458376 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4583] Read config: /etc/NetworkManager/NetworkManager.conf, /usr/lib/NetworkManager/conf.d/{20-connectivity.conf,20-omarchy-mac-wifi.conf}, /etc/NetworkManager/conf.d/{omarchy-wifi-powersave.conf,wifi_backend.conf}
+Sep 26 11:11:45.463088 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4630] manager[0xaaabc8c90be0]: monitoring kernel firmware directory '/lib/firmware'.
+Sep 26 11:11:45.463645 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4636] hostname: omarchy-m1-pro: using hostnamed
+Sep 26 11:11:45.463651 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4636] hostname: omarchy-m1-pro hostname changed from (none) to "omarchy-m1-pro"
+Sep 26 11:11:45.463767 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4637] dns-mgr: init: dns=systemd-resolved rc-manager=symlink, plugin=systemd-resolved
+Sep 26 11:11:45.464858 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4648] rfkill1: found Wi-Fi radio killswitch (at /sys/devices/platform/soc/590000000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/ieee80211/phy0/rfkill1) (driver brcmfmac)
+Sep 26 11:11:45.465034 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4650] manager[0xaaabc8c90be0]: rfkill: Wi-Fi hardware radio set enabled
+Sep 26 11:11:45.465039 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4650] manager[0xaaabc8c90be0]: rfkill: WWAN hardware radio set enabled
+Sep 26 11:11:45.466711 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4667] Loaded device plugin: NMAtmManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-adsl.so)
+Sep 26 11:11:45.469400 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4693] Loaded device plugin: NMBluezManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-bluetooth.so)
+Sep 26 11:11:45.470747 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4707] Loaded device plugin: NMOvsFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-ovs.so)
+Sep 26 11:11:45.484750 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4847] Loaded device plugin: NMTeamFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-team.so)
+Sep 26 11:11:45.485602 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4855] Loaded device plugin: NMWifiFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wifi.so)
+Sep 26 11:11:45.485918 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4859] Loaded device plugin: NMWwanFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wwan.so)
+Sep 26 11:11:45.486113 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4861] manager: rfkill: Wi-Fi enabled by radio killswitch; enabled by state file
+Sep 26 11:11:45.486138 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4861] manager: rfkill: WWAN enabled by radio killswitch; enabled by state file
+Sep 26 11:11:45.486163 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4861] manager: Networking is enabled by state file
+Sep 26 11:11:45.486256 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4862] settings: Loaded settings plugin: keyfile (internal)
+Sep 26 11:11:45.487026 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4870] dhcp: init: Using DHCP client 'internal'
+Sep 26 11:11:45.487102 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4870] manager: (lo): new Loopback device (/org/freedesktop/NetworkManager/Devices/1)
+Sep 26 11:11:45.487620 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4876] device (lo): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:45.487785 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4877] device (lo): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:45.488082 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4880] device (lo): Activation: starting connection 'Bellbird7C21-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 26 11:11:45.489269 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4892] manager: (wlan0): new 802.11 Wi-Fi device (/org/freedesktop/NetworkManager/Devices/2)
+Sep 26 11:11:45.489435 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4894] device (wlan0): state change: unmanaged -> unavailable (reason 'managed', managed-type: 'external')
+Sep 26 11:11:45.499728 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.4997] bus-manager: acquired D-Bus service "org.freedesktop.NetworkManager"
+Sep 26 11:11:45.500036 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.5000] ovsdb: disconnected from ovsdb
+Sep 26 11:11:45.500062 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.5000] device (lo): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.500136 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.5001] device (lo): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.500207 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.5002] device (lo): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.500325 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.5003] device (lo): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.613649 omarchy-m1-pro systemd[1]: Started Network Manager.
+Sep 26 11:11:45.625319 omarchy-m1-pro systemd[1]: Starting Wireless service...
+Sep 26 11:11:45.633166 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.6331] device (lo): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.633248 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.6332] device (lo): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 26 11:11:45.633442 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.6334] device (lo): Activation: successful, device activated.
+Sep 26 11:11:45.633610 omarchy-m1-pro NetworkManager[933]: <info>  [1790385105.6336] manager: startup complete
+Sep 26 11:11:45.679028 omarchy-m1-pro iwd[1055]: Wireless daemon version 3.12
+Sep 26 11:11:45.679463 omarchy-m1-pro iwd[1055]: station: Network configuration is disabled.
+Sep 26 11:11:45.679455 omarchy-m1-pro systemd[1]: Started Wireless service.
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]: Wiphy: 0, Name: phy0
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         Permanent Address: 7a:3e:51:c0:9d:24
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         2.4GHz Band:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 Bitrates (non-HT):
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          1.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          2.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          5.5 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         11.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          6.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          9.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         12.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         18.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         24.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         36.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         48.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         54.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HT Capabilities:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         HT20
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Short GI for 20Mhz
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Short GI for 40Mhz
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HT RX MCS indexes:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         0-15
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HE Capabilities
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Interface Types: station
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         5GHz Band:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 Bitrates (non-HT):
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          6.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                          9.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         12.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         18.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         24.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         36.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         48.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         54.0 Mbps
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HT Capabilities:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         HT40
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Short GI for 20Mhz
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Short GI for 40Mhz
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HT RX MCS indexes:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         0-15
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 VHT Capabilities:
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Short GI for 80Mhz
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max RX MCS: 0-9 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max TX MCS: 0-9 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                 HE Capabilities
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Interface Types: station
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE RX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                         Max HE TX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         Ciphers: BIP-CMAC-256 BIP-GMAC-256 BIP-GMAC-128 CCMP-256
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                  GCMP-256 GCMP-128 BIP-CMAC-128 CCMP-128
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:                  TKIP
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         Supported iftypes: ad-hoc station ap p2p-client p2p-go p2p-device
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]:         Driver Flags: DefaultInterface
+Sep 26 11:11:45.679987 omarchy-m1-pro iwd[1055]: Wiphy phy0 will only use the default interface
+Sep 26 11:11:46.191533 omarchy-m1-pro iwd[1055]: event: state, old: disconnected, new: autoconnect_quick
+Sep 26 11:11:46.190390 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.1903] manager: (Bellbird7C21-5G): new Tun device (/org/freedesktop/NetworkManager/Devices/3)
+Sep 26 11:11:46.191963 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.1919] device (wlan0): new IWD device state is disconnected
+Sep 26 11:11:46.192031 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.1920] device (wlan0): state change: unavailable -> disconnected (reason 'supplicant-available', managed-type: 'full')
+Sep 26 11:11:46.194699 omarchy-m1-pro iwd[1055]: udev interface=Bellbird7C21-5G ifindex=3
+Sep 26 11:11:46.268935 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2689] manager: (Bellbird7C21-5G): new Bridge device (/org/freedesktop/NetworkManager/Devices/4)
+Sep 26 11:11:46.270298 omarchy-m1-pro iwd[1055]: udev interface=Bellbird7C21-5G ifindex=4
+Sep 26 11:11:46.285727 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2857] device (Bellbird7C21-5G): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:46.285900 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2858] device (Bellbird7C21-5G): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:46.286102 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2860] device (Bellbird7C21-5G): Activation: starting connection 'Bellbird7C21-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 26 11:11:46.286212 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2861] device (Bellbird7C21-5G): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.286320 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2863] device (Bellbird7C21-5G): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.286372 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2863] device (Bellbird7C21-5G): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.286429 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2864] device (Bellbird7C21-5G): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.286927 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2869] device (Bellbird7C21-5G): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.286981 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2869] device (Bellbird7C21-5G): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 26 11:11:46.287069 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2870] manager: NetworkManager state is now CONNECTED_LOCAL
+Sep 26 11:11:46.287143 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.2871] device (Bellbird7C21-5G): Activation: successful, device activated.
+Sep 26 11:11:46.579603 omarchy-m1-pro iwd[1055]: event: connect-info, ssid: Bellbird7C21-5G, bss: 7a:3e:51:c0:9d:24, signal: -44, load: 3/255
+Sep 26 11:11:46.579603 omarchy-m1-pro iwd[1055]: event: state, old: autoconnect_quick, new: connecting (auto)
+Sep 26 11:11:46.599672 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.5996] device (wlan0): new IWD device state is connecting
+Sep 26 11:11:46.599906 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.5999] device (wlan0): Activation: starting connection 'Bellbird7C21-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 26 11:11:46.599942 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.5999] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 26 11:11:46.600028 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.6000] manager: NetworkManager state is now CONNECTING
+Sep 26 11:11:46.600118 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.6001] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 26 11:11:46.856086 omarchy-m1-pro iwd[1055]: event: state, old: connecting (auto), new: connected
+Sep 26 11:11:46.857311 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.8572] device (wlan0): new IWD device state is connected
+Sep 26 11:11:46.857377 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.8573] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 26 11:11:46.862366 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.8623] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 26 11:11:46.874895 omarchy-m1-pro NetworkManager[933]: <info>  [1790385106.8748] dhcp4 (wlan0): state changed new lease, address=10.200.4.9, acd pending
+Sep 26 11:11:47.053639 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0536] dhcp4 (wlan0): state changed new lease, address=10.88.0.12
+Sep 26 11:11:47.057189 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0571] policy: set 'Bellbird7C21-5G' (wlan0) as default for IPv4 routing and DNS
+Sep 26 11:11:47.058367 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0583] device (wlan0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 26 11:11:47.058926 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0589] device (wlan0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 26 11:11:47.058966 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0589] device (wlan0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 26 11:11:47.059091 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0590] manager: NetworkManager state is now CONNECTED_SITE
+Sep 26 11:11:47.059176 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.0591] device (wlan0): Activation: successful, device activated.
+Sep 26 11:11:47.707010 omarchy-m1-pro NetworkManager[933]: <info>  [1790385107.7069] manager: NetworkManager state is now CONNECTED_GLOBAL
+Sep 26 11:11:49.315409 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3153] device (Bellbird7C21-5G): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:49.317023 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3169] device (Bellbird7C21-5G): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 26 11:11:49.317704 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3176] device (Bellbird7C21-5G): Activation: starting connection 'Bellbird7C21-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 26 11:11:49.318069 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3180] device (Bellbird7C21-5G): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.318423 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3184] device (Bellbird7C21-5G): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.318654 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3186] device (Bellbird7C21-5G): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.319592 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3195] device (Bellbird7C21-5G): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.320080 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3200] device (Bellbird7C21-5G): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.320136 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3201] device (Bellbird7C21-5G): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 26 11:11:49.320388 omarchy-m1-pro NetworkManager[933]: <info>  [1790385109.3203] device (Bellbird7C21-5G): Activation: successful, device activated.
+Sep 26 11:18:15.752937 omarchy-m1-pro NetworkManager[933]: <info>  [1790385495.7529] manager: (vethce684e8): new Veth device (/org/freedesktop/NetworkManager/Devices/5)
+Sep 26 11:18:15.754386 omarchy-m1-pro iwd[1055]: udev interface=vethce684e8 ifindex=5
+Sep 26 11:18:15.759278 omarchy-m1-pro NetworkManager[933]: <info>  [1790385495.7592] device (vethce684e8): carrier: link connected
+Sep 26 11:18:15.759324 omarchy-m1-pro NetworkManager[933]: <info>  [1790385495.7593] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 11:18:34.506400 omarchy-m1-pro NetworkManager[933]: <info>  [1790385514.5063] manager: (veth12c8331): new Veth device (/org/freedesktop/NetworkManager/Devices/6)
+Sep 26 11:18:34.527500 omarchy-m1-pro iwd[1055]: udev interface=veth12c8331 ifindex=6
+Sep 26 11:19:02.540634 omarchy-m1-pro NetworkManager[933]: <info>  [1790385542.5406] manager: (vethf7c810b): new Veth device (/org/freedesktop/NetworkManager/Devices/7)
+Sep 26 11:19:02.542536 omarchy-m1-pro iwd[1055]: udev interface=vethf7c810b ifindex=7
+Sep 26 11:19:02.543638 omarchy-m1-pro NetworkManager[933]: <info>  [1790385542.5436] device (vethf7c810b): carrier: link connected
+Sep 26 11:19:02.543683 omarchy-m1-pro NetworkManager[933]: <info>  [1790385542.5436] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 11:19:18.096096 omarchy-m1-pro NetworkManager[933]: <info>  [1790385558.0960] manager: (veth8800584): new Veth device (/org/freedesktop/NetworkManager/Devices/8)
+Sep 26 11:19:18.114970 omarchy-m1-pro iwd[1055]: udev interface=veth8800584 ifindex=8
+Sep 26 11:19:25.275970 omarchy-m1-pro NetworkManager[933]: <info>  [1790385565.2759] manager: (veth61ad1b7): new Veth device (/org/freedesktop/NetworkManager/Devices/9)
+Sep 26 11:19:25.277715 omarchy-m1-pro iwd[1055]: udev interface=veth61ad1b7 ifindex=9
+Sep 26 11:19:25.278000 omarchy-m1-pro NetworkManager[933]: <info>  [1790385565.2779] device (veth61ad1b7): carrier: link connected
+Sep 26 11:19:25.278043 omarchy-m1-pro NetworkManager[933]: <info>  [1790385565.2780] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 11:25:15.016509 omarchy-m1-pro NetworkManager[933]: <info>  [1790385915.0164] manager: (veth926aaaa): new Veth device (/org/freedesktop/NetworkManager/Devices/10)
+Sep 26 11:25:15.026617 omarchy-m1-pro iwd[1055]: udev interface=veth926aaaa ifindex=10
+Sep 26 11:28:42.321641 omarchy-m1-pro iwd[1055]: udev interface=veth8b2cdb4 ifindex=11
+Sep 26 11:28:42.321757 omarchy-m1-pro NetworkManager[933]: <info>  [1790386122.3217] manager: (veth8b2cdb4): new Veth device (/org/freedesktop/NetworkManager/Devices/11)
+Sep 26 11:28:42.326379 omarchy-m1-pro NetworkManager[933]: <info>  [1790386122.3263] device (veth8b2cdb4): carrier: link connected
+Sep 26 11:28:42.326432 omarchy-m1-pro NetworkManager[933]: <info>  [1790386122.3264] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 11:34:41.022902 omarchy-m1-pro NetworkManager[933]: <info>  [1790386481.0228] manager: (vethf12a9c8): new Veth device (/org/freedesktop/NetworkManager/Devices/12)
+Sep 26 11:34:41.031782 omarchy-m1-pro iwd[1055]: udev interface=vethf12a9c8 ifindex=12
+Sep 26 11:49:30.859079 omarchy-m1-pro NetworkManager[933]: <info>  [1790387370.8590] manager: (veth57cdd40): new Veth device (/org/freedesktop/NetworkManager/Devices/13)
+Sep 26 11:49:30.862736 omarchy-m1-pro iwd[1055]: udev interface=veth57cdd40 ifindex=13
+Sep 26 11:49:30.863020 omarchy-m1-pro NetworkManager[933]: <info>  [1790387370.8630] device (veth57cdd40): carrier: link connected
+Sep 26 11:49:30.863092 omarchy-m1-pro NetworkManager[933]: <info>  [1790387370.8630] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 11:49:36.489973 omarchy-m1-pro NetworkManager[933]: <info>  [1790387376.4899] manager: (veth88e079e): new Veth device (/org/freedesktop/NetworkManager/Devices/14)
+Sep 26 11:49:36.512703 omarchy-m1-pro iwd[1055]: udev interface=veth88e079e ifindex=14
+Sep 26 13:53:44.636718 omarchy-m1-pro iwd[1055]: udev interface=veth4b2bcf1 ifindex=15
+Sep 26 13:53:44.636886 omarchy-m1-pro NetworkManager[933]: <info>  [1790394824.6368] manager: (veth4b2bcf1): new Veth device (/org/freedesktop/NetworkManager/Devices/15)
+Sep 26 13:53:44.639131 omarchy-m1-pro NetworkManager[933]: <info>  [1790394824.6391] device (veth4b2bcf1): carrier: link connected
+Sep 26 13:53:44.639191 omarchy-m1-pro NetworkManager[933]: <info>  [1790394824.6391] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 14:16:59.247533 omarchy-m1-pro NetworkManager[933]: <info>  [1790396219.2474] manager: (vethc968521): new Veth device (/org/freedesktop/NetworkManager/Devices/16)
+Sep 26 14:16:59.303946 omarchy-m1-pro iwd[1055]: udev interface=vethc968521 ifindex=16
+Sep 26 14:47:41.774514 omarchy-m1-pro NetworkManager[933]: <info>  [1790398061.7745] manager: (veth73ad0d7): new Veth device (/org/freedesktop/NetworkManager/Devices/17)
+Sep 26 14:47:41.776454 omarchy-m1-pro NetworkManager[933]: <info>  [1790398061.7764] device (veth73ad0d7): carrier: link connected
+Sep 26 14:47:41.776508 omarchy-m1-pro NetworkManager[933]: <info>  [1790398061.7765] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 14:47:41.778118 omarchy-m1-pro iwd[1055]: udev interface=veth73ad0d7 ifindex=17
+Sep 26 14:50:54.548224 omarchy-m1-pro NetworkManager[933]: <info>  [1790398254.5482] manager: (veth6cbe6f5): new Veth device (/org/freedesktop/NetworkManager/Devices/18)
+Sep 26 14:50:54.549747 omarchy-m1-pro iwd[1055]: udev interface=veth6cbe6f5 ifindex=18
+Sep 26 15:09:52.073386 omarchy-m1-pro NetworkManager[933]: <info>  [1790399392.0733] manager: (vethd71dfd3): new Veth device (/org/freedesktop/NetworkManager/Devices/19)
+Sep 26 15:09:52.074542 omarchy-m1-pro iwd[1055]: udev interface=vethd71dfd3 ifindex=19
+Sep 26 15:09:52.075456 omarchy-m1-pro NetworkManager[933]: <info>  [1790399392.0754] device (vethd71dfd3): carrier: link connected
+Sep 26 15:09:52.075531 omarchy-m1-pro NetworkManager[933]: <info>  [1790399392.0755] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 15:21:19.352807 omarchy-m1-pro NetworkManager[933]: <info>  [1790400079.3527] manager: (veth8339185): new Veth device (/org/freedesktop/NetworkManager/Devices/20)
+Sep 26 15:21:19.373451 omarchy-m1-pro iwd[1055]: udev interface=veth8339185 ifindex=20
+Sep 26 21:20:47.371336 omarchy-m1-pro NetworkManager[933]: <info>  [1790421647.3713] manager: (veth4028269): new Veth device (/org/freedesktop/NetworkManager/Devices/21)
+Sep 26 21:20:47.375443 omarchy-m1-pro iwd[1055]: udev interface=veth4028269 ifindex=21
+Sep 26 21:20:47.378239 omarchy-m1-pro NetworkManager[933]: <info>  [1790421647.3782] device (veth4028269): carrier: link connected
+Sep 26 21:20:47.378286 omarchy-m1-pro NetworkManager[933]: <info>  [1790421647.3782] device (Bellbird7C21-5G): carrier: link connected
+Sep 26 21:32:06.540247 omarchy-m1-pro NetworkManager[933]: <info>  [1790422326.5402] manager: (veth7583501): new Veth device (/org/freedesktop/NetworkManager/Devices/22)
+Sep 26 21:32:06.562114 omarchy-m1-pro iwd[1055]: udev interface=veth7583501 ifindex=22
+Sep 26 23:11:46.879462 omarchy-m1-pro NetworkManager[933]: <info>  [1790428306.8794] dhcp4 (wlan0): state changed new lease, address=10.61.23.147

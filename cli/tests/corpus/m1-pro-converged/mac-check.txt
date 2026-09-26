@@ -1,0 +1,23 @@
+INFO  platform         Apple MacBook Pro (14-inch, M1 Pro, 2021) (apple,j314s apple,t6000 apple,arm-platform)
+PASS  kernel           running 7.1.12-2-10-ARCH from linux-aurora 7.1.12.aurora2-10
+INFO  packages         m1n1-aurora 1.6.1.aurora1-3, uboot-asahi 2026.07.asahi2-4, limine 12.9.0-1, omarchy 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001, omarchy-settings 4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001, omarchy-mac 0.1.0-5.361571887310001, omarchy-mac-boot 20260926-1.45
+PASS  repos            omarchy asahi-alarm core extra alarm aur
+PASS  kernel-repo      linux-aurora updates from [omarchy]
+PASS  boot-check       running linux-aurora 7.1.12-2-10-ARCH; installed boot files match
+INFO  boot-loader      Limine, ESP /boot/efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/EFI/Linux/omarchy_linux-aurora.efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/limine.conf
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/m1n1/boot.bin
+PASS  units            no failed system or user units
+PASS  vendor-firmware  omarchy-vendor-firmware.service finished in this boot
+PASS  speakersafetyd   speakersafetyd is active
+PASS  displays         1 active: eDP-1 3024x1964@120
+PASS  sound-cards      AppleJ314HPAI, AppleJ314
+PASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)
+PASS  wifi             wlan0 is connected
+PASS  wifi-backend     NetworkManager uses iwd
+PASS  bluetooth        controller powered
+PASS  snapshots        /.snapshots is a btrfs subvolume holding 3 snapshots
+WARN  migrations       pending: 1786609204.sh 1786719479.sh 1787215824.sh 1787342993.sh 1787573629.sh 1787666837.sh 1788200000.sh 1788200001.sh 1788200002.sh 1788595060.sh 1788596255.sh 1788862626.sh 1788941927.sh 1789091250.sh 1789130779.sh 1789132600.sh 1789135842.sh 1789135902.sh 1789135950.sh 1789136142.sh 1789136143.sh 1789138445.sh 1789140928.sh 1789140994.sh 1789146110.sh 1789146111.sh 1789148088.sh 1789154627.sh 1789155585.sh 1789158178.sh 1789158179.sh 1789228235.sh 1789275235.sh 1789310715.sh 1789522888.sh 1789780917.sh 1790326507.sh 1790326963.sh 1790327076.sh 1790327183.sh 1790327324.sh 1790328426.sh
+INFO  coredumps        none this boot
+14 passed, 0 failed, 1 warnings, 0 skipped

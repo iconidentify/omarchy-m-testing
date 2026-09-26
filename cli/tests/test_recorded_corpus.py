@@ -90,6 +90,7 @@ SERIAL_FILES = {
 CORPUS_HOLDS = {
     "m2-max-image2": ("MAC address", "IPv4 address", "IPv6 address", "UUID", "long hex identifier", "home path"),
     "m1-pro-mx-mac": ("IPv4 address", "IPv6 address"),
+    "m1-pro-converged": ("MAC address", "IPv4 address", "UUID", "long hex identifier", "home path"),
 }
 
 
@@ -146,7 +147,11 @@ class RecordModeTest(unittest.TestCase):
             with self.subTest(machine=machine):
                 recorded = record(machine)
 
-                replay = RecordedHost(json.loads(recorded.written[RECORDING_FILE]), answers=[ENTER, ENDED])
+                saved = json.loads(recorded.written[RECORDING_FILE])
+                if "HOME" in saved.get("env", {}):
+                    # Record mode never checkpoints; a replay does, and finds no earlier run's checkpoint.
+                    saved["files"][f"{saved['env']['HOME']}/.local/state/omarchy-m-test/checkpoint.json"] = None
+                replay = RecordedHost(saved, answers=[ENTER, ENDED])
                 status = main(["--dry-run"], replay)
 
                 self.assertEqual(status, 0)

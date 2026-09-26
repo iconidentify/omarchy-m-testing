@@ -10,8 +10,9 @@ second apart, then put back; its restorer is registered before the first
 step and runs again when the section ends if putting it back failed. It
 steps down to 70%, 45% and 25% of where it was (never below a tenth of its
 range, never off), or up when it's already dim. brightnessctl sets it as the
-user through its udev rules or setuid bit, or logind; where it can't, the
-check is skipped. A backlight that doesn't read back the value it was set to
+user through its udev rules or setuid bit, or logind; where it can't (over
+SSH, without a seat), the check is skipped, and when not even the first step
+took there is nothing to put back. A backlight that doesn't read back the value it was set to
 fails without asking.
 
 Cursor (human): is the pointer visible everywhere on the built-in screen,
@@ -145,7 +146,8 @@ def brightness_steps(ctx: Context) -> dict:
     for level in levels:
         result = ctx.host.run(set_argv(panel.name, level))
         if result.returncode != 0:
-            if ctx.host.run(back).returncode == 0:
+            # Nothing changed when the first step failed (no permission over SSH, say): nothing to put back.
+            if not read_back or ctx.host.run(back).returncode == 0:
                 ctx.changes.replace(restorer, None)
             return human.skip(check_id, f"brightnessctl couldn't set the backlight ({_why(result)})", evidence)
         now = next((light for light in map(parse_light, result.stdout.splitlines()) if light), None)
