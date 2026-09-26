@@ -8,9 +8,9 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Catalogue v1 as a versioned data file: each entry names its layer and, per chip generation, the Asahi status and version, the Aurora status and version, and the Omarchy status
-- [ ] Asahi layer seeded by parsing Asahi's published per-chip feature tables, with CC-BY-3.0 credit recorded
-- [ ] Aurora additions (DP-alt/USB4 displays, VRR, camera image processor, AOP) and Omarchy integration features (notch bar, clamshell, auto keyboard light, speaker protection, 5 GHz first join, first-boot hardware setup) entered
-- [ ] Classification engine matches Aurora first, then Asahi; never treats a missing human answer as a failure; every report records the catalogue version
-- [ ] CI job parses Asahi's tables and flags drift from the catalogue
-- [ ] Seam A tests cover each classification outcome
+- [x] Catalogue v1 as a versioned data file: each entry names its layer and, per chip generation, the Asahi status and version, the Aurora status and version, and the Omarchy status
+- [x] Asahi layer seeded by parsing Asahi's published per-chip feature tables, with CC-BY-3.0 credit recorded
+- [x] Aurora additions (DP-alt/USB4 displays, VRR, camera image processor, AOP) and Omarchy integration features (notch bar, clamshell, auto keyboard light, speaker protection, 5 GHz first join, first-boot hardware setup) entered
+- [x] Classification engine matches Aurora first, then Asahi; never treats a missing human answer as a failure; every report records the catalogue version
+- [x] CI job parses Asahi's tables and flags drift from the catalogue
+- [x] Seam A tests cover each classification outcome

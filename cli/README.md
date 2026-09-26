@@ -2,9 +2,12 @@
 
 The `omarchy-m-test` command. Python 3 standard library only.
 
-    bin/omarchy-m-test [--dry-run] [--output FILE] [--site URL] [--record FILE]
+    bin/omarchy-m-test [--dry-run] [--output FILE] [--site URL] [--catalogue FILE] [--record FILE]
+    bin/omarchy-m-test --explain REPORT [--catalogue FILE]
 
 It refuses non-Apple machines, shows the disclaimer (Enter accepts), runs the checks, writes the report, shows it and asks before uploading it to the site (`--site http://localhost:3000` for a local site).
+
+Every result is explained against the feature catalogue (`../catalogue/catalogue.json`; a release ships it as `omarchy_m_test/catalogue.json`): works, not yet supported by Aurora, not yet supported by Asahi, unknown hardware and so on. The report records the catalogue version. `--catalogue FILE` runs with a draft catalogue; `--explain REPORT` re-explains a saved report against the current catalogue without running anything.
 
 ## The host boundary
 

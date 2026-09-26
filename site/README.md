@@ -2,10 +2,10 @@
 
 The omarchy-m-testing.org site and upload API (Rails 8, Postgres).
 
-- `POST /api/v1/reports`: upload a report; it must validate against `../schema/report-v1.schema.json`. Returns `201` with `report_url` and `deletion_url`, `422` with `details` when it doesn't match the schema, `400` when the body isn't JSON.
+- `POST /api/v1/reports`: upload a report; it must validate against `../schema/report-v1.schema.json` and use only check ids the feature catalogue knows. Returns `201` with `report_url` and `deletion_url`, `422` with `details` when it doesn't match the schema or has unknown check ids, `400` when the body isn't JSON.
 - `GET /reports/:id`: the report page. `GET /reports/:id/deletion?token=...`: the deletion link.
 
-The schema is read from `../schema` (override with `REPORT_SCHEMA_DIR`).
+The schema is read from `../schema` (override with `REPORT_SCHEMA_DIR`) and the feature catalogue from `../catalogue/catalogue.json` (override with `CATALOGUE_PATH`).
 
 ## Develop
 

@@ -188,7 +188,8 @@ class ReportPrivacyContractTest(unittest.TestCase):
         return golden
 
     def check(self, evidence, **extra):
-        return {"id": "system.identity", "kind": "automatic", "status": "pass", "evidence": evidence, **extra}
+        golden = json.loads(read(os.path.join(SCHEMA_DIR, "golden", "m2-max-image2.json")))["checks"][0]
+        return {**golden, "evidence": evidence, **extra}
 
     def test_the_allowlist_is_the_schema(self):
         def allowed(schema):

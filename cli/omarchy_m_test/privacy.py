@@ -39,11 +39,18 @@ SAVED_CONNECTIONS = ["nmcli", "--get-values", "NAME", "connection", "show"]
 
 # Only these fields reach a report. A dict lists allowed keys (True: keep the
 # value as is); a one-item list means "a list of these".
-_CHECK = {"id": True, "kind": True, "status": True, "evidence": True}
+_CLASSIFICATION = {
+    "outcome": True,
+    "feature": True,
+    "layer": True,
+    "expected": {"asahi": True, "aurora": True, "omarchy": True},
+}
+_CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION}
 REPORT_ALLOWLIST: dict[str, Any] = {
     "schema_version": True,
     "tool": {"name": True, "version": True},
     "consent_version": True,
+    "catalogue_version": True,
     "machine": {"model": True, "board": True, "soc": True, "chip": True, "arch": True, "kernel": True},
     "checks": [_CHECK],
 }
