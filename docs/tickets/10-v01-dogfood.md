@@ -8,15 +8,15 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Full automatic run on each Mac, uploaded to production, report pages checked
+- [x] Full automatic run on each Mac, uploaded to production, report pages checked
   - [x] M1 Pro (0.1.2, over SSH: https://omarchy-m-testing.org/reports/ehkyUxczpv9z754mdpbL1Yer; report, matrix and gaps pages checked)
-  - [ ] M2 Max
-- [ ] Each run saved as a scrubbed recording in the corpus; the zero-leak test passes on them
+  - [x] M2 Max (0.1.3, over SSH: https://omarchy-m-testing.org/reports/A4tBuTZ2V1NfSwqwSA4x65sk; report, matrix and gaps pages checked)
+- [x] Each run saved as a scrubbed recording in the corpus; the zero-leak test passes on them
   - [x] M1 Pro (`cli/tests/corpus/m1-pro-converged`, `cli/tests/recordings/m1-pro-converged.json`)
-  - [ ] M2 Max
-- [ ] Every problem found fixed or filed as a ticket
+  - [x] M2 Max (`cli/tests/corpus/m2-max-converged`, `cli/tests/recordings/m2-max-converged.json`)
+- [x] Every problem found fixed or filed as a ticket
   - [x] M1 Pro (fixed in this PR, the rest filed under "M1 dogfood findings" below)
-  - [ ] M2 Max
+  - [x] M2 Max (filed under "M2 dogfood findings" below; the M1 fixes from #20 held on it)
 - [ ] Owner approves announcing v0.1
 
 ## Notes
@@ -44,3 +44,22 @@ Filed (not fixed here):
 - Over SSH the Audio section still measures the microphone and plays the 30% tone (it isn't disruptive by design); on an unattended run nobody hears it. Consider skipping the tone when the run is remote, as the video check does.
 - `/gaps` shows "Unknown hardware: None reported" above an unclaimed-hardware table listing unknown hardware (from the 0.1.1/0.1.2 reports' false entries): the two sections count different things. Once this PR is released and the M1 re-run, those entries go; the wording could still say the top list is per feature.
 - The report page and matrix show 1 machine; the matrix only sets a cell's state once 2 machines agree, so every M1 cell is still tentative until another M1 Pro reports.
+
+## M2 dogfood findings (2026-09-27, Brisbane)
+
+The M2 Max was freshly reinstalled with converged image 4 (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root). Release 0.1.3 was cut from main and installed with the one-line installer; the `--dry-run --record` run and the real upload went over SSH with nobody at the Mac (human questions answered skip, with a note; video and Wi-Fi first join skipped as designed). Report: 34 pass, 1 fail, 12 skip. The owner's answers to the human checks, if relayed later, need a run at the Mac.
+
+The M1 fixes from #20 held: `hardware.drivers` passes with 0 unclaimed nodes (5 unbound by design), and the brightness check skips over SSH without a false "Couldn't undo". Brightness and volume (including mute) were back as they were after both runs. No temporary packages were installed.
+
+Corpus: `m2-max-converged` round-trips exactly (reseeding gives the recording the Mac saved). In `m2-max-image2`, the CPU clusters and GPU address are confirmed, and the reconstructed cpufreq ranges are replaced with the real ones (P-clusters 702-3264 MHz, E-cluster 912-2424 MHz; the top state is behind `boost`); image 2's own answers stay reconstructed, since the Mac no longer runs it.
+
+Real results (for Aurora and omarchy-mac):
+- `hardware.probe-errors`: the display coprocessors' Type-C routes (`dcp@315c00000`, `48dc00000`, `50dc00000`) defer with "failed to get display crossbar", and `dcp@289c00000` and the tps6598x controllers at i2c `0-0038`, `0-003b`, `0-003f` defer for unknown reasons: USB-C display output isn't there yet.
+- The video decoder's firmware is present on image 4 (the image-2 corpus's failed AVD probe is gone).
+- The candidate-set tag is still missing: `target.booted` holds only `format=1` and `platform=apple-silicon`, and there's no factory seal, so the report carries no `candidate_set` (the installer issue in the notes above still needs filing).
+
+Filed (not fixed here):
+- Image 4 ships without `vulkan-tools`, `mesa-utils` and `dtc`: `gpu.vulkan` can't read the Vulkan version, `gpu.opengl` is skipped and record mode saves no device-tree dump. The GPU checks could offer them as temporary packages, as the video check does with mpv (both install from [extra] without a sync).
+- The scrubber turns the string index in the kernel's `New USB device strings: Mfr=3, Product=2, SerialNumber=1` into `<serial>`. Harmless, but not a serial.
+- `hyprctl devices -j` fails over SSH (no Hyprland instance in the environment), so a remote recording has no input devices. Record mode could look up the session's `HYPRLAND_INSTANCE_SIGNATURE`.
+- `/gaps` still lists the M1's pre-fix false entries (timer, SMBIOS, CPU frequency clusters) from its 0.1.1 and 0.1.2 reports. A 0.1.3 run on the M1, and deleting the older two reports (deletion links in the dogfood logs), clears them.
