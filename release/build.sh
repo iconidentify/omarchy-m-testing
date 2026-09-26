@@ -3,7 +3,8 @@
 #
 # OUTDIR/omarchy-m-test.tar.gz unpacks to omarchy-m-test/ with bin/, the
 # omarchy_m_test package (the feature catalogue bundled as
-# omarchy_m_test/catalogue.json, omarchy-mac's check scripts under
+# omarchy_m_test/catalogue.json, Asahi's reference kernel config as
+# omarchy_m_test/asahi-kernel/, omarchy-mac's check scripts under
 # omarchy_m_test/vendor/) and VERSION. release/check.sh checks a built one. OUTDIR/VERSION is the version
 # on its own, which the CLI's newer-release check reads. Signing happens
 # separately (release.yml), so this runs anywhere with GNU tar.
@@ -20,6 +21,8 @@ mkdir -p "$root/bin" "$root/omarchy_m_test"
 install -m 0755 "$repo/cli/bin/omarchy-m-test" "$root/bin/omarchy-m-test"
 install -m 0644 "$repo"/cli/omarchy_m_test/*.py "$root/omarchy_m_test/"
 install -m 0644 "$repo/catalogue/catalogue.json" "$root/omarchy_m_test/catalogue.json"
+mkdir -p "$root/omarchy_m_test/asahi-kernel"
+install -m 0644 "$repo/catalogue/asahi-kernel/source.json" "$repo/catalogue/asahi-kernel/config" "$root/omarchy_m_test/asahi-kernel/"
 # Vendored check scripts (omarchy_m_test/bundled.py runs them), modes kept.
 (cd "$repo/cli/omarchy_m_test" && find vendor -type f | sort | while read -r f; do
   install -D -m "$([[ -x $f ]] && echo 0755 || echo 0644)" "$f" "$root/omarchy_m_test/$f"

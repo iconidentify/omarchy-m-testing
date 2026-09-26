@@ -1,6 +1,6 @@
 {
   "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac: raw host answers for record mode",
-  "source": "Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such.",
+  "source": "Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them. The package, encryption, first-boot, mac-check, GPU, battery and CPU answers were never captured on the M1: they are reconstructed from what is known of the install (mx-mac, GRUB, linux-asahi) and noted as such. The inventory answers come from the booted kernel's own package, linux-asahi 7.1.13.asahi1-1 and its headers (device tree, module aliases, build config).",
   "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m1-pro",
@@ -186,6 +186,65 @@
       "stdout": "",
       "stderr": "eglinfo: command not found\n",
       "note": "reconstructed, not captured on the M1 on 2026-09-12: mesa-utils not installed"
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-a",
+        "-H",
+        "",
+        "--include=compatible",
+        "--include=status",
+        "/sys/firmware/devicetree/base"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree-properties.txt"
+      },
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: the compatible and status properties of every node in linux-asahi 7.1.13.asahi1-1 (dtbs/t6000-j314s.dtb), the device tree the booted kernel package ships (m1n1 adjusts some nodes at boot, so a few statuses may differ on the Mac)"
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-H",
+        "-E",
+        "^(OF_FULLNAME|DRIVER)=",
+        "--include=uevent",
+        "/sys/devices"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uevents.txt"
+      },
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-asahi 7.1.13.asahi1-1 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound (no kernel log of the M1 exists to show a failed probe); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
+    },
+    {
+      "argv": [
+        "zcat",
+        "/proc/config.gz"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel-config.txt"
+      },
+      "stderr": "",
+      "note": "linux-asahi-headers 7.1.13.asahi1-1's build/.config: the exact build options of the booted kernel, which /proc/config.gz holds"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "-- No entries --\n",
+      "stderr": "",
+      "note": "stand-in: no kernel log of the M1 was ever saved, so the firmware and probe-error checks are not tested until the v0.1 dogfood run records one"
     }
   ],
   "files": {

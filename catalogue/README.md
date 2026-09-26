@@ -14,7 +14,11 @@ A chip generation's state can be overridden per board under `models` (e.g. the M
 
 Aurora states: `supported` (with the Aurora kernel version), `asahi` (expected to match linux-asahi, not verified on its own), `unsupported`, `unknown`, `absent`. Omarchy states: `supported`, `unsupported`, `absent`.
 
-`checks` maps each check id to the feature it tests.
+`checks` maps each check id to the feature it tests. `hardware` maps device-tree compatible strings (shell-style patterns such as `apple,t*-avd`) to the feature that hardware is: an enabled node no driver claimed counts as that feature failing, and a compatible the map doesn't know is unknown hardware.
+
+## Asahi's reference kernel config
+
+`asahi-kernel/config` is asahi-alarm's `linux-asahi/config`, pinned byte for byte at the commit in `asahi-kernel/source.json` (with its sha256). omarchy-m-test compares the running kernel's build options with it. To move the pin, fetch the file at a newer commit of [asahi-alarm/PKGBUILDs](https://github.com/asahi-alarm/PKGBUILDs), update `source.json` (commit, version from that commit's PKGBUILD, sha256, date) and rerun `cli/scripts/reseed_recordings.py`.
 
 ## Classification
 
@@ -22,7 +26,7 @@ A passed check `works`; a skipped one is `not-tested` (a missing human answer is
 
 - Aurora expects it to work: `fails` (or `not-in-omarchy` when Omarchy's integration isn't there yet). The site turns `fails` into a regression only against a verified earlier pass.
 - Asahi has it but Aurora doesn't: `not-in-aurora`. Asahi doesn't have it either: `not-in-asahi`.
-- The board lacks the hardware: `not-applicable`. The chip isn't in the catalogue: `unknown-hardware`.
+- The board lacks the hardware: `not-applicable`. The chip isn't in the catalogue: `unknown-hardware`. Unclaimed hardware the `hardware` map doesn't know is `unknown-hardware` too.
 
 ## Editing
 

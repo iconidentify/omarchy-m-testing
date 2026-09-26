@@ -21,9 +21,20 @@ Every result is explained against the feature catalogue (`../catalogue/catalogue
 
 Before each run it looks up the latest release's version (`releases/latest/download/VERSION` on GitHub, 5 s timeout) and says so when a newer one exists, with the command to upgrade. Offline or any odd answer: it says nothing and carries on.
 
+## Hardware inventory and gap map
+
+The Hardware section (`omarchy_m_test/inventory.py`) maps the Mac's hardware on every run, read-only:
+
+- **Nodes.** Every device-tree node's `compatible` and `status` properties and nothing else (`grep` over `/sys/firmware/devicetree/base`), and which node each device came from and whether a driver is bound to it (the `OF_FULLNAME` and `DRIVER` lines of the uevents under `/sys/devices`). A node is `bound`, `unbound` (it has a device no driver claimed) or `none` (no device of its own: disabled, set up early by the kernel core, or handled by its parent's driver). `/cpus`, `/chosen` and `/reserved-memory` are left out: the kernel core handles them without drivers.
+- **Unclaimed hardware.** An enabled node whose device no driver claimed is explained against the catalogue's `hardware` map (compatible pattern to feature): that feature failing, or **unknown hardware** when the catalogue doesn't know it.
+- **Firmware and probe errors.** This boot's firmware-load failures and driver probe errors (`probe with driver ... failed`, `deferred probe pending`) from `journalctl --dmesg`, kept as scrubbed evidence without the journal's line prefix.
+- **Build options.** `/proc/config.gz` compared with Asahi's pinned reference configuration (`../catalogue/asahi-kernel/`; a release ships it as `omarchy_m_test/asahi-kernel/`). Options set to `y`, `m`, not set or a number are compared; strings and toolchain-derived options are not. Every difference is reported; none is judged.
+
+Its four results are `hardware.drivers`, `hardware.firmware`, `hardware.probe-errors` and `hardware.kernel-config`. The report's `inventory` block holds only node types (the first compatible string), statuses, driver-bound states and counts, the unclaimed nodes with their classification, and the build-option differences: never a property value or a node's path. Skipping the section leaves the block out.
+
 ## The run: sections, resume, restore
 
-A run is a list of sections (`omarchy_m_test/sections.py`: boot, graphics, display, audio, network, input, power, cpu), listed up front after the disclaimer. mac-check feeds several of them and runs once, for the first one that isn't skipped. Any can be skipped: untick it in the picker at a terminal, or `--skip NAME` (repeatable, or comma-separated) anywhere. A skipped section's checks are reported as skipped.
+A run is a list of sections (`omarchy_m_test/sections.py`: boot, hardware, graphics, display, audio, network, input, power, cpu), listed up front after the disclaimer. mac-check feeds several of them and runs once, for the first one that isn't skipped. Any can be skipped: untick it in the picker at a terminal, or `--skip NAME` (repeatable, or comma-separated) anywhere. A skipped section's checks are reported as skipped.
 
 After each section the run's state is checkpointed to `$XDG_STATE_HOME/omarchy-m-test/checkpoint.json` (`~/.local/state/...`). A run interrupted by Ctrl-C, a closed terminal or a crash offers to resume on the next start with the same tool, catalogue, Mac and kernel: finished sections aren't run again. Evidence is scrubbed before it is checkpointed, and the file is only the user's (0600, in a 0700 directory). The checkpoint is removed once the report is written, or when the disclaimer is declined. Record mode never checkpoints.
 
@@ -49,7 +60,7 @@ Every report passes `omarchy_m_test/privacy.py` before it is written, shown or u
 
 Record mode runs as usual and also saves what the Mac answered at the host boundary: every command, file and directory the CLI read, plus the sources later checks need (`RECORDED_SOURCES` in `recording.py`: kernel log, device tree, first-boot, Wi-Fi and lid journals, uname, PCI, input devices, addresses). The recording is scrubbed before it is saved. Prompts, answers and uploads are not recorded. Check a new recording by eye before committing it, then add it to `tests/recordings/`.
 
-`tests/corpus/` holds the real M1 and M2 evidence the seeded recordings came from, pseudonymized (every identifier swapped for a same-shape decoy) because this repository is public. Answers never captured on a Mac (most of the M1's, and the M2's mac-check output) are reconstructed from what is known of the install and say so in their `note`; the v0.1 dogfood run replaces them. `scripts/reseed_recordings.py` reruns record mode over the corpus and rewrites `tests/recordings/` and the golden reports.
+`tests/corpus/` holds the real M1 and M2 evidence the seeded recordings came from, pseudonymized (every identifier swapped for a same-shape decoy) because this repository is public. The inventory answers (device-tree properties, bound drivers, `/proc/config.gz`) weren't captured either: they are reconstructed from each Mac's booted kernel package (its DTB, module aliases and headers' build config) and, for the M2, its kernel log's failed probe; the M1 has no kernel log at all. Answers never captured on a Mac (most of the M1's, and the M2's mac-check output) are reconstructed from what is known of the install and say so in their `note`; the v0.1 dogfood run replaces them. `scripts/reseed_recordings.py` reruns record mode over the corpus and rewrites `tests/recordings/` and the golden reports.
 
 ## Test (Seam A)
 

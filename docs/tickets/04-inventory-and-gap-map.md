@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Inventory records only node type, status and driver-bound, never property values
-- [ ] Firmware-load failures and probe errors captured as scrubbed evidence
-- [ ] Kernel build options diffed against Asahi's reference configuration, reported as differences
-- [ ] Unclaimed hardware classified as "unknown hardware" and listed on the report page
-- [ ] Seam A tests with M1 and M2 recordings produce the expected inventory and unknown-hardware list
+- [x] Inventory records only node type, status and driver-bound, never property values
+- [x] Firmware-load failures and probe errors captured as scrubbed evidence
+- [x] Kernel build options diffed against Asahi's reference configuration, reported as differences
+- [x] Unclaimed hardware classified as "unknown hardware" and listed on the report page
+- [x] Seam A tests with M1 and M2 recordings produce the expected inventory and unknown-hardware list

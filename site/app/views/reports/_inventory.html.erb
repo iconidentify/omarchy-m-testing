@@ -1,0 +1,46 @@
+<%# The report's hardware inventory: what no driver claimed (unknown hardware first) and the kernel's build options against Asahi's. %>
+<section class="inventory" id="inventory">
+  <h2>Hardware</h2>
+  <% if (nodes = inventory["nodes"]) %>
+    <% unknown, known = Array(inventory["unclaimed"]).partition { |entry| entry["outcome"] == "unknown-hardware" } %>
+    <% driver_states = nodes.each_with_object(Hash.new(0)) { |node, counts| counts[node["status"] == "okay" ? node["driver"] : "disabled"] += node["count"] } %>
+    <p class="inventory-summary"><%= nodes.sum { |node| node["count"] } %> hardware nodes: <%= driver_states["bound"] %> claimed by a driver, <%= driver_states["none"] %> with no device of their own, <%= driver_states["disabled"] %> disabled, <%= driver_states["unbound"] %> unclaimed.</p>
+
+    <h3>Unknown hardware</h3>
+    <% if unknown.any? %>
+      <ul class="unknown-hardware">
+        <% unknown.each do |entry| %>
+          <li><code class="compatible"><%= entry["compatible"] %></code> (<%= pluralize(entry["count"], "node") %>): <span class="outcome outcome-unknown-hardware"><%= Catalogue.outcome_words("unknown-hardware") %></span>, no driver claimed it</li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="dim">None: every node on this Mac is either claimed by a driver or known to the feature catalogue.</p>
+    <% end %>
+
+    <% if known.any? %>
+      <h3>Known hardware no driver claimed</h3>
+      <ul class="unclaimed-hardware">
+        <% known.each do |entry| %>
+          <li><code class="compatible"><%= entry["compatible"] %></code> (<%= pluralize(entry["count"], "node") %>): <span class="outcome outcome-<%= entry["outcome"] %>"><%= Catalogue.outcome_words(entry["outcome"]) %></span> (<%= Catalogue.feature(entry["feature"])&.fetch("name") || entry["feature"] %>, <%= entry["layer"] %> layer)</li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% else %>
+    <p class="dim">The device tree or the list of bound drivers couldn't be read on this Mac.</p>
+  <% end %>
+
+  <% if (config = inventory["kernel_config"]) %>
+    <h3>Kernel build options</h3>
+    <p><%= pluralize(config["differences"].size + config["omitted"], "option") %> differ from Asahi's <%= config["reference"] %><%= config["omitted"].positive? ? " (the first #{config["differences"].size} are listed)" : "" %>.</p>
+    <% if config["differences"].any? %>
+      <table class="kernel-config">
+        <thead><tr><th>option</th><th>Asahi</th><th>this kernel</th></tr></thead>
+        <tbody>
+          <% config["differences"].each do |difference| %>
+            <tr><td><code><%= difference["option"] %></code></td><td><%= difference["asahi"] %></td><td><%= difference["kernel"] %></td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  <% end %>
+</section>

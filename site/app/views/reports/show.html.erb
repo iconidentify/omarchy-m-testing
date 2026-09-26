@@ -25,5 +25,6 @@
       </li>
     <% end %>
   </ul>
+  <%= render "inventory", inventory: @report.body["inventory"] if @report.body["inventory"] %>
   <p class="credit">Asahi hardware states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0.</p>
 </article>

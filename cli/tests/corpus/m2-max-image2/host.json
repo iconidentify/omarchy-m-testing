@@ -1,6 +1,6 @@
 {
   "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install: raw host answers for record mode",
-  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached).",
+  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe.",
   "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m2-max",
@@ -243,6 +243,53 @@
       "stdout": "",
       "stderr": "eglinfo: command not found\n",
       "note": "mesa-utils isn't in image 2's package set (PROVENANCE)"
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-a",
+        "-H",
+        "",
+        "--include=compatible",
+        "--include=status",
+        "/sys/firmware/devicetree/base"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree-properties.txt"
+      },
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: the compatible and status properties of every node in linux-aurora 7.1.12.aurora2-2 (dtbs/t6021-j416c.dtb, the DTB devicetree.dts was decompiled from), the device tree the booted kernel package ships (m1n1 adjusts some nodes at boot, so a few statuses may differ on the Mac)"
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-H",
+        "-E",
+        "^(OF_FULLNAME|DRIVER)=",
+        "--include=uevent",
+        "/sys/devices"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uevents.txt"
+      },
+      "stderr": "",
+      "note": "reconstructed, not captured on the Mac: a device for every enabled node a driver in linux-aurora 7.1.12.aurora2-2 matches (its modules.alias and modules.builtin.modinfo) or that sits on a bus, with that driver bound, except the AVD the kernel log shows failing its probe (firmware apple/avd-fw-v3-t1.bin missing); paths approximate. Nodes the kernel core sets up early (AIC, timer, fixed clocks, OPP tables) get none"
+    },
+    {
+      "argv": [
+        "zcat",
+        "/proc/config.gz"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel-config.txt"
+      },
+      "stderr": "",
+      "note": "linux-aurora-headers 7.1.12.aurora2-2's build/.config: the exact build options of the booted kernel, which /proc/config.gz holds"
     }
   ],
   "files": {
