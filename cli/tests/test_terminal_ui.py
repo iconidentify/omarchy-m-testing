@@ -240,7 +240,7 @@ class SectionsTest(unittest.TestCase):
         status = main(["--skip", "teleport"], mac)
 
         self.assertEqual(status, 4)
-        self.assertIn("--skip takes section names: boot, hardware, graphics, video, display, audio, network, sleep, input, power, cpu", mac.output)
+        self.assertIn("--skip takes section names: boot, hardware, graphics, video, display, audio, network, sleep, input, camera, ports, power, cpu", mac.output)
         self.assertEqual(mac.written, {})
 
     def test_ctrl_c_at_the_disclaimer_leaves_nothing_behind(self):

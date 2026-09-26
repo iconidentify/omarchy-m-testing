@@ -6,8 +6,8 @@
 
 Each feature names its layer, so a failure goes to the right project:
 
-1. `asahi`: Asahi hardware features, one per row of Asahi's feature tables. Per chip generation: Asahi's state (`upstream` with the kernel version, `linux-asahi`, `wip`, `tba`, `out-of-tree`, `absent` for "-", ...) with the original cell text, and Aurora's state.
-2. `aurora`: what the Aurora kernel (omacom/linux) adds: external displays over USB-C, VRR, the camera ISP, AOP.
+1. `asahi`: Asahi hardware features, one per row of Asahi's feature tables. Per chip generation: Asahi's state (`upstream` with the kernel version, `linux-asahi`, `wip`, `tba`, `out-of-tree`, `absent` for "-", ...) with the original cell text, and Aurora's state. A few Asahi-layer features are hardware the tables have no row for (DisplayPort audio); they're marked `"asahi_tables": false`, kept by hand with Asahi's state `no`, and left alone by `asahi_tables.py`.
+2. `aurora`: what the Aurora kernel (omacom/linux) adds: external displays over USB-C, VRR, the camera ISP, AOP. Where Aurora goes beyond Asahi on an Asahi feature (DP alt mode, Thunderbolt on M1 and M2), that feature's Aurora state says so.
 3. `omarchy`: Omarchy integration: the notch bar, clamshell, the automatic keyboard light, speaker protection, the first 5 GHz join, first-boot hardware setup, the boot chain, disk encryption, package repositories, vendor firmware, system services, snapshots, the iwd Wi-Fi backend and the microphone mapping.
 
 A chip generation's state can be overridden per board under `models` (e.g. the MacBook Pro 13" has no notch). Aurora and Omarchy features can point at the Asahi feature they depend on with `asahi_feature`; its Asahi state is used for them.

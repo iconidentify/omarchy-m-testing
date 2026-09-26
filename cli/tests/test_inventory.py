@@ -51,12 +51,12 @@ class GoldenInventoryTest(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(mac.written[REPORT_FILE], golden("m2-max-image2"))
         inventory = report["inventory"]
-        # The DisplayPort audio controllers have no driver and the catalogue doesn't know them.
-        self.assertEqual(unknown_hardware(report), [("apple,t6020-dpaudio", 2)])
+        # Nothing is unknown: the DisplayPort audio controllers have no driver, and no Asahi one exists yet.
+        self.assertEqual(unknown_hardware(report), [])
         # The video decoder has a driver whose probe failed (its firmware is missing): the catalogue knows it.
         self.assertEqual(inventory["unclaimed"], [
             {"compatible": "apple,t6020-avd", "count": 1, "outcome": "fails", "feature": "video-decoder", "layer": "asahi"},
-            {"compatible": "apple,t6020-dpaudio", "count": 2, "outcome": "unknown-hardware"},
+            {"compatible": "apple,t6020-dpaudio", "count": 2, "outcome": "not-in-asahi", "feature": "dp-audio", "layer": "asahi"},
         ])
         nodes = {(n["compatible"], n["status"], n["driver"]): n["count"] for n in inventory["nodes"]}
         self.assertEqual(nodes[("apple,agx-t6021", "okay", "bound")], 1)
@@ -81,7 +81,7 @@ class GoldenInventoryTest(unittest.TestCase):
             "424 hardware nodes: 366 claimed by a driver, 27 with no device of their own, "
             "5 bus or register containers with no driver of their own, 23 disabled, 3 unclaimed",
             "unclaimed: apple,t6020-avd (1 node): doesn't work, but should on this Mac (Video decoder)",
-            "unclaimed: apple,t6020-dpaudio (2 nodes): unknown hardware",
+            "unclaimed: apple,t6020-dpaudio (2 nodes): not yet supported by Asahi (DisplayPort audio)",
         ])
         self.assertEqual(found["hardware.firmware"]["evidence"], [
             "avd 287080000.avd: Direct firmware load for apple/avd-fw-v3-t1.bin failed with error -2",
@@ -113,8 +113,10 @@ class GoldenInventoryTest(unittest.TestCase):
 
         self.assertEqual(status, 0)
         self.assertEqual(mac.written[REPORT_FILE], golden("m1-pro-mx-mac"))
-        self.assertEqual(unknown_hardware(report), [("apple,t6000-dpaudio", 1)])
-        self.assertEqual(report["inventory"]["unclaimed"], [{"compatible": "apple,t6000-dpaudio", "count": 1, "outcome": "unknown-hardware"}])
+        self.assertEqual(unknown_hardware(report), [])
+        self.assertEqual(report["inventory"]["unclaimed"], [
+            {"compatible": "apple,t6000-dpaudio", "count": 1, "outcome": "not-in-asahi", "feature": "dp-audio", "layer": "asahi"},
+        ])
         found = hardware(report)
         # The M1's recording has no kernel log: not tested, never failed.
         self.assertEqual(found["hardware.firmware"]["classification"]["outcome"], "not-tested")
@@ -214,7 +216,7 @@ class GapMapTest(unittest.TestCase):
         main(["--dry-run", "--catalogue", "draft.json"], mac)
 
         report = json.loads(mac.written[REPORT_FILE])
-        self.assertEqual(unknown_hardware(report), [("apple,t6020-avd", 1), ("apple,t6020-dpaudio", 2)])
+        self.assertEqual(unknown_hardware(report), [("apple,t6020-avd", 1)])
 
     def test_a_driver_bound_everywhere_leaves_nothing_unclaimed(self):
         def bind_all(stdout: str) -> str:

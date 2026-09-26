@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 8,
+  "catalogue_version": 9,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -84,6 +84,16 @@
     "input.ambient-light": "aop",
     "input.auto-keyboard-light": "auto-keyboard-light",
     "input.keyboard-light-follows-room": "auto-keyboard-light",
+    "input.function-keys": "keyboard",
+    "input.trackpad-gestures": "touchpad",
+    "camera.isp": "isp-camera",
+    "camera.frames": "isp-camera",
+    "camera.image": "isp-camera",
+    "ports.usb-c": "usb3-tb-ports",
+    "ports.thunderbolt": "thunderbolt",
+    "ports.external-displays": "usb4-displays",
+    "ports.devices-work": "usb3-tb-ports",
+    "ports.external-display-picture": "usb4-displays",
     "power.battery": "battery-info",
     "cpu.frequency-scaling": "cpufreq",
     "benchmark.opengl": "gpu",
@@ -148,7 +158,8 @@
     "apple,s5l-fpwm": "kb-backlight",
     "pci14e4,44*": "wifi",
     "pci14e4,5f*": "bluetooth",
-    "pci17a0,9755": "sd-card-slot"
+    "pci17a0,9755": "sd-card-slot",
+    "apple,*-dpaudio": "dp-audio"
   },
   "features": [
     {
@@ -207,17 +218,18 @@
       "name": "Thunderbolt",
       "layer": "asahi",
       "chips": {
-        "m1": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "asahi"}},
-        "m1-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "asahi"}},
-        "m2": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "asahi"}},
-        "m2-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "asahi"}},
+        "m1": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
+        "m1-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
+        "m2": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
+        "m2-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
         "m3": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
-      }
+      },
+      "note": "Aurora's thunderbolt-apple-acio and thunderbolt-apple-nhi drivers bring up the USB4/Thunderbolt host on M1 and M2 (links to devices and other computers); PCIe tunnels still need m1n1's handoff."
     },
     {
       "id": "dp-alt-mode",
@@ -1373,6 +1385,25 @@
         "j474s": {"asahi": {"status": "absent", "cell": "-"}},
         "j433": {"asahi": {"status": "absent", "cell": "-"}},
         "j434": {"asahi": {"status": "absent", "cell": "-"}}
+      }
+    },
+    {
+      "id": "dp-audio",
+      "name": "DisplayPort audio",
+      "layer": "asahi",
+      "asahi_tables": false,
+      "note": "Not a row in Asahi's feature tables: the display coprocessor's DisplayPort audio (apple,*-dpaudio) has no Asahi driver yet.",
+      "chips": {
+        "m1": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m1-pro-max-ultra": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m2": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m2-pro-max-ultra": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m3-ultra": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m4": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "m4-pro-max": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}}
       }
     },
     {

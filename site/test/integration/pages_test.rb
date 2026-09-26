@@ -100,7 +100,7 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal [ second["id"], first["id"] ].map { |id| "report-#{id}" }, css_select("tr.report-row").map { |row| row["id"] }
     assert_select "tr#report-#{second["id"]} td", "converged 4.0.0"
-    assert_select "tr#report-#{second["id"]} td", /32 pass 4 fail 19 skip/
+    assert_select "tr#report-#{second["id"]} td", /37 pass 4 fail 24 skip/
   end
 
   test "the report page reads like terminal output, grouped by section" do
@@ -110,7 +110,7 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_select ".terminal .terminal-bar", /omarchy-m-test/
     assert_select ".terminal .badge-community", "community report"
     # One title per check-id prefix, plus the hardware inventory.
-    assert_select "h2.section-title", %w[system boot packages setup hardware gpu video display audio network sleep input power cpu benchmark].size + 1
+    assert_select "h2.section-title", %w[system boot packages setup hardware gpu video display audio network sleep input camera ports power cpu benchmark].size + 1
     assert_select "dd", "converged 4.0.0"
     assert_select "dd", "omarchy, limine, encryption on"
     assert_select "li#check-setup\\.first-boot-hardware .status.status-fail", "FAIL"

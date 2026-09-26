@@ -1,7 +1,7 @@
 {
   "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install: raw host answers for record mode",
-  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted. The M2 has since been reinstalled with converged image 4, so image 2's own answers (mac-check, encryption, the backlight level, the volume) can no longer be captured and stay reconstructed; tests/corpus/m2-max-converged is its real run.",
-  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
+  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted. The M2 has since been reinstalled with converged image 4, so image 2's own answers (mac-check, encryption, the backlight level, the volume) can no longer be captured and stay reconstructed; tests/corpus/m2-max-converged is its real run. The camera, function-key and ports answers are stand-ins, noted on each entry (checks added after image 2's runs).",
+  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape, and the camera module's serial (in the ISP's log lines), before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m2-max",
     "kestrel",
@@ -24,7 +24,9 @@
     "10.118.110.232",
     "10.159.16.3",
     "fe80::c712:bd3:b033:120c",
-    "10.139.113.3"
+    "10.139.113.3",
+    "CC2411719QXRWTVDC",
+    "31313432 51393137"
   ],
   "commands": [
     {
@@ -540,6 +542,83 @@
       "stdout": "",
       "stderr": "error: package 'assimp' was not found\nerror: package 'vkmark' was not found\n",
       "note": "stand-in: this run had no benchmark section (omarchy-m-test 0.1.3); what pacman answers on a Mac without vkmark and with ffmpeg (mpv needs it), with Arch Linux ARM extra's vkmark 2025.01 and its assimp dependency, so the benchmarks are offered and, with no answer, declined"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for d in /sys/class/video4linux/video*; do [ -e \"$d\" ] || continue; drv=$(readlink \"$d/device/driver\"); echo \"${d##*/} ${drv##*/}\"; done"
+      ],
+      "returncode": 0,
+      "stdout": "video0 apple-isp\n",
+      "stderr": "",
+      "note": "stand-in: the camera's video devices weren't captured; kernel.log has apple-isp probing and loading its firmware. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "timeout",
+        "20",
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-i",
+        "/dev/video0",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, video4linux2,v4l2, from '/dev/video0':\n  Duration: N/A, start: 0.000000, bitrate: 746496 kb/s\n  Stream #0:0: Video: rawvideo (NV12 / 0x3231564E), nv12, 1920x1080, 746496 kb/s, 30 fps, 30 tbr, 1000k tbn\nStream mapping:\n  Stream #0:0 -> #0:0 (rawvideo (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Stream #0:0: Video: wrapped_avframe, nv12(progressive), 1920x1080, q=2-31, 200 kb/s, 30 fps, 30 tbn\n[out#0/null @ 0xaaaacafe0000] video:13KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=   30 fps= 29 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.98x\n",
+      "note": "stand-in: no frame capture was recorded; the stream is the ISP's 1920x1080 mode from kernel.log's CISP_CMD_CH_CAMERA_CONFIG_GET list (0x780 x 0x438). The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for p in /sys/class/typec/port*; do\n  n=${p##*/port}\n  case $n in ''|*[!0-9]*) continue;; esac\n  if [ -e \"/sys/class/typec/port$n-partner\" ]; then partner=yes; else partner=no; fi\n  data=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/data_role\" 2>/dev/null)\n  power=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/power_role\" 2>/dev/null)\n  echo \"typec $n partner=$partner data=$data power=$power\"\ndone\nfor d in /sys/bus/usb/devices/*; do\n  [ -r \"$d/speed\" ] || continue\n  case ${d##*/} in *:*) continue;; usb*) kind=root;; *) kind=device;; esac\n  class=$(cat \"$d/bDeviceClass\" 2>/dev/null)\n  if [ \"$class\" = 00 ]; then class=$(cat \"$d\"/*:*/bInterfaceClass 2>/dev/null | head -n 1); fi\n  echo \"usb $kind speed=$(cat \"$d/speed\") class=$class\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "typec 0 partner=yes data=host power=source\ntypec 1 partner=yes data=host power=source\ntypec 2 partner=no data=device power=sink\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\n",
+      "stderr": "",
+      "note": "stand-in reconstructed from the M2's evidence: three USB-C ports (usb-pd@38, @3b, @3f in kernel.log), one holding the Thunderbolt lab link the corpus runs go over and one the 3440x1440 display mac-check lists as USB-2; the roles and root hub speeds are reconstructed. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "if [ ! -d /sys/bus/thunderbolt/devices ]; then echo nobus; exit 0; fi\nfor d in /sys/bus/thunderbolt/devices/*; do\n  [ -r \"$d/uevent\" ] || continue\n  line=\"thunderbolt ${d##*/} $(sed -n 's/^DEVTYPE=//p' \"$d/uevent\")\"\n  for f in generation rx_speed rx_lanes authorized; do\n    if [ -r \"$d/$f\" ]; then line=\"$line $f=$(tr -d ' \\n' < \"$d/$f\")\"; fi\n  done\n  echo \"$line\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "thunderbolt 0-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=2 authorized=1\nthunderbolt 0-0:1.1 thunderbolt_retimer\nthunderbolt 0-1 thunderbolt_xdomain rx_speed=10.0Gb/s rx_lanes=2\nthunderbolt 1-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 2-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt domain0 thunderbolt_domain\nthunderbolt domain1 thunderbolt_domain\nthunderbolt domain2 thunderbolt_domain\n",
+      "stderr": "",
+      "note": "stand-in reconstructed from kernel.log: thunderbolt-apple-acio brings up three domains, domain 0 linked to another Mac (the lab link: 'new host found', USB4 Gen2 on two lanes) through a retimer; speeds and lanes are reconstructed. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card1-eDP-1 connected enabled 3456x2234\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 connected enabled 3440x1440\nconnector card2-USB-3 disconnected disabled \n",
+      "stderr": "",
+      "note": "stand-in reconstructed from mac-check.txt ('USB-2 3440x1440@60', 'eDP-1 3456x2234@120') and the DRM connector the display uses (card2-USB-2); the other connectors and card numbers are reconstructed. The next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
+      ],
+      "returncode": 0,
+      "stdout": "unavailable\n",
+      "stderr": "",
+      "note": "stand-in: the corpus runs are over SSH, where hyprctl can't reach Hyprland (as the converged M1's real run shows), so the script prints 'unavailable'"
     }
   ],
   "files": {
@@ -633,7 +712,8 @@
     "/sys/bus/iio/devices/iio:device0/in_illuminance_input": {
       "text": "733\n",
       "note": "39-display-check-session.txt: 'lux 733'"
-    }
+    },
+    "/sys/module/hid_apple/parameters/fnmode": null
   },
   "dirs": {
     "/home": [

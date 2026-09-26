@@ -14,7 +14,7 @@ import json
 import os
 import unittest
 
-from omarchy_m_test import audio, display, network
+from omarchy_m_test import audio, display, inputs, network, ports
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.inventory import KERNEL_LOG
@@ -43,6 +43,8 @@ NOTCH_PROMPT = display.NOTCH_QUESTION + " [y/n/s] "
 BRIGHTNESS_PROMPT = display.BRIGHTNESS_QUESTION + " [y/n/s] "
 CURSOR_PROMPT = display.CURSOR_QUESTION + " [y/n/s] "
 KEYBOARD_PROMPT = display.KEYBOARD_QUESTION + " [y/n/s] "
+# The Input section's function-key and trackpad questions, after the keyboard light's.
+KEYS_AND_TRACKPAD = ["s", "s"]
 
 
 def answer(rec: dict, argv: list[str], returncode: int = 0, stdout: str = "", stderr: str = "") -> dict:
@@ -350,7 +352,7 @@ class Covered(LiveMac):
 
 class KeyboardLightTest(unittest.TestCase):
     def test_covering_the_sensor_lights_the_keyboard(self):
-        host = run("input", ["y"], cls=Covered)
+        host = run("input", ["y", *KEYS_AND_TRACKPAD], cls=Covered)
 
         self.assertLess(host.output.index("Cover the camera and notch"), host.output.index(KEYBOARD_PROMPT))
         self.assertIn("You can uncover it now.", host.output)
@@ -360,7 +362,7 @@ class KeyboardLightTest(unittest.TestCase):
         self.assertEqual(result["evidence"][-1], "while covered: ambient light 2 lux, keyboard light 128/255")
 
     def test_a_keyboard_light_that_stays_off_is_a_failure_the_human_reports(self):
-        result = check(run("input", ["n stayed dark"]), "input.keyboard-light-follows-room")
+        result = check(run("input", ["n stayed dark", *KEYS_AND_TRACKPAD]), "input.keyboard-light-follows-room")
 
         self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
 
@@ -370,7 +372,7 @@ class KeyboardLightTest(unittest.TestCase):
         no_keys = answer(live_recording(), display.LIST_LIGHTS, stdout="apple-panel-bl,backlight,250,50%,500\n")
         for rec, why in ((no_sensor, "no ambient light sensor"), (no_keys, "no keyboard light")):
             with self.subTest(why=why):
-                host = run("input", [], rec=rec)
+                host = run("input", KEYS_AND_TRACKPAD, rec=rec)
 
                 self.assertNotIn(KEYBOARD_PROMPT, prompts(host))
                 self.assertIn(why, check(host, "input.keyboard-light-follows-room")["evidence"][0])
@@ -386,6 +388,8 @@ class WholeRunTest(unittest.TestCase):
 
         self.assertEqual([p for p in prompts(host) if p.endswith("[y/n/s] ")], [
             NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, network.PAIRING_QUESTION + " [y/n/s] ", KEYBOARD_PROMPT,
+            *(question + " [y/n/s] " for question in (inputs.FUNCTION_KEYS_QUESTION, inputs.GESTURES_QUESTION,
+                                                      ports.DEVICES_QUESTION, ports.PICTURE_QUESTION)),
         ])
         self.assertEqual(host.state.volume, "0.45")
         self.assertEqual([argv for argv in host.commands_run if argv[:1] == ["brightnessctl"] and "set" in argv][-1], PANEL_BACK)

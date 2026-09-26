@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import benchmarks, checks, sleep, video
+from . import benchmarks, camera, checks, ports, sleep, video
 from .session import Context, Section
 
 
@@ -47,9 +47,14 @@ APPLE: tuple[Section, ...] = (
     ), checks.network, ("network.bluetooth-pairing",)),
     _section("sleep", "Sleep", "You close and open the lid when asked: suspend and resume, then clamshell mode with an external display (the built-in screen off, no sleep), and whether Wi-Fi and Thunderbolt come back after waking up. Only at the Mac, never over SSH.",
              sleep.CHECK_IDS, sleep.run, disruptive=True),
-    _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light.", (
+    _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light, press the function keys and try the trackpad's gestures.", (
         "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
-    ), checks.input_devices, ("input.keyboard-light-follows-room",)),
+        "input.function-keys", "input.trackpad-gestures",
+    ), checks.input_devices, ("input.keyboard-light-follows-room", "input.function-keys", "input.trackpad-gestures")),
+    _section("camera", "Camera", "The camera's image processor and a few frames from it; then (at the Mac) you look at its picture.",
+             camera.CHECK_IDS, camera.run, (camera.IMAGE,)),
+    _section("ports", "Ports", "USB-C ports, Thunderbolt and USB4 links and displays on USB-C: plug in what you have; then you say whether they work.",
+             ports.CHECK_IDS, ports.run, (ports.DEVICES_WORK, ports.PICTURE)),
     _section("power", "Power", "The battery.", ("power.battery",), checks.power),
     _section("cpu", "CPU", "CPU frequency scaling.", ("cpu.frequency-scaling",), checks.cpu),
     _section("benchmarks", "Benchmarks", "About a minute of short benchmarks for comparing Macs: OpenGL (glmark2, off-screen), Vulkan (vkmark, headless) and H.264 and HEVC hardware decode (ffmpeg). Leave the Mac alone while they run.",
