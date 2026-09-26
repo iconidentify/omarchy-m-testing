@@ -23,6 +23,18 @@
     },
     {
       "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 0,
+      "stdout": "<ssid>\n<ssid>\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "pacman",
         "-Q",
         "omarchy",
@@ -84,24 +96,6 @@
     },
     {
       "argv": [
-        "bundled:apple-audio-check",
-        "--no-sound"
-      ],
-      "returncode": 0,
-      "stdout": "PASS audio stack installed\nPASS speakersafetyd enabled and active\nspeakersafetyd presets: /usr/lib/systemd/system-preset/80-omarchy-apple.preset /usr/lib/systemd/system-preset/80-omarchy-mac-audio.preset /usr/lib/systemd/system-preset/80-omarchy-mac.preset \nspeakersafetyd enable links: /etc/systemd/system/multi-user.target.wants/speakersafetyd.service \nFAIL only omarchy-mac presets speakersafetyd\nPASS speakersafetyd enabled by exactly one link\nPASS speaker amps unlocked this boot\nPASS speaker DSP sink present\nPASS speaker and headphone sinks never suspend\nPASS mic mapper running\ndefault source: omarchy_asahi_mic.monitor\nSep 26 08:49:17 <hostname> systemd[1351]: Starting Reconcile the Asahi microphone stereo mapping...\nSep 26 08:49:17 <hostname> systemd[1351]: Started Reconcile the Asahi microphone stereo mapping.\nSep 26 08:49:17 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\nSep 26 09:41:45 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "bundled:apple-display-check",
-        "--read-only"
-      ],
-      "returncode": 0,
-      "stdout": "ok - detector says apple-silicon\nomarchy-mac 0.1.0-5.361571887310001\nok - omarchy-mac is installed\nok - appledrm show_notch=1 is configured\nok - appledrm is showing the notch strip\n  monitor eDP-1 3456x2234 scale 2\n  monitor USB-2 3440x1440 scale 1\n  expect eDP-1 3456x2234 on the 16\" M2 Max (2160 without the strip); check by eye that the bar clears the camera cutout\nok - Hyprland draws the cursor in software\nok - the software cursor was written once\nok - sddm waits for the display controller\nok - the display controller card exists\n  kernel: [   81.120908] <hostname> kernel: apple-drm soc:display-subsystem: bound 389c00000.dcp (ops dcp_comp_ops [appledrm])\n  sddm: [   83.238736] <hostname> systemd[1]: Starting Simple Desktop Display Manager...\n  sddm: [   85.440239] <hostname> systemd[1]: Started Simple Desktop Display Manager.\n  expect sddm Started after the appledrm card; by eye: greeter typing fills dots on the built-in panel with USB-C monitors attached\nok - the panel backlight is apple-panel-bl\n  read-only: skipped the panel and external brightness steps\nok - ALS and keyboard LED are available\nok - the ALS keyboard loop runs\n  lux 733, keys 0/255\n  read-only: skipped the lock-style keyboard blank\n  by eye: dim the keys to off with the keyboard-brightness keys; they stay off until the room light changes a lot\n\n0 failure(s)\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
         "journalctl",
         "--unit=omarchy-provision-hardware.service",
         "--output=short-iso",
@@ -131,14 +125,20 @@
     },
     {
       "argv": [
-        "nmcli",
-        "--get-values",
-        "NAME",
-        "connection",
-        "show"
+        "bundled:apple-display-check",
+        "--read-only"
       ],
       "returncode": 0,
-      "stdout": "<ssid>\n<ssid>\n",
+      "stdout": "ok - detector says apple-silicon\nomarchy-mac 0.1.0-5.361571887310001\nok - omarchy-mac is installed\nok - appledrm show_notch=1 is configured\nok - appledrm is showing the notch strip\n  monitor eDP-1 3456x2234 scale 2\n  monitor USB-2 3440x1440 scale 1\n  expect eDP-1 3456x2234 on the 16\" M2 Max (2160 without the strip); check by eye that the bar clears the camera cutout\nok - Hyprland draws the cursor in software\nok - the software cursor was written once\nok - sddm waits for the display controller\nok - the display controller card exists\n  kernel: [   81.120908] <hostname> kernel: apple-drm soc:display-subsystem: bound 389c00000.dcp (ops dcp_comp_ops [appledrm])\n  sddm: [   83.238736] <hostname> systemd[1]: Starting Simple Desktop Display Manager...\n  sddm: [   85.440239] <hostname> systemd[1]: Started Simple Desktop Display Manager.\n  expect sddm Started after the appledrm card; by eye: greeter typing fills dots on the built-in panel with USB-C monitors attached\nok - the panel backlight is apple-panel-bl\n  read-only: skipped the panel and external brightness steps\nok - ALS and keyboard LED are available\nok - the ALS keyboard loop runs\n  lux 733, keys 0/255\n  read-only: skipped the lock-style keyboard blank\n  by eye: dim the keys to off with the keyboard-brightness keys; they stay off until the room light changes a lot\n\n0 failure(s)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 0,
+      "stdout": "PASS audio stack installed\nPASS speakersafetyd enabled and active\nspeakersafetyd presets: /usr/lib/systemd/system-preset/80-omarchy-apple.preset /usr/lib/systemd/system-preset/80-omarchy-mac-audio.preset /usr/lib/systemd/system-preset/80-omarchy-mac.preset \nspeakersafetyd enable links: /etc/systemd/system/multi-user.target.wants/speakersafetyd.service \nFAIL only omarchy-mac presets speakersafetyd\nPASS speakersafetyd enabled by exactly one link\nPASS speaker amps unlocked this boot\nPASS speaker DSP sink present\nPASS speaker and headphone sinks never suspend\nPASS mic mapper running\ndefault source: omarchy_asahi_mic.monitor\nSep 26 08:49:17 <hostname> systemd[1351]: Starting Reconcile the Asahi microphone stereo mapping...\nSep 26 08:49:17 <hostname> systemd[1351]: Started Reconcile the Asahi microphone stereo mapping.\nSep 26 08:49:17 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\nSep 26 09:41:45 <hostname> omarchy-audio-asahi-mic-map[1429]: No Asahi DSP microphone is present; user service will retry if an array appears\n",
       "stderr": ""
     },
     {
@@ -196,6 +196,9 @@
     },
     "/proc/device-tree/model": {
       "text": "Apple MacBook Pro (16-inch, M2 Max, 2023)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "<hostname>\n"
     },
     "/etc/os-release": {
       "text": "NAME=\"Omarchy\"\nPRETTY_NAME=\"Omarchy\"\nID=omarchy\nID_LIKE=arch\nBUILD_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nVERSION_ID=\"4.0.0.alpha.quattro.r1790350165.g99ace4070354\"\nANSI_COLOR=\"38;2;158;206;106\"\nHOME_URL=\"https://omarchy.org/\"\n"
@@ -261,12 +264,12 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy8/related_cpus": {
       "text": "8 9 10 11\n"
-    },
-    "/proc/sys/kernel/hostname": {
-      "text": "<hostname>\n"
     }
   },
   "dirs": {
+    "/home": [
+      "<user>"
+    ],
     "/sys/bus/platform/drivers/asahi": [
       "406400000.gpu",
       "bind",
@@ -284,9 +287,6 @@
       "policy0",
       "policy4",
       "policy8"
-    ],
-    "/home": [
-      "<user>"
     ]
   }
 }

@@ -23,6 +23,18 @@
     },
     {
       "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n"
+    },
+    {
+      "argv": [
         "pacman",
         "-Q",
         "omarchy",
@@ -113,18 +125,6 @@
     },
     {
       "argv": [
-        "nmcli",
-        "--get-values",
-        "NAME",
-        "connection",
-        "show"
-      ],
-      "returncode": 1,
-      "stdout": "",
-      "stderr": "not captured in the seed evidence\n"
-    },
-    {
-      "argv": [
         "uname",
         "-a"
       ],
@@ -168,6 +168,9 @@
     },
     "/proc/device-tree/model": {
       "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "<hostname>\n"
     },
     "/etc/os-release": {
       "text": "NAME=\"Omarchy\"\nPRETTY_NAME=\"Omarchy\"\nID=omarchy\nID_LIKE=arch\nBUILD_ID=\"4.0.2.r6879.gaae2586\"\nVERSION_ID=\"4.0.2.r6879.gaae2586\"\nHOME_URL=\"https://omarchy.org/\"\n"
@@ -230,12 +233,12 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy6/related_cpus": {
       "text": "6 7 8 9\n"
-    },
-    "/proc/sys/kernel/hostname": {
-      "text": "<hostname>\n"
     }
   },
   "dirs": {
+    "/home": [
+      "<user>"
+    ],
     "/sys/bus/platform/drivers/asahi": [
       "406400000.gpu",
       "bind",
@@ -253,9 +256,6 @@
       "policy0",
       "policy2",
       "policy6"
-    ],
-    "/home": [
-      "<user>"
     ]
   }
 }

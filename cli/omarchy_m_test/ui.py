@@ -1,0 +1,331 @@
+"""What the human sees: plain text, or Omarchy's installer look at a terminal.
+
+Ui.for_host picks one. Off a terminal (a pipe, a test) the run prints plain
+lines and prompts with host.prompt, nothing else. At a terminal it looks like
+Omarchy's installer: the screen cleared, the installed logo centred in the
+theme's green, section titles in the logo's font, gum prompts, and during
+automatic checks a live feed: the last lines of what the checks run and read,
+redrawn in place in grey, each prefixed "  → " (install/helpers/logging.sh).
+"""
+
+from __future__ import annotations
+
+import re
+from collections import deque
+from typing import Sequence
+
+from . import TOOL_NAME, TOOL_VERSION
+from .host import CommandResult, Host, Terminal
+from .theme import Theme, load, with_padding
+
+ESC = "\033["
+RESET = ESC + "0m"
+BOLD = ESC + "1m"
+CLEAR_SCREEN = ESC + "H" + ESC + "2J"
+CLEAR_LINE = ESC + "2K"
+CLEAR_BELOW = ESC + "J"
+HIDE_CURSOR = ESC + "?25l"
+SHOW_CURSOR = ESC + "?25h"
+FEED_PREFIX = "  → "
+FEED_MAX_ROWS = 20
+FEED_MIN_ROWS = 3
+
+# The site's colour code, per classification outcome.
+OUTCOME_COLOURS = {
+    "works": "green",
+    "fails": "red",
+    "regression": "red",
+    "partial": "yellow",
+    "not-in-omarchy": "blue",
+    "not-in-aurora": "blue",
+    "not-in-asahi": "blue",
+    "unknown-hardware": "magenta",
+}
+_CONTROL = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|[\x00-\x08\x0b-\x1f\x7f]")
+
+
+class Interrupted(KeyboardInterrupt):
+    """Ctrl-C in a gum prompt (gum exits 130)."""
+
+
+def _rgb(hex_colour: str) -> str:
+    r, g, b = (int(hex_colour[i:i + 2], 16) for i in (1, 3, 5))
+    return f"{ESC}38;2;{r};{g};{b}m"
+
+
+def printable(text: str) -> str:
+    """A line of command output made safe to draw: no escape sequences, tabs as spaces."""
+    return _CONTROL.sub("", text.expandtabs(4)).rstrip()
+
+
+class Ui:
+    """Plain text: what a run looks like off a terminal."""
+
+    styled = False
+
+    def __init__(self, host: Host):
+        self.host = host
+
+    @classmethod
+    def for_host(cls, host: Host) -> "Ui":
+        terminal = host.terminal()
+        if terminal is None:
+            return cls(host)
+        return StyledUi(host, terminal, load(host))
+
+    def intro(self) -> None:
+        pass
+
+    def text(self, text: str) -> None:
+        self.host.show(text)
+
+    def ask(self, message: str) -> str:
+        return self.host.prompt(message)
+
+    def section(self, title: str, description: str) -> "Host":
+        """Start a section; returns the host its checks run through."""
+        return self.host
+
+    def end_section(self) -> None:
+        pass
+
+    def result(self, text: str, outcome: str) -> None:
+        self.host.show(text)
+
+    def choose(self, header: str, options: Sequence[str], selected: Sequence[str]) -> list[str]:
+        """Which options the human keeps. Off a terminal, the ones given (--skip decides)."""
+        return list(selected)
+
+    def confirm(self, question: str, default: bool = False) -> bool:
+        suffix = " [Y/n] " if default else " [y/N] "
+        try:
+            answer = self.host.prompt(question + suffix).strip().lower()
+        except EOFError:
+            return default
+        if not answer:
+            return default
+        return answer in ("y", "yes")
+
+    def close(self) -> None:
+        pass
+
+
+class StyledUi(Ui):
+    """Omarchy's installer look."""
+
+    styled = True
+
+    def __init__(self, host: Host, terminal: Terminal, theme: Theme):
+        super().__init__(host)
+        self.terminal = terminal
+        self.theme = theme
+        width = theme.logo_width if theme.logo and theme.logo_width <= terminal.width else 80
+        self.left = max(0, (terminal.width - width) // 2)
+        self.pad = " " * self.left
+        self.feed: Feed | None = None
+        self._gum: bool | None = None
+
+    # -- colour and layout ----------------------------------------------
+
+    def paint(self, name: str, text: str) -> str:
+        return f"{_rgb(self.theme.colour(name))}{text}{RESET}"
+
+    def _padded(self, text: str) -> str:
+        return "\n".join(self.pad + line if line else line for line in text.split("\n"))
+
+    def _centred(self, block: str) -> str:
+        lines = block.split("\n")
+        width = max((len(line) for line in lines), default=0)
+        left = " " * max(0, (self.terminal.width - width) // 2)
+        return "\n".join(left + line for line in lines)
+
+    # -- what the run shows -----------------------------------------------
+
+    def intro(self) -> None:
+        self.host.show(CLEAR_SCREEN)
+        if self.theme.logo and self.theme.logo_width <= self.terminal.width:
+            self.host.show("\n" + self.paint("green", self._centred(self.theme.logo)) + "\n")
+        else:
+            self.host.show("\n" + self.pad + BOLD + self.paint("green", TOOL_NAME) + "\n")
+        caption = f"{TOOL_NAME} {TOOL_VERSION}: hardware test for Omarchy on Apple Silicon"
+        self.host.show(self.paint("dark_foreground", self._centred(caption)) + "\n")
+
+    def text(self, text: str) -> None:
+        self.host.show(self.paint("foreground", self._padded(text)))
+
+    def ask(self, message: str) -> str:
+        return self.host.prompt(self.pad + message)
+
+    def section(self, title: str, description: str) -> "Host":
+        art = self._ascii(title)
+        if art:
+            self.host.show("\n" + self.paint("accent", self._padded(art)))
+        else:
+            self.host.show("\n" + self.pad + BOLD + self.paint("accent", title))
+        self.host.show(self.paint("dark_foreground", self._padded(description)) + "\n")
+        rows = max(FEED_MIN_ROWS, min(FEED_MAX_ROWS, self.terminal.height - 16))
+        self.feed = Feed(self.host, self, rows)
+        return self.feed
+
+    def end_section(self) -> None:
+        if self.feed:
+            self.feed.close()
+            self.feed = None
+
+    def result(self, text: str, outcome: str) -> None:
+        self.host.show(self.paint(OUTCOME_COLOURS.get(outcome, "dark_foreground"), self._padded(text)))
+
+    def _ascii(self, title: str) -> str | None:
+        if not self.theme.has_ascii:
+            return None
+        drawn = self.host.run(["omarchy-ascii", title])
+        art = drawn.stdout.rstrip("\n")
+        if drawn.returncode != 0 or not art.strip():
+            return None
+        if max(len(line) for line in art.split("\n")) + self.left > self.terminal.width:
+            return None
+        return art
+
+    # -- gum --------------------------------------------------------------
+
+    def _has_gum(self) -> bool:
+        if self._gum is None:
+            self._gum = self.host.run(["gum", "--version"]).returncode == 0
+        return self._gum
+
+    def _gum_run(self, argv: list[str]) -> CommandResult:
+        result = self.host.run_tty(argv, with_padding(self.theme, self.left))
+        if result.returncode == 130:
+            raise Interrupted
+        return result
+
+    def choose(self, header: str, options: Sequence[str], selected: Sequence[str]) -> list[str]:
+        if not self._has_gum():
+            return self._choose_by_prompt(options, selected)
+        argv = ["gum", "choose", "--no-limit", "--header", header]
+        if selected:
+            argv += ["--selected", ",".join(selected) if len(selected) < len(options) else "*"]
+        result = self._gum_run(argv + list(options))
+        if result.returncode != 0:
+            return list(selected)
+        picked = {line.strip() for line in result.stdout.splitlines()}
+        return [option for option in options if option in picked]
+
+    def _choose_by_prompt(self, options: Sequence[str], selected: Sequence[str]) -> list[str]:
+        try:
+            answer = self.host.prompt(self.pad + "Sections to skip (numbers, e.g. 2 5; Enter runs them all): ")
+        except EOFError:
+            return list(selected)
+        skip = {int(n) - 1 for n in re.findall(r"\d+", answer)}
+        return [option for i, option in enumerate(options) if option in selected and i not in skip]
+
+    def confirm(self, question: str, default: bool = False) -> bool:
+        if not self._has_gum():
+            return super().confirm(self.pad + question, default)
+        argv = ["gum", "confirm", question] + ([] if default else ["--default=false"])
+        return self._gum_run(argv).returncode == 0
+
+    def close(self) -> None:
+        self.end_section()
+        self.host.show(SHOW_CURSOR + RESET)
+
+
+class Feed:
+    """The live feed: a host that shows, as they happen, the commands a section runs and their output.
+
+    Everything else passes straight through to the inner host. A prompt or
+    message in the middle of a section lifts the feed, then draws it again
+    below.
+    """
+
+    def __init__(self, inner: Host, ui: StyledUi, rows: int):
+        self.inner = inner
+        self.ui = ui
+        self.rows = rows
+        self.lines: deque[str] = deque(maxlen=rows)
+        self.drawn = False
+        self.width = max(20, ui.terminal.width - ui.left - len(FEED_PREFIX) - 1)
+        self.inner.show(HIDE_CURSOR + ("\n" * (rows - 1)))
+        self.drawn = True
+        self._draw(up=True)
+
+    # -- the machine, logged ------------------------------------------------
+
+    def run(self, argv: Sequence[str]) -> CommandResult:
+        self._add(["$ " + " ".join(argv)])
+        result = self.inner.run(argv)
+        self._add((result.stdout + result.stderr).splitlines())
+        return result
+
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        self._add(["$ " + " ".join([name, *args])])
+        result = self.inner.run_bundled(name, args)  # type: ignore[attr-defined]
+        self._add((result.stdout + result.stderr).splitlines())
+        return result
+
+    def read_file(self, path: str) -> bytes:
+        self._add([f"read {path}"])
+        return self.inner.read_file(path)
+
+    def list_dir(self, path: str) -> list[str]:
+        self._add([f"list {path}"])
+        return self.inner.list_dir(path)
+
+    # -- the human, with the feed lifted -----------------------------------
+
+    def show(self, text: str) -> None:
+        self._lift()
+        self.inner.show(text)
+        self._reopen()
+
+    def prompt(self, message: str) -> str:
+        self._lift()
+        try:
+            return self.inner.prompt(message)
+        finally:
+            self._reopen()
+
+    def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
+        self._lift()
+        try:
+            return self.inner.run_tty(argv, env)
+        finally:
+            self._reopen()
+
+    def __getattr__(self, name: str):
+        return getattr(self.inner, name)
+
+    # -- drawing ------------------------------------------------------------
+
+    def _add(self, lines: Sequence[str]) -> None:
+        added = False
+        for line in lines:
+            line = printable(line)
+            if line.strip():
+                self.lines.append(line if len(line) <= self.width else line[: self.width - 3] + "...")
+                added = True
+        if added and self.drawn:
+            self._draw(up=True)
+
+    def _draw(self, up: bool) -> None:
+        shown = list(self.lines) + [""] * (self.rows - len(self.lines))
+        frame = "\n".join(
+            CLEAR_LINE + (self.ui.paint("dark_foreground", f"{self.ui.pad}{FEED_PREFIX}{line}") if line else "")
+            for line in shown
+        )
+        self.inner.show((f"{ESC}{self.rows}A\r" if up else "") + frame)
+
+    def _lift(self) -> None:
+        if self.drawn:
+            self.inner.show(f"{ESC}{self.rows}A\r{CLEAR_BELOW}{SHOW_CURSOR}" + ESC + "1A")
+            self.drawn = False
+
+    def _reopen(self) -> None:
+        if not self.drawn:
+            self.inner.show(HIDE_CURSOR + ("\n" * (self.rows - 1)))
+            self.drawn = True
+            self._draw(up=True)
+
+    def close(self) -> None:
+        self._lift()
+        self.lines.clear()

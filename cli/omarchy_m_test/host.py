@@ -14,9 +14,17 @@ Operations:
   list_dir(path)             list a directory's entry names, sorted
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
   show(text)                 show text to the human
-  write_file(path, text)     write a file the CLI produces (the report)
+  write_file(path, text, private=False)
+                             write a file the CLI produces (the report); private: only this
+                             user can read it (0600, in a 0700 directory: the checkpoint)
   post_json(url, body)       POST a JSON text body; returns the HTTP response
   get(url)                   GET a small text (the latest release's version); NetworkError if unreachable
+  env(name)                  an environment variable's value; None when unset
+  terminal()                 the terminal's size when the human is at one (stdin and stdout
+                             a TTY), else None: output is then plain text, no colours or redraws
+  run_tty(argv, env)         run an interactive command on the terminal (gum): it draws on
+                             the terminal and reads keys; only its stdout is captured
+  remove_file(path)          remove a file the CLI wrote itself (the checkpoint); no error if absent
 """
 
 from __future__ import annotations
@@ -55,6 +63,12 @@ class CommandResult:
 
 
 @dataclass(frozen=True)
+class Terminal:
+    width: int
+    height: int
+
+
+@dataclass(frozen=True)
 class HttpResponse:
     status: int
     body: str
@@ -77,11 +91,19 @@ class Host(Protocol):
 
     def show(self, text: str) -> None: ...
 
-    def write_file(self, path: str, text: str) -> None: ...
+    def write_file(self, path: str, text: str, private: bool = False) -> None: ...
 
     def post_json(self, url: str, body: str) -> HttpResponse: ...
 
     def get(self, url: str) -> HttpResponse: ...
+
+    def env(self, name: str) -> str | None: ...
+
+    def terminal(self) -> Terminal | None: ...
+
+    def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult: ...
+
+    def remove_file(self, path: str) -> None: ...
 
 
 class RealHost:
@@ -125,12 +147,55 @@ class RealHost:
         return input(message)
 
     def show(self, text: str) -> None:
-        print(text)
-        sys.stdout.flush()
+        try:
+            print(text)
+            sys.stdout.flush()
+        except OSError:
+            pass  # the terminal is gone (closed window, broken pipe); restoring must still go on
 
-    def write_file(self, path: str, text: str) -> None:
-        with open(path, "w", encoding="utf-8") as f:
+    def write_file(self, path: str, text: str, private: bool = False) -> None:
+        """Write whole or not at all: a checkpoint cut short by a crash must not be half a file."""
+        if os.path.exists(path) and not os.path.isfile(path):  # /dev/stdout, a FIFO
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            return
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, mode=0o700 if private else 0o777, exist_ok=True)
+            if private:
+                os.chmod(directory, 0o700)
+        partial = path + ".partial"
+        if os.path.lexists(partial):
+            os.remove(partial)
+        fd = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600 if private else 0o666)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
+        os.replace(partial, path)
+
+    def remove_file(self, path: str) -> None:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+
+    def env(self, name: str) -> str | None:
+        return os.environ.get(name)
+
+    def terminal(self) -> Terminal | None:
+        if os.environ.get("TERM") == "dumb" or not (sys.stdin.isatty() and sys.stdout.isatty()):
+            return None
+        try:
+            size = os.get_terminal_size(sys.stdout.fileno())
+        except OSError:
+            return None
+        return Terminal(size.columns, size.lines)
+
+    def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
+        try:
+            done = subprocess.run(list(argv), stdout=subprocess.PIPE, text=True, errors="replace", env={**os.environ, **(env or {})})
+        except FileNotFoundError:
+            return CommandResult(127, "", f"{argv[0]}: command not found\n")
+        return CommandResult(done.returncode, done.stdout, "")
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         request = urllib.request.Request(
