@@ -5,7 +5,7 @@
     "version": "0.1.3"
   },
   "consent_version": 3,
-  "catalogue_version": 8,
+  "catalogue_version": 9,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1791,6 +1791,78 @@
         "layer": "asahi",
         "expected": {
           "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "benchmark.opengl",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "already installed: ffmpeg",
+        "skipped: you chose not to install vkmark"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "benchmark.vulkan",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "already installed: ffmpeg",
+        "skipped: you chose not to install vkmark"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "benchmark.h264-decode",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "already installed: ffmpeg",
+        "skipped: you chose not to install vkmark"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "benchmark.hevc-decode",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "already installed: ffmpeg",
+        "skipped: you chose not to install vkmark"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
           "aurora": "asahi"
         }
       }

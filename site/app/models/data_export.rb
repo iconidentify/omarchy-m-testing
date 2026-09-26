@@ -14,6 +14,7 @@ module DataExport
   CHECK_COLUMNS = %w[
     report_id uploaded_at model board soc chip kernel stack omarchy_version
     check_id kind status outcome feature layer expected_asahi expected_aurora expected_omarchy
+    score score_unit score_tool score_suite
   ].freeze
 
   def self.reports = Report.visible.order(:created_at, :id)
@@ -46,7 +47,8 @@ module DataExport
         classification = check["classification"]
         [ report.public_id, report.created_at.utc.iso8601, report.model_name, report.board, report.soc, report.chip, report.kernel,
           report.stack, report.omarchy_version, check["id"], check["kind"], check["status"], classification["outcome"],
-          classification["feature"], classification["layer"], *Catalogue::LAYERS.map { |layer| classification.dig("expected", layer) } ]
+          classification["feature"], classification["layer"], *Catalogue::LAYERS.map { |layer| classification.dig("expected", layer) },
+          *%w[value unit tool suite].map { |field| check.dig("score", field) } ]
       end
     end)
   end

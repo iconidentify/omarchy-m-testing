@@ -91,7 +91,7 @@ class GoldenRunsTest(unittest.TestCase):
         _, _, report = run(M2_MAX)
 
         prefixes = {check["id"].split(".")[0] for check in report["checks"]}
-        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "sleep", "input", "camera", "ports", "power", "cpu"})
+        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "sleep", "input", "camera", "ports", "power", "cpu", "benchmark"})
         humans = {check["id"] for check in report["checks"] if check["kind"] == "human"}
         self.assertEqual(humans, {"display.notch-bar", "display.brightness-steps", "display.cursor",
                                   "audio.speaker-tone", "audio.headphone-detection", "network.bluetooth-pairing",
@@ -190,8 +190,9 @@ class RootChecksTest(unittest.TestCase):
             self.assertIn("passwordless sudo", found[check_id]["evidence"][0])
         self.assertFalse(any(argv[0] == "sudo" for argv in mac.commands_run))
         asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
-        # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions.
-        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")], [ACCEPT_PROMPT])
+        # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions and the
+        # benchmarks' package offer (declined).
+        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")], [ACCEPT_PROMPT, "Install 2 package(s) now? [y/N] "])
         self.assertIn("passwordless sudo", mac.output)
 
     def test_when_mac_check_cant_run_its_checks_are_skipped_with_the_reason(self):

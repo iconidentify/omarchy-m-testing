@@ -58,4 +58,11 @@ module ApplicationHelper
   def uploaded_at(report) = report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC")
 
   def check_section(check_id) = check_id.split(".").first
+
+  # A benchmark score as it reads best: whole points, frames per second to one decimal.
+  def score_words(value)
+    return "–" if value.nil?
+
+    value.to_f == value.to_i ? number_with_delimiter(value.to_i) : number_with_delimiter(value.to_f.round(1))
+  end
 end

@@ -3,8 +3,8 @@
 The omarchy-m-testing.org site and upload API (Rails 8, Postgres).
 
 - `POST /api/v1/reports`: upload a report; it must validate against `../schema/report-v1.schema.json` and use only check ids the feature catalogue knows. Returns `201` with `report_url` and `deletion_url`, `422` with `details` when it doesn't match the schema, uses an outdated schema version or has unknown check ids (both with upgrade instructions), `422` when it isn't signed by its machine's key or its signature doesn't match it, `400` when the body isn't JSON, `429` past `UPLOADS_PER_HOUR` (default 30) uploads an hour from one IP address or `UPLOADS_PER_HOUR_PER_MACHINE` (default 10) from one machine key.
-- Pages: `/` (install and the matrix), `/matrix` (model × stack/version, `?stack=` filters), `/models/:board`, `/features/:id`, `/gaps` (kernel gaps), `/reports`, `/reports/:id` (terminal-style), `/data`.
-- Exports, CC0, visible reports only: `/api/v1/reports.json` (every report as uploaded), `/api/v1/reports.csv` (one row per report), `/api/v1/checks.csv` (one row per check), `/api/v1/matrix.json`.
+- Pages: `/` (install and the matrix), `/matrix` (model × stack/version, `?stack=` filters), `/models/:board`, `/features/:id`, `/gaps` (kernel gaps), `/benchmarks` (benchmark scores per model and stack/version: each machine once, with its latest score, the median per row, compared only within one check, suite and unit; also on each model page and report), `/reports`, `/reports/:id` (terminal-style), `/data`.
+- Exports, CC0, visible reports only: `/api/v1/reports.json` (every report as uploaded), `/api/v1/reports.csv` (one row per report), `/api/v1/checks.csv` (one row per check, with any benchmark score), `/api/v1/matrix.json`, `/api/v1/benchmarks.json`.
 - `GET /install`: the one-line installer, `../installer/install.sh` (override with `INSTALLER_PATH`).
 - `www.` + `CANONICAL_HOST` (default `omarchy-m-testing.org`) redirects to the apex.
 - `GET /reports/:id/deletion?token=...`: the deletion link; deleting removes the report row and with it all its evidence.

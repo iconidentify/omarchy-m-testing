@@ -14,7 +14,7 @@ from typing import Any
 ANNOTATIONS = {"$schema", "$id", "title", "description"}
 KEYWORDS = ANNOTATIONS | {
     "type", "properties", "required", "additionalProperties", "const", "enum",
-    "pattern", "minLength", "maxLength", "minimum", "items", "minItems", "maxItems",
+    "pattern", "minLength", "maxLength", "minimum", "maximum", "items", "minItems", "maxItems",
 }
 
 
@@ -28,6 +28,7 @@ _TYPES = {
     "array": lambda v: isinstance(v, list),
     "string": lambda v: isinstance(v, str),
     "integer": lambda v: _is_number(v) and float(v).is_integer(),
+    "number": _is_number,
     "boolean": lambda v: isinstance(v, bool),
 }
 
@@ -71,6 +72,8 @@ def errors(schema: dict, value: Any, path: str = "$") -> list[str]:
     if _is_number(value):
         if "minimum" in schema and value < schema["minimum"]:
             found.append(f"{path}: below {schema['minimum']}")
+        if "maximum" in schema and value > schema["maximum"]:
+            found.append(f"{path}: above {schema['maximum']}")
 
     if isinstance(value, dict):
         properties = schema.get("properties", {})

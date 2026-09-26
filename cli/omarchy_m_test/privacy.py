@@ -68,7 +68,8 @@ _INVENTORY = {
     "unclaimed": [{"compatible": True, "count": True, "outcome": True, "feature": True, "layer": True}],
     "kernel_config": {"reference": True, "differences": [{"option": True, "asahi": True, "kernel": True}], "omitted": True},
 }
-_CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION}
+_SCORE = {"value": True, "unit": True, "tool": True, "suite": True}
+_CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION, "score": _SCORE}
 REPORT_ALLOWLIST: dict[str, Any] = {
     "schema_version": True,
     "tool": {"name": True, "version": True},

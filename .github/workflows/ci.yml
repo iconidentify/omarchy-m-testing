@@ -55,7 +55,7 @@ jobs:
       - name: Schema is valid draft 2020-12
         run: check-jsonschema --check-metaschema schema/report-v*.schema.json
       - name: Golden reports validate
-        run: check-jsonschema --schemafile schema/report-v1.schema.json schema/golden/*.json schema/golden/signed/*.json
+        run: check-jsonschema --schemafile schema/report-v1.schema.json schema/golden/*.json schema/golden/signed/*.json schema/golden/benchmarks/*.json
 
   site:
     name: Site (Seam B)

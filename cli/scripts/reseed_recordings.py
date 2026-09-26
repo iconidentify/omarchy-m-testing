@@ -7,7 +7,9 @@ recording's hand-written description and source, and the report as the
 golden report. The Seam A tests check the committed recordings and golden
 reports equal what the CLI produces, so run this after changing the corpus,
 the scrubber, the recorded sources, the checks or the catalogue, and review
-the golden diff: the site's Seam B tests post those reports.
+the golden diff: the site's Seam B tests post those reports. It also writes
+the Benchmarks section's golden report (schema/golden/benchmarks/, from the
+recorded M2 at its desktop: tests/test_benchmarks.py).
 
     python3 scripts/reseed_recordings.py
 """
@@ -50,3 +52,7 @@ def reseed(machine: str) -> str:
 if __name__ == "__main__":
     for name in MACHINES:
         print(f"wrote {reseed(name)}")
+    from tests import test_benchmarks  # noqa: E402  (it reads the recordings just written)
+
+    test_benchmarks.regenerate()
+    print(f"wrote {test_benchmarks.GOLDEN}")

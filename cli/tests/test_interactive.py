@@ -346,7 +346,7 @@ class TemporaryPackagesTest(unittest.TestCase):
 
         consent = next(p for p in prompts(host) if p.startswith(INSTALL_PROMPT_START))
         self.assertEqual(consent, "Install 2 package(s) now? [y/N] ")
-        self.assertIn("packages that aren't installed: glmark2 (with libpng12)", host.output)
+        self.assertIn("a package that isn't installed: glmark2 (with libpng12)", host.output)
         self.assertLess(host.commands_run.index(INSTALL), host.commands_run.index(REMOVE))
         self.assertEqual(host.state.installed, MacState().installed)  # mesa was there before and stays
         self.assertFalse(any("mesa" in argv for argv in host.commands_run if argv[:4] == ["sudo", "-n", "pacman", "-R"]))

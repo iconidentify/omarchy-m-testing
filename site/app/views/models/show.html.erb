@@ -32,6 +32,31 @@
   <p class="credit dim">Asahi states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0.</p>
 <% end %>
 
+<% if @benchmarks.any? %>
+  <%= card "benchmarks", id: "benchmarks" do %>
+    <table class="list benchmark-table">
+      <thead><tr><th>Benchmark</th><th>Stack / version</th><th class="score-head">Score</th><th>Machines</th><th>Tool</th></tr></thead>
+      <tbody>
+        <% @benchmarks.each do |benchmark| %>
+          <% benchmark.rows_for_board(@latest.board).each do |row| %>
+            <tr class="score-row" data-benchmark="<%= benchmark.id %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>">
+              <td><a href="<%= benchmarks_path(anchor: "benchmark-#{benchmark.id}") %>"><%= benchmark.name %></a> <span class="dim">suite <%= benchmark.suite %></span></td>
+              <td class="nowrap"><%= row.configuration.label %></td>
+              <td class="score-cell">
+                <span class="score-bar" style="--share: <%= benchmark.best.positive? ? (100.0 * row.median / benchmark.best).round(1) : 0 %>%"></span>
+                <a class="score-value" href="<%= report_path(row.latest.report) %>"><%= score_words(row.median) %></a> <span class="dim"><%= benchmark.unit_words %></span>
+              </td>
+              <td><%= row.machines %></td>
+              <td class="dim nowrap"><%= row.tools.join(", ") %></td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+    <p class="dim">Bars are against the best Mac on the same benchmark. <a href="<%= benchmarks_path %>">Compare every Mac</a>.</p>
+  <% end %>
+<% end %>
+
 <%= card "reports" do %>
   <%= render "shared/report_list", reports: @rows.flat_map(&:reports).sort_by(&:created_at).reverse %>
 <% end %>

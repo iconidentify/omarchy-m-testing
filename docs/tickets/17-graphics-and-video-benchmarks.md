@@ -8,6 +8,6 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] OpenGL and Vulkan short benchmarks and decode throughput, with temporary packages removed afterwards
-- [ ] Scores in the report; per-model/version comparison on the site
-- [ ] Seam A and B tests with recorded benchmark output
+- [x] OpenGL and Vulkan short benchmarks and decode throughput, with temporary packages removed afterwards
+- [x] Scores in the report; per-model/version comparison on the site
+- [x] Seam A and B tests with recorded benchmark output
