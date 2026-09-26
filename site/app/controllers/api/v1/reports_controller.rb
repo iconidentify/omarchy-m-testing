@@ -22,6 +22,9 @@ module Api
           render json: { error: "The report has checks this site doesn't know (feature catalogue v#{Catalogue.version}). Update omarchy-m-test and run it again.",
                          details: unknown.map { |id| "unknown check id #{id}" } },
                  status: :unprocessable_content
+        elsif (problems = ReportEvidence.errors(payload)).any?
+          render json: { error: "The report's evidence must be text and at most 64 KiB.", details: problems },
+                 status: :unprocessable_content
         else
           report = Report.create!(body: payload, schema_version: payload.fetch("schema_version"))
           render json: {

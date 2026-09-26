@@ -1,0 +1,2 @@
+01:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4387 802.11ax Dual Band Wireless LAN Controller [14e4:4433] (rev 07)
+01:00.1 Network controller [0280]: Broadcom Inc. and subsidiaries BRCM4387 Bluetooth Controller [14e4:5f71] (rev 07)

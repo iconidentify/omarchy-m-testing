@@ -1,0 +1,1 @@
+Linux omarchy-m1-pro 7.1.13-1-1-ARCH #1 SMP PREEMPT_DYNAMIC Wed, 09 Sep 2026 09:28:26 +0000 aarch64 GNU/Linux
