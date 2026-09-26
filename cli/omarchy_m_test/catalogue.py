@@ -9,7 +9,7 @@ Outcomes:
   fails             it failed where Aurora (and Omarchy, for integration
                     features) expects it to work; the site upgrades this to a
                     regression only against a verified earlier pass
-  not-in-aurora     Asahi supports it (or it's an Aurora addition) and Aurora doesn't yet
+  not-in-aurora     Asahi supports it, or it's an Aurora addition, and Aurora doesn't yet
   not-in-asahi      Asahi doesn't support it yet, so neither does Aurora
   not-in-omarchy    the kernel supports it but Omarchy's integration doesn't yet
   not-applicable    this Mac doesn't have the hardware
@@ -106,10 +106,13 @@ def _outcome(status: str, layer: str, states: dict | None) -> str:
     # Aurora first: does the kernel Omarchy runs expect this to work?
     if aurora == "supported" or (aurora == "asahi" and asahi in ASAHI_SUPPORTED):
         return "not-in-omarchy" if omarchy_missing else "fails"
+    # An Aurora addition Aurora doesn't claim here is Aurora's to add, whatever Asahi's state.
+    if layer == "aurora":
+        return "not-in-aurora"
     # Then Asahi: Aurora lacks something Asahi has, or Asahi doesn't have it either.
     if asahi in ASAHI_SUPPORTED:
         return "not-in-aurora"
-    if asahi == "unlisted":  # an Aurora addition or an Omarchy feature Asahi doesn't track
+    if asahi == "unlisted":  # an Omarchy feature with no Asahi dependency
         return "not-in-omarchy" if omarchy_missing else "not-in-aurora"
     return "not-in-asahi"
 

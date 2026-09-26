@@ -1366,6 +1366,8 @@
       },
       "models": {
         "j493": {"omarchy": {"status": "absent"}},
+        "j375c": {"omarchy": {"status": "absent"}},
+        "j375d": {"omarchy": {"status": "absent"}},
         "j433": {"omarchy": {"status": "absent"}},
         "j434": {"omarchy": {"status": "absent"}}
       }

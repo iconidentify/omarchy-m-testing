@@ -318,8 +318,8 @@ def update(catalogue: dict, layer: dict[str, dict]) -> dict:
             feature = {"id": fid, "name": found["name"], "layer": "asahi", "chips": {}}
             features.append(feature)
         for chip in list(feature["chips"]):
-            if chip not in found["chips"]:
-                feature["chips"][chip].pop("asahi", None)
+            if chip not in found["chips"]:  # Asahi no longer lists it for this chip
+                del feature["chips"][chip]
         for chip, state in found["chips"].items():
             entry = feature["chips"].setdefault(chip, {})
             entry["asahi"] = state
