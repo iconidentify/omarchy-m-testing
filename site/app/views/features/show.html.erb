@@ -1,0 +1,50 @@
+<% content_for :title, @feature["name"] %>
+<h1><%= @feature["name"] %></h1>
+<p class="subtitle"><span class="layer layer-<%= @feature["layer"] %>"><%= @feature["layer"] %></span> <%= Catalogue::LAYER_WORDS[@feature["layer"]] %><% if @feature["asahi_feature"] %> · builds on <a href="<%= feature_path(@feature["asahi_feature"]) %>"><%= Catalogue.feature_name(@feature["asahi_feature"]) %></a><% end %></p>
+<% if @feature["note"] %><p><%= @feature["note"] %></p><% end %>
+
+<%= card "results" do %>
+  <% if @rows.empty? %>
+    <p class="dim">No report has tested this yet<%= Catalogue.checks_for(@feature["id"]).empty? ? ": no check covers it in this version of omarchy-m-test" : "" %>.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Mac</th><th>Stack / version</th><th></th><th>Machines</th></tr></thead>
+      <tbody>
+        <% @rows.each do |row| %>
+          <% cell = row.cell(@feature["id"]) %>
+          <tr class="result-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>">
+            <td><a href="<%= model_path(row.configuration.board) %>"><%= row.model_name %></a></td>
+            <td><%= row.configuration.label %></td>
+            <%= matrix_cell(cell, feature_id: @feature["id"], link: report_path(cell.reports.first)) %>
+            <td class="summary"><%= cell.summary %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <%= render "shared/legend" %>
+  <% end %>
+  <% if (checks = Catalogue.checks_for(@feature["id"])).any? %>
+    <p class="dim">Tested by <%= safe_join(checks.map { |id| tag.code(id) }, ", ") %>.</p>
+  <% end %>
+<% end %>
+
+<%= card "expected per chip" do %>
+  <table class="list">
+    <thead><tr><th>Chip</th><th>Asahi</th><th>Aurora</th><th>Omarchy</th></tr></thead>
+    <tbody>
+      <% Catalogue.chips.each do |key, chip| %>
+        <% expected = Catalogue.expected(@feature, key) %>
+        <tr id="chip-<%= key %>">
+          <td><%= chip["name"] %></td>
+          <% Catalogue::LAYERS.each do |layer| %>
+            <td class="<%= expected_class(layer, expected&.dig(layer)) %>"><%= expected_words(expected&.dig(layer)) %></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @feature["models"].present? %>
+    <p class="dim">Per board: <%= safe_join(@feature["models"].map { |board, states| "#{board} " + states.map { |layer, state| "#{layer} #{expected_words(state)}" }.join(", ") }, "; ") %>.</p>
+  <% end %>
+  <p class="credit dim"><%= Catalogue.asahi_credit %></p>
+<% end %>

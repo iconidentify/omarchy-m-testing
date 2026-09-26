@@ -12,7 +12,7 @@ class ReportInventoryTest < ActionDispatch::IntegrationTest
   test "the report page lists the hardware no driver claimed, unknown hardware first" do
     upload_and_show "m2-max-image2"
 
-    assert_select "#inventory h2", "Hardware"
+    assert_select "#inventory h2.section-title", "hardware inventory"
     assert_select "#inventory .inventory-summary", /424 hardware nodes: 366 claimed by a driver, 27 with no device of their own, 5 bus or register containers with no driver of their own, 23 disabled, 3 unclaimed\./
     assert_select "#inventory ul.unknown-hardware li", 1
     assert_select "#inventory ul.unknown-hardware li", /apple,t6020-dpaudio \(2 nodes\): unknown hardware/

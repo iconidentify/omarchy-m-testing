@@ -1,0 +1,27 @@
+<% content_for :title, "Features" %>
+<h1>Features</h1>
+<p class="subtitle">Feature catalogue v<%= Catalogue.version %>: what each feature is expected to do per chip, in three layers.</p>
+<% Catalogue::LAYERS.each do |layer| %>
+  <%= card Catalogue::LAYER_WORDS[layer].downcase, id: "layer-#{layer}" do %>
+    <table class="list">
+      <thead><tr><th>Feature</th><th>Checks</th><th>Tested on</th></tr></thead>
+      <tbody>
+        <% @features.fetch(layer, []).each do |feature| %>
+          <% rows = @matrix.rows_for_feature(feature["id"]) %>
+          <tr class="feature-row" id="feature-<%= feature["id"] %>">
+            <td><a href="<%= feature_path(feature["id"]) %>"><%= feature["name"] %></a></td>
+            <td class="dim"><%= Catalogue.checks_for(feature["id"]).size.nonzero? || "–" %></td>
+            <td>
+              <% rows.each do |row| %>
+                <% cell = row.cell(feature["id"]) %>
+                <span class="chip-result <%= cell.css_class %>" title="<%= row.model_name %>, <%= row.configuration.label %>: <%= cell.summary %>"><%= ResultState.glyph(cell.display_state) %></span>
+              <% end %>
+              <% if rows.empty? %><span class="dim">–</span><% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>
+<p class="credit dim"><%= Catalogue.asahi_credit %></p>

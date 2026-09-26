@@ -47,10 +47,10 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
     bad_check_id = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0]["id"] = "Not An Id" }
     unclassified = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0].delete("classification") }
     no_catalogue_version = GoldenReports.json("m2-max-image2").tap { |r| r.delete("catalogue_version") }
-    outdated = GoldenReports.json("m2-max-image2").tap { |r| r["schema_version"] = 0 }
+    newer = GoldenReports.json("m2-max-image2").tap { |r| r["schema_version"] = 2 }
     not_an_object = []
 
-    [ with_serial, bad_check_id, unclassified, no_catalogue_version, outdated, not_an_object ].each do |report|
+    [ with_serial, bad_check_id, unclassified, no_catalogue_version, newer, not_an_object ].each do |report|
       upload report.to_json
       assert_response :unprocessable_content
       assert_match "does not match report schema v1", response.parsed_body["error"]
@@ -125,6 +125,24 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
 
     get path_of(links["report_url"])
     assert_response :not_found
+  end
+
+  test "deleting removes the report and its evidence completely, hidden or not" do
+    links = JSON.parse(upload(GoldenReports.text("m2-max-image2")) && response.body)
+    Report.sole.update!(hidden_at: Time.current)
+    evidence = GoldenReports.json("m2-max-image2")["checks"].find { |check| check["id"] == "setup.first-boot-hardware" }["evidence"].first
+
+    token = Rack::Utils.parse_query(URI(links["deletion_url"]).query)["token"]
+    get path_of(links["deletion_url"])
+    assert_response :success
+    delete path_of(links["report_url"]), params: { token: token }
+
+    assert_response :success
+    assert_select "p", /its evidence have been removed/
+    assert_equal 0, Report.count
+    assert_equal 0, ActiveRecord::Base.connection.select_value("SELECT count(*) FROM reports WHERE body::text LIKE #{ActiveRecord::Base.connection.quote("%#{evidence}%")}")
+    get "/api/v1/checks.csv"
+    assert_not_includes response.body, links["id"]
   end
 
   test "a wrong deletion token deletes nothing" do

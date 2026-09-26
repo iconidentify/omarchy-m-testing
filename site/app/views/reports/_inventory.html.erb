@@ -1,6 +1,6 @@
 <%# The report's hardware inventory: what no driver claimed (unknown hardware first) and the kernel's build options against Asahi's. %>
 <section class="inventory" id="inventory">
-  <h2>Hardware</h2>
+  <h2 class="section-title">hardware inventory</h2>
   <% if (nodes = inventory["nodes"]) %>
     <% unknown, known = Array(inventory["unclaimed"]).partition { |entry| entry["outcome"] == "unknown-hardware" } %>
     <% driver_states = nodes.each_with_object(Hash.new(0)) { |node, counts| counts[node["status"] == "okay" ? node["driver"] : "disabled"] += node["count"] } %>

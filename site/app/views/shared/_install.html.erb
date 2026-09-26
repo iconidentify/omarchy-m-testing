@@ -1,0 +1,5 @@
+<%= card "install", id: "install-card" do %>
+  <p>Run it on Omarchy on your Apple Silicon Mac. It tests the hardware, shows you the exact report, and uploads it only if you say so.</p>
+  <pre class="command"><span class="prompt" aria-hidden="true">$ </span><code id="install">curl -fsSL <%= install_url %> | bash</code></pre>
+  <p class="dim">The installer downloads the latest release of <code>omarchy-m-test</code>, verifies its signature and installs it for your user. Then run <code>omarchy-m-test</code>. <a href="https://github.com/maralcbr/omarchy-m-testing">Source, releases and the release signing key</a>.</p>
+<% end %>

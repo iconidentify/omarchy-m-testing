@@ -1,0 +1,17 @@
+<% content_for :title, "Data" %>
+<h1>Data</h1>
+<%= card "downloads" do %>
+  <p>Everything published here is <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>: use it for anything. Hidden and deleted reports are never included.</p>
+  <table class="list">
+    <tbody>
+      <tr><td><a href="<%= api_v1_reports_path(format: :json) %>">reports.json</a></td><td>every report exactly as uploaded, with its link and upload time</td></tr>
+      <tr><td><a href="<%= api_v1_reports_path(format: :csv) %>">reports.csv</a></td><td>one row per report: Mac, stack, versions and pass/fail/skip counts</td></tr>
+      <tr><td><a href="<%= api_v1_checks_path(format: :csv) %>">checks.csv</a></td><td>one row per check result, with its outcome, feature, layer and expected states</td></tr>
+      <tr><td><a href="<%= api_v1_matrix_path(format: :json) %>">matrix.json</a></td><td>the compatibility matrix, with each cell's agreement per machine</td></tr>
+    </tbody>
+  </table>
+  <p class="dim">The expected Asahi states inside come from the <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature-support tables</a>, CC BY 3.0: credit Asahi Linux when you reuse them.</p>
+<% end %>
+<%= card "api" do %>
+  <p><code>POST <%= api_v1_reports_path %></code> takes a report in <a href="https://github.com/maralcbr/omarchy-m-testing/blob/main/schema/report-v<%= ReportSchema::VERSION %>.schema.json">report schema v<%= ReportSchema::VERSION %></a> and answers with its link and deletion link. Reports in older schemas and unknown check ids are refused with an upgrade message; uploads are limited to <%= Api::V1::ReportsController::UPLOADS_PER_HOUR %> an hour per network.</p>
+<% end %>

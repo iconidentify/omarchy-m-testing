@@ -1,4 +1,6 @@
 <% content_for :title, "Delete report" %>
-<h1>Delete this report?</h1>
-<p>This permanently removes the <%= @report.machine["model"] %> report uploaded <%= @report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC") %>.</p>
-<%= button_to "Delete report", report_path(@report), method: :delete, params: { token: params[:token] } %>
+<%= card "delete report", klass: "narrow" do %>
+  <h1>Delete this report?</h1>
+  <p>This permanently removes the <%= @report.machine["model"] %> report uploaded <%= uploaded_at(@report) %>, with all its evidence. It can't be undone.</p>
+  <%= button_to "Delete report", report_path(@report), method: :delete, params: { token: params[:token] }, class: "button button-danger" %>
+<% end %>
