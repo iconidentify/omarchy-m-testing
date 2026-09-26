@@ -254,6 +254,18 @@ class PresenceTest(unittest.TestCase):
         self.assertNotIn(WIFI_OFF, host.commands_run)
         self.assertIn("skipped: running over SSH", check(host, "test.wifi-rejoin")["evidence"][0])
 
+    def test_without_a_session_id_logind_is_asked_for_the_users_graphical_session(self):
+        # A terminal Omarchy's uwsm started runs outside the login session: no XDG_SESSION_ID.
+        host = self.run_wifi(env={"XDG_SESSION_ID": ""})
+
+        self.assertIn(["loginctl", "show-session", "auto", "--property=Remote", "--property=Seat", "--property=Active"], host.commands_run)
+        self.assertEqual(check(host, "test.wifi-rejoin")["status"], "pass")
+
+    def test_a_session_id_logind_no_longer_knows_falls_back_to_auto(self):
+        host = self.run_wifi(state=MacState(session_ids=("auto",)))
+
+        self.assertEqual(check(host, "test.wifi-rejoin")["status"], "pass")
+
     def test_runs_without_disruptive_sections_never_ask_logind(self):
         host = mac([ENTER, "y"])
         main(ARGS, host, sections=(SPEAKER,))
@@ -299,6 +311,16 @@ class VolumeTest(unittest.TestCase):
         self.assertFalse(any(argv[:2] == ["wpctl", "set-volume"] for argv in host.commands_run))
         self.assertNotIn(TONE_PROMPT, prompts(host))
         self.assertIn("skipped: no default audio output", check(host, "test.tone-heard")["evidence"][-1])
+
+
+    def test_a_volume_that_cant_be_set_skips_the_check_and_is_still_put_back(self):
+        host = mac([ENTER], state=MacState(volume_fails=True))
+
+        main(ARGS, host, sections=(SPEAKER,))
+
+        self.assertNotIn(TONE_PROMPT, prompts(host))
+        self.assertIn("wpctl couldn't set the volume", check(host, "test.tone-heard")["evidence"][-1])
+        self.assertIn(VOLUME_BACK, host.commands_run)
 
 
 class WifiTest(unittest.TestCase):
@@ -406,12 +428,18 @@ class TemporaryPackagesTest(unittest.TestCase):
         class Watches(LiveMac):
             def run(self, argv):
                 if list(argv) == INSTALL:
-                    registered.extend(r["argv"] for r in json.loads(self.written[CHECKPOINT])["restorers"])
+                    registered.extend(r["argv"] + r.get("packages", []) for r in json.loads(self.written[CHECKPOINT])["restorers"])
                 return super().run(argv)
 
         self.run_bench(["y", "y"], cls=Watches)
 
         self.assertEqual(registered, [REMOVE])
+
+    def test_packages_that_would_upgrade_installed_ones_are_not_installed(self):
+        host = self.run_bench([], state=MacState(outdated={"mesa"}, repository={"glmark2": ["mesa", "glmark2"]}))
+
+        self.assertFalse(ran_sudo(host))
+        self.assertIn("would upgrade installed packages (mesa)", check(host, "test.benchmark")["evidence"][-1])
 
     def test_kernel_firmware_and_boot_packages_are_never_installed(self):
         for names in (("linux-aurora",), ("bootpull",)):  # bootpull brings in linux-firmware
@@ -475,7 +503,7 @@ class InterruptionTest(unittest.TestCase):
             main(ARGS, first, sections=(EVERYTHING,))
         left = first.written[CHECKPOINT]
         saved = json.loads(left)["restorers"]
-        self.assertEqual([r["argv"] for r in saved], [VOLUME_BACK, WIFI_ON, REMOVE])
+        self.assertEqual([r["argv"] + r.get("packages", []) for r in saved], [VOLUME_BACK, WIFI_ON, REMOVE])
         self.assertEqual(saved[-1]["sudo"], True)
         self.assertNotEqual(first.state, MacState())
 
@@ -486,6 +514,34 @@ class InterruptionTest(unittest.TestCase):
         self.assertEqual(second.commands_run[-3:], [REMOVE, WIFI_ON, VOLUME_BACK])
         self.assertEqual(second.state, MacState())
         self.assertIn("the temporary packages libpng12 glmark2", second.output)
+
+    def test_a_run_killed_before_the_install_finished_removes_only_what_arrived(self):
+        for arrived in (0, 1):
+            with self.subTest(arrived=arrived):
+                class KilledInstalling(LiveMac):
+                    """The process dies while pacman installs: nothing after that reaches the Mac."""
+                    dead = False
+
+                    def run(self, argv):
+                        if self.dead:
+                            raise SystemExit(137)
+                        if list(argv) == INSTALL:
+                            self.dead = True
+                            self.state.installed.update(["libpng12", "glmark2"][:arrived])
+                            raise SystemExit(137)
+                        return super().run(argv)
+
+                first = mac([ENTER, "y"], cls=KilledInstalling)
+                with self.assertRaises(SystemExit):
+                    main(ARGS, first, sections=(BENCH,))
+
+                second = mac(["n"], state=first.state.copy(), checkpoint=first.written[CHECKPOINT])
+                self.assertEqual(main(ARGS, second, sections=(BENCH,)), 1)
+
+                removals = [argv for argv in second.commands_run if argv[:4] == ["sudo", "-n", "pacman", "-R"]]
+                self.assertEqual(removals, [["sudo", "-n", "pacman", "-R", "--noconfirm", "libpng12"]] if arrived else [])
+                self.assertEqual(second.state.installed, MacState().installed)
+                self.assertNotIn("Couldn't undo", second.output)
 
 
 # -- what the tool never does ------------------------------------------------------
@@ -512,6 +568,8 @@ FORBIDDEN = (
     ["sudo", "-n", "pacman", "-S", "--noconfirm", "linux-aurora"],
     ["sudo", "-n", "pacman", "-R", "--noconfirm", "m1n1"],
     ["sudo", "-n", "pacman", "-U", "/tmp/linux.pkg.tar.zst"],
+    ["sh", "-c", "echo b > /proc/sysrq-trigger"],
+    ["sudo", "-n", "tee", "/proc/sysrq-trigger"],
 )
 FORBIDDEN_WRITES = ("/boot/limine.conf", "/efi/EFI/BOOT/BOOTAA64.EFI", "/etc/crypttab", "/proc/sysrq-trigger", "/dev/nvme0n1")
 

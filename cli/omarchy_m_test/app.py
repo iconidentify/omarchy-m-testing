@@ -241,7 +241,7 @@ def _report_failed_restores(host: Host, changes: Changes) -> None:
     for restorer, reason in changes.take_failures():
         host.show(
             f"Couldn't undo: {restorer.description} ({reason or 'it failed'}). "
-            f"To put it back yourself, run: {' '.join(restorer.argv)}"
+            f"To put it back yourself, run: {' '.join(restorer.command)}"
         )
 
 

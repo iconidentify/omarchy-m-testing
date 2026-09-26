@@ -63,9 +63,13 @@ def set_volume(ctx: Context, level: float) -> str | None:
     before = read_volume(ctx)
     if before is None:
         return "no default audio output (wpctl found no sink)"
-    ctx.change("the speaker volume", ["wpctl", "set-volume", before.node, f"{level:.2f}"], ["wpctl", "set-volume", before.node, before.level])
+    changed = ctx.change("the speaker volume", ["wpctl", "set-volume", before.node, f"{level:.2f}"], ["wpctl", "set-volume", before.node, before.level])
+    if changed.returncode != 0:
+        return f"wpctl couldn't set the volume ({(changed.stderr or changed.stdout).strip() or changed.returncode})"
     if before.muted:
-        ctx.change("the speaker mute", ["wpctl", "set-mute", before.node, "0"], ["wpctl", "set-mute", before.node, "1"])
+        unmuted = ctx.change("the speaker mute", ["wpctl", "set-mute", before.node, "0"], ["wpctl", "set-mute", before.node, "1"])
+        if unmuted.returncode != 0:
+            return f"wpctl couldn't unmute the speaker ({(unmuted.stderr or unmuted.stdout).strip() or unmuted.returncode})"
     return None
 
 

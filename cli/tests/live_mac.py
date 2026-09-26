@@ -65,8 +65,11 @@ class MacState:
         "bootpull": ["linux-firmware", "bootpull"],
     })
     install_fails_after: int | None = None  # installs only the first N packages, then fails
+    outdated: set[str] = field(default_factory=set)  # installed, but a dependency needs a newer one (pacman -Sp lists them)
+    volume_fails: bool = False
     sudo_cached: bool = True
     session: dict[str, str] | None = field(default_factory=lambda: {"Remote": "no", "Seat": "seat0", "Active": "yes"})
+    session_ids: tuple[str, ...] = ("2", "auto")  # the ids logind answers for
 
     def copy(self) -> "MacState":
         return copy.deepcopy(self)
@@ -112,6 +115,8 @@ class LiveMac(RecordedHost):
         if argv == ["wpctl", "get-volume", NODE]:
             return CommandResult(0, f"Volume: {s.volume}{' [MUTED]' if s.muted else ''}\n", "")
         if argv[:3] == ["wpctl", "set-volume", NODE]:
+            if s.volume_fails:
+                return CommandResult(1, "", "Node not found\n")
             s.volume = argv[3]
             return ok
         if argv[:3] == ["wpctl", "set-mute", NODE]:
@@ -129,9 +134,9 @@ class LiveMac(RecordedHost):
         if argv == ["sudo", "-n", "true"]:
             return ok if s.sudo_cached else CommandResult(1, "", "sudo: a password is required\n")
         recorded = any(entry["argv"] == argv for entry in self.recording.get("commands", []))
-        if argv[:2] == ["pacman", "-Q"] and len(argv) > 2 and not recorded:  # the stack query stays as recorded
+        if argv[1:2] in (["-Q"], ["-Qq"]) and argv[0] == "pacman" and len(argv) > 2 and not recorded:  # the stack query stays as recorded
             names = argv[2:]
-            found = "".join(f"{n} 1.0-1\n" for n in names if n in s.installed)
+            found = "".join(f"{n}\n" if argv[1] == "-Qq" else f"{n} 1.0-1\n" for n in names if n in s.installed)
             missing = "".join(f"error: package '{n}' was not found\n" for n in names if n not in s.installed)
             return CommandResult(1 if missing else 0, found, missing)
         if argv[:5] == ["pacman", "-Sp", "--needed", "--print-format", "%n"]:
@@ -139,7 +144,7 @@ class LiveMac(RecordedHost):
             for name in argv[5:]:
                 if name not in s.repository:
                     return CommandResult(1, "", f"error: target not found: {name}\n")
-                plan += [p for p in s.repository[name] if p not in s.installed and p not in plan]
+                plan += [p for p in s.repository[name] if (p not in s.installed or p in s.outdated) and p not in plan]
             return CommandResult(0, "".join(p + "\n" for p in plan), "")
         if argv[:4] == ["sudo", "-n", "pacman", "-S"]:
             if not s.sudo_cached:
@@ -160,7 +165,7 @@ class LiveMac(RecordedHost):
             s.installed.difference_update(names)
             return ok
         if argv[:2] == ["loginctl", "show-session"]:
-            if s.session is None:
+            if s.session is None or argv[2] not in s.session_ids:
                 return CommandResult(1, "", "Failed to get session: No session\n")
             return CommandResult(0, "".join(f"{k}={v}\n" for k, v in s.session.items()), "")
         return None

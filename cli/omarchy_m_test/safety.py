@@ -26,7 +26,10 @@ Refused, after unwrapping sudo, env, timeout and similar launchers (and in
     initramfs tools: their hooks rewrite /boot).
 
 Writes are refused under PROTECTED_PATHS, to /proc/sysrq-trigger and to
-devices (/dev, except the standard streams).
+devices (/dev, except the standard streams), whether through the host's
+write_file, a file tool's argument or a `sh -c` redirection. Bundled
+scripts (run_bundled) are the tool's own, reviewed with it, and not
+inspected command by command.
 """
 
 from __future__ import annotations
@@ -119,6 +122,10 @@ def refusal(argv: Sequence[str]) -> str | None:
 
     if program in _SHELLS and "-c" in args[:-1]:
         script = args[args.index("-c") + 1]
+        for target in re.findall(r">>?\s*([^\s;&|()]+)", script):
+            reason = write_refusal(target)
+            if reason:
+                return reason
         for command in re.split(r"[;&|\n()`]+|\$\(", script):
             reason = refusal(command.split())
             if reason:
@@ -148,8 +155,11 @@ def refusal(argv: Sequence[str]) -> str | None:
     if program == "pacman":
         return _pacman(args)
 
-    if program in _FILE_TOOLS and any(protected(a.split("=", 1)[-1]) for a in args if "/" in a):
-        return "it never touches disk encryption, boot files or disks"
+    if program in _FILE_TOOLS:
+        for arg in args:
+            reason = write_refusal(arg.split("=", 1)[-1]) if "/" in arg else None
+            if reason:
+                return reason
     return None
 
 

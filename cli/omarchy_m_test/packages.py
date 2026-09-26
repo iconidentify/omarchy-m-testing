@@ -18,8 +18,11 @@ What happens:
   4. sudo: its cached credentials, or at a terminal `sudo -v`, which asks
      for the password there (the human is at the Mac, running the tool).
      Off a terminal without cached credentials the checks are skipped.
-  5. The restorer (`sudo -n pacman -R --noconfirm` exactly that list) is
-     registered, then `sudo -n pacman -S --needed --noconfirm --asdeps` runs.
+     If any of them is installed already (a dependency needs a newer
+     version: an upgrade), nothing is installed.
+  5. The restorer (`sudo -n pacman -R --noconfirm` exactly that list, those
+     still installed when it runs) is registered, then
+     `sudo -n pacman -S --needed --noconfirm --asdeps` runs.
      --asdeps: should removing them ever fail, they are orphans pacman
      offers to clean up, not packages the user seems to have chosen.
   6. What is actually installed afterwards is checked with pacman, and the
@@ -47,8 +50,7 @@ def install_command(names: Sequence[str]) -> list[str]:
     return ["sudo", "-n", "pacman", "-S", "--needed", "--noconfirm", "--asdeps", *names]
 
 
-def remove_command(names: Sequence[str]) -> list[str]:
-    return ["sudo", "-n", "pacman", "-R", "--noconfirm", *names]
+REMOVE = ("sudo", "-n", "pacman", "-R", "--noconfirm")  # + the packages still installed (session.py)
 
 
 @dataclass(frozen=True)
@@ -102,6 +104,10 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     boot = [name for name in plan if safety.is_boot_package(name)]
     if boot:
         return Temporary(skipped=f"installing {' '.join(missing)} would bring in boot packages ({' '.join(boot)})", already=kept)
+    upgraded = sorted(installed(ctx, plan))
+    if upgraded:  # a dependency needs a newer version of something installed: that's an upgrade, not a test package
+        return Temporary(skipped=f"installing {' '.join(missing)} would upgrade installed packages ({' '.join(upgraded)}); update the system first",
+                         already=kept)
 
     ui = ctx.ui or Ui(ctx.host)
     extra = [name for name in plan if name not in missing]
@@ -117,14 +123,11 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     if not _sudo(ctx):
         return Temporary(skipped="installing test packages needs sudo, and it wasn't given", already=kept)
 
-    restorer = ctx.changes.register(f"the temporary packages {' '.join(plan)}", remove_command(plan), sudo=True)
+    restorer = ctx.changes.register(f"the temporary packages {' '.join(plan)}", REMOVE, sudo=True, packages=plan)
     done = ctx.host.run(install_command(missing))
     present = installed(ctx, plan)
     actual = tuple(name for name in plan if name in present)
-    ctx.changes.replace(
-        restorer,
-        Restorer(f"the temporary packages {' '.join(actual)}", tuple(remove_command(actual)), True) if actual else None,
-    )
+    ctx.changes.replace(restorer, Restorer(f"the temporary packages {' '.join(actual)}", REMOVE, True, actual) if actual else None)
     if done.returncode != 0 or any(name not in present for name in missing):
         problem = (done.stderr or done.stdout).strip().splitlines()
         return Temporary(skipped=f"pacman couldn't install {' '.join(missing)} ({problem[-1] if problem else done.returncode})",

@@ -12,7 +12,10 @@ checkpoint too, so a run killed outright (power loss, a closed terminal
 before the signal handler ran) has them run by the next run, before anything
 else. A restorer that needs root (sudo=True: removing temporary packages)
 runs `sudo -n`; if sudo's cached credentials ran out and the human is at a
-terminal, `sudo -v` asks for the password there first. changes.py and
+terminal, `sudo -v` asks for the password there first. A restorer that
+removes packages lists them (packages=...): only those pacman still has
+installed are removed, so a run killed before or during the install doesn't
+leave a removal that fails on the ones that never arrived. changes.py and
 packages.py build the restorers for volume, Wi-Fi and temporary packages.
 
 Disruptive sections (disruptive=True: they could cut the connection or the
@@ -51,6 +54,11 @@ class Restorer:
     description: str
     argv: tuple[str, ...]
     sudo: bool = False  # argv starts with `sudo -n`; the password may be asked for first
+    packages: tuple[str, ...] = ()  # appended to argv, those still installed only
+
+    @property
+    def command(self) -> tuple[str, ...]:
+        return self.argv + self.packages
 
 SUDO_CACHED = ["sudo", "-n", "true"]
 SUDO_ASK = ["sudo", "-v"]
@@ -70,8 +78,8 @@ class Changes:
         self.register(description, restore)
         return (host or self.host).run(list(change))
 
-    def register(self, description: str, restore: Sequence[str], sudo: bool = False) -> Restorer:
-        restorer = Restorer(description, tuple(restore), sudo)
+    def register(self, description: str, restore: Sequence[str], sudo: bool = False, packages: Sequence[str] = ()) -> Restorer:
+        restorer = Restorer(description, tuple(restore), sudo, tuple(packages))
         self.pending.append(restorer)
         self.persist()
         return restorer
@@ -98,10 +106,11 @@ class Changes:
         while self.pending:
             restorer = self.pending[-1]
             try:
-                if restorer.sudo and not asked:
+                argv = self._command(restorer)
+                if argv and restorer.sudo and not asked:
                     asked = True
                     self._authorise()
-                result = self.host.run(list(restorer.argv))
+                result = self.host.run(argv) if argv else CommandResult(0, "", "")
             except Exception:
                 return
             self.pending.pop()
@@ -111,6 +120,14 @@ class Changes:
                 self.persist()
             except Exception:
                 pass  # a checkpoint that can't be written mustn't stop the rest being put back
+
+    def _command(self, restorer: Restorer) -> list[str]:
+        """What to run: argv, plus those of its packages still installed; nothing when none are."""
+        if not restorer.packages:
+            return list(restorer.argv)
+        listed = self.host.run(["pacman", "-Qq", *restorer.packages]).stdout.split()
+        present = [name for name in restorer.packages if name in listed]
+        return [*restorer.argv, *present] if present else []
 
     def _authorise(self) -> None:
         """Make sure `sudo -n` works: ask for the password at the terminal if sudo forgot it."""
@@ -182,7 +199,10 @@ class State:
             "done": self.done,
             "shared": self.shared,
             "restorers": [
-                {"description": r.description, "argv": list(r.argv), **({"sudo": True} if r.sudo else {})}
+                {
+                    "description": r.description, "argv": list(r.argv),
+                    **({"sudo": True} if r.sudo else {}), **({"packages": list(r.packages)} if r.packages else {}),
+                }
                 for r in self.restorers
             ],
         }, indent=2, ensure_ascii=False) + "\n"
@@ -194,7 +214,10 @@ class State:
             if data.get("checkpoint_version") != CHECKPOINT_VERSION:
                 return None
             restorers = [
-                Restorer(str(r["description"]), tuple(str(a) for a in r["argv"]), r.get("sudo") is True)
+                Restorer(
+                    str(r["description"]), tuple(str(a) for a in r["argv"]), r.get("sudo") is True,
+                    tuple(str(p) for p in r.get("packages", [])),
+                )
                 for r in data.get("restorers", [])
             ]
             done = {str(k): list(v) for k, v in data.get("done", {}).items()}

@@ -9,8 +9,11 @@ with the reason, when:
   - there is no local seat: logind doesn't place the session on a seat, or
     the session isn't the active one there, or logind can't be asked.
 
-logind is asked about the run's own session (XDG_SESSION_ID, else "self"):
-`loginctl show-session ID --property=Remote --property=Seat --property=Active`.
+logind is asked about the run's own session:
+`loginctl show-session ID --property=Remote --property=Seat --property=Active`
+with ID XDG_SESSION_ID, else (or if logind no longer knows it) "auto": the
+caller's session, or, for a process outside any session such as a terminal
+Omarchy's uwsm started as a systemd user unit, the user's graphical session.
 The helpers that make disruptive changes (changes.py) check this again
 themselves, so a section that forgot to say it's disruptive still can't cut
 an SSH connection.
@@ -50,9 +53,13 @@ class Presence:
 
 def detect(host: Host) -> Presence:
     ssh = any(host.env(name) for name in SSH_VARIABLES)
-    session = host.env("XDG_SESSION_ID") or "self"
-    answer = host.run(session_query(session))
-    if answer.returncode != 0:
+    sessions = list(dict.fromkeys(s for s in (host.env("XDG_SESSION_ID"), "auto") if s))
+    answer = None
+    for session in sessions:
+        answer = host.run(session_query(session))
+        if answer.returncode == 0:
+            break
+    if answer is None or answer.returncode != 0:
         return Presence(ssh, False, "logind doesn't know this session")
     properties = dict(line.partition("=")[::2] for line in answer.stdout.splitlines() if "=" in line)
     if properties.get("Remote") == "yes":
