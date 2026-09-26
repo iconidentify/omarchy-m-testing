@@ -82,7 +82,7 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
 
     assert_select "li#check-system\\.identity .outcome.outcome-works", "works"
     assert_select "li#check-system\\.identity .feature", "Device tree, asahi layer"
-    assert_select "dd", "feature catalogue v1"
+    assert_select "dd", "feature catalogue v#{GoldenReports.json("m2-max-image2").fetch("catalogue_version")}"
     assert_select ".credit", /CC BY 3\.0/
   end
 

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Regenerate tests/recordings/<machine>.json from the evidence corpus.
+"""Regenerate tests/recordings/<machine>.json and schema/golden/<machine>.json from the evidence corpus.
 
 Runs the whole CLI in record mode (--dry-run --record) against each corpus
 machine in tests/corpus/ and saves what record mode wrote, keeping the
-recording's hand-written description and source. The Seam A tests check the
-committed recordings equal what record mode produces, so run this after
-changing the corpus, the scrubber or the recorded sources.
+recording's hand-written description and source, and the report as the
+golden report. The Seam A tests check the committed recordings and golden
+reports equal what the CLI produces, so run this after changing the corpus,
+the scrubber, the recorded sources, the checks or the catalogue, and review
+the golden diff: the site's Seam B tests post those reports.
 
     python3 scripts/reseed_recordings.py
 """
@@ -21,6 +23,8 @@ from omarchy_m_test.app import main  # noqa: E402
 from tests.corpus import MACHINES, raw_host, raw_recording, seeded_recording_path  # noqa: E402
 
 OUT = "recording.json"
+REPORT = "omarchy-m-test-report.json"
+GOLDEN = os.path.join(os.path.dirname(CLI), "schema", "golden")
 
 
 def reseed(machine: str) -> str:
@@ -36,6 +40,8 @@ def reseed(machine: str) -> str:
     recording["source"] = f"omarchy-m-test --record against tests/corpus/{machine}/ (scrubbed). {raw['source']}"
     with open(path, "w", encoding="utf-8") as f:
         f.write(json.dumps(recording, indent=2, ensure_ascii=False) + "\n")
+    with open(os.path.join(GOLDEN, f"{machine}.json"), "w", encoding="utf-8") as f:
+        f.write(host.written[REPORT])
     return path
 
 

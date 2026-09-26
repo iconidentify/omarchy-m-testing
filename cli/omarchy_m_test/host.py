@@ -8,6 +8,8 @@ what a real Mac answered.
 
 Operations:
   run(argv)                  run a command (no shell), capture its output
+  run_bundled(name, args)    run one of the tool's own bundled scripts (bundled.py),
+                             e.g. omarchy-mac's mac-check; recorded as bundled_argv()
   read_file(path)            read a file's bytes; FileNotFoundError if absent
   list_dir(path)             list a directory's entry names, sorted
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
@@ -28,10 +30,21 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
+from . import bundled
+
 COMMAND_TIMEOUT_SECONDS = 60
+# Bundled check scripts run many commands (mac-check's boot check rebuilds and
+# compares the m1n1 image), so they get longer.
+BUNDLED_TIMEOUT_SECONDS = 300
 HTTP_TIMEOUT_SECONDS = 30
 # GETs only look up the latest release; a slow or absent network must not hold up a run.
 GET_TIMEOUT_SECONDS = 5
+BUNDLED_PREFIX = "bundled:"
+
+
+def bundled_argv(name: str, args: Sequence[str] = ()) -> list[str]:
+    """How a bundled script's run appears in a recording: ["bundled:mac-check", *args]."""
+    return [BUNDLED_PREFIX + name, *args]
 
 
 @dataclass(frozen=True)
@@ -54,6 +67,8 @@ class NetworkError(Exception):
 class Host(Protocol):
     def run(self, argv: Sequence[str]) -> CommandResult: ...
 
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult: ...
+
     def read_file(self, path: str) -> bytes: ...
 
     def list_dir(self, path: str) -> list[str]: ...
@@ -73,19 +88,30 @@ class RealHost:
     """The host backed by this machine, its terminal and the network."""
 
     def run(self, argv: Sequence[str]) -> CommandResult:
+        return self._run(list(argv), COMMAND_TIMEOUT_SECONDS)
+
+    def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
+        try:
+            path = bundled.script_path(name)
+        except FileNotFoundError as missing:
+            return CommandResult(127, "", f"{missing}\n")
+        return self._run(["bash", path, *args], BUNDLED_TIMEOUT_SECONDS, name)
+
+    def _run(self, argv: list[str], timeout: int, name: str | None = None) -> CommandResult:
+        name = name or argv[0]
         try:
             done = subprocess.run(
-                list(argv),
+                argv,
                 capture_output=True,
                 text=True,
                 errors="replace",
-                timeout=COMMAND_TIMEOUT_SECONDS,
+                timeout=timeout,
                 stdin=subprocess.DEVNULL,
             )
         except FileNotFoundError:
-            return CommandResult(127, "", f"{argv[0]}: command not found\n")
+            return CommandResult(127, "", f"{name}: command not found\n")
         except subprocess.TimeoutExpired:
-            return CommandResult(124, "", f"{argv[0]}: timed out after {COMMAND_TIMEOUT_SECONDS}s\n")
+            return CommandResult(124, "", f"{name}: timed out after {timeout}s\n")
         return CommandResult(done.returncode, done.stdout, done.stderr)
 
     def read_file(self, path: str) -> bytes:

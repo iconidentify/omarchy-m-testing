@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 1,
+  "catalogue_version": 2,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -38,7 +38,40 @@
     "unknown-hardware": "unknown hardware",
     "not-tested": "not tested"
   },
-  "checks": {"system.identity": "devicetree"},
+  "checks": {
+    "system.identity": "devicetree",
+    "boot.kernel-package": "boot-chain",
+    "boot.chain": "boot-chain",
+    "boot.files": "boot-chain",
+    "boot.encryption": "disk-encryption",
+    "packages.repositories": "package-repositories",
+    "packages.kernel-updates": "package-repositories",
+    "packages.hardware": "first-boot-hardware-setup",
+    "setup.first-boot-hardware": "first-boot-hardware-setup",
+    "setup.vendor-firmware": "vendor-firmware",
+    "system.failed-units": "system-services",
+    "system.snapshots": "snapshots",
+    "gpu.driver": "gpu",
+    "gpu.vulkan": "gpu",
+    "gpu.opengl": "gpu",
+    "display.outputs": "main-display",
+    "display.controller": "dcp",
+    "display.backlight": "brightness",
+    "display.notch-strip": "notch-bar",
+    "audio.sound-cards": "mca",
+    "audio.default-sink": "speakers",
+    "audio.speaker-dsp": "speakers",
+    "audio.speaker-protection": "speaker-protection",
+    "audio.speaker-amps-unlocked": "speaker-protection",
+    "audio.microphone-mapping": "mic-mapping",
+    "network.wifi": "wifi",
+    "network.wifi-backend": "iwd-wifi-backend",
+    "network.bluetooth": "bluetooth",
+    "input.ambient-light": "aop",
+    "input.auto-keyboard-light": "auto-keyboard-light",
+    "power.battery": "battery-info",
+    "cpu.frequency-scaling": "cpufreq"
+  },
   "features": [
     {
       "id": "dcp",
@@ -1472,6 +1505,152 @@
         "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
         "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
         "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "boot-chain",
+      "name": "Boot chain",
+      "layer": "omarchy",
+      "note": "The installed kernel package is the running one, and omarchy-mac's boot check finds m1n1, U-Boot and Limine (or GRUB) and their boot files as installed.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "disk-encryption",
+      "name": "Disk encryption",
+      "layer": "omarchy",
+      "note": "The root filesystem is on a LUKS volume the boot chain unlocked.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "package-repositories",
+      "name": "Package repositories",
+      "layer": "omarchy",
+      "note": "pacman is configured with the repositories the Mac needs, and one of them carries the running kernel's package.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "vendor-firmware",
+      "name": "Vendor firmware",
+      "layer": "omarchy",
+      "note": "omarchy-vendor-firmware.service installs the Apple firmware copied from macOS in each boot.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "system-services",
+      "name": "System services",
+      "layer": "omarchy",
+      "note": "No system or user unit has failed.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "snapshots",
+      "name": "Snapshots",
+      "layer": "omarchy",
+      "note": "/.snapshots is a btrfs subvolume snapper keeps snapshots in.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "iwd-wifi-backend",
+      "name": "iwd Wi-Fi backend",
+      "layer": "omarchy",
+      "asahi_feature": "wifi",
+      "note": "NetworkManager drives the Broadcom Wi-Fi through iwd.",
+      "chips": {
+        "m1": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "supported", "version": "7.1.12"}, "omarchy": {"status": "supported"}},
+        "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      }
+    },
+    {
+      "id": "mic-mapping",
+      "name": "Microphone mapping",
+      "layer": "omarchy",
+      "asahi_feature": "microphones",
+      "note": "omarchy-mac's omarchy-asahi-mic.service maps the Asahi DSP microphone array to a stereo default source.",
+      "chips": {
+        "m1": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m1-pro-max-ultra": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m2": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
+        "m2-pro-max-ultra": {"aurora": {"status": "asahi"}, "omarchy": {"status": "supported"}},
         "m3": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},

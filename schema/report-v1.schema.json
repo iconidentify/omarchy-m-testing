@@ -5,7 +5,7 @@
   "description": "The report the omarchy-m-test CLI produces and the site's /api/v1 upload accepts. Shared by cli/ and site/; golden reports in schema/golden/ must validate against it. Only allowlisted, privacy-safe fields are permitted, so every object rejects unknown properties.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "tool", "consent_version", "catalogue_version", "machine", "checks"],
+  "required": ["schema_version", "tool", "consent_version", "catalogue_version", "machine", "system", "checks"],
   "properties": {
     "schema_version": {
       "description": "Report schema version. Bumped on any incompatible change.",
@@ -42,6 +42,33 @@
         "chip": { "description": "Marketing chip name for the SoC, e.g. \"M2 Max\"; \"unknown\" when the SoC isn't known yet.", "type": "string", "pattern": "^(M[0-9]+( Pro| Max| Ultra)?|unknown)$" },
         "arch": { "const": "aarch64" },
         "kernel": { "description": "Kernel release (uname -r).", "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "system": {
+      "description": "What the Mac runs: package names and versions, the os-release ID and the kinds of block devices under the root filesystem; never device names, UUIDs or key slots.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stack", "distro", "boot_loader", "encryption", "packages"],
+      "properties": {
+        "stack": { "description": "converged (the omarchy-mac or omarchy package), mx-mac (the fork's omarchy-dev without omarchy-mac), legacy-omarchy-mac (no Omarchy package, but omarchy-mac-keyring or a checkout), or reference for another distro.", "enum": ["converged", "mx-mac", "legacy-omarchy-mac", "reference"] },
+        "distro": { "description": "os-release ID, e.g. \"omarchy\" or \"fedora\"; \"unknown\" without one.", "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,39}$" },
+        "boot_loader": { "enum": ["limine", "grub", "unknown"] },
+        "encryption": { "description": "Whether the root filesystem is on an encrypted volume.", "enum": ["on", "off", "unknown"] },
+        "candidate_set": { "description": "The candidate set a candidate image was built from: the candidate_set of the image's target record (image/target or, after first boot, image/target.booted), else of the factory seal. Absent without a target record.", "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "packages": {
+          "description": "Installed versions of the stack, boot and hardware packages omarchy-m-test asks pacman about.",
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "version"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9+_.@-]{0,63}$" },
+              "version": { "type": "string", "pattern": "^[0-9A-Za-z.:+~_-]{1,100}$" }
+            }
+          }
+        }
       }
     },
     "checks": {
