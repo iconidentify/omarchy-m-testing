@@ -5,7 +5,8 @@
 class TesterBinding < ApplicationRecord
   normalizes :github_login, with: ->(login) { login.to_s.downcase }
   validates :machine_id, presence: true, uniqueness: true
-  validates :github_login, :github_id, presence: true
+  validates :github_login, format: { with: Tester::LOGIN }
+  validates :github_id, presence: true
 
   def self.bind!(machine_id:, identity:)
     binding = find_or_initialize_by(machine_id:)

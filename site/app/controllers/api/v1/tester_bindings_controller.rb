@@ -8,7 +8,9 @@ module Api
     #
     # GitHub confirms the token was issued by this site's OAuth app and names
     # its user; the machine is bound to that handle and the token is revoked.
-    # The token is never stored.
+    # The token is never stored. An allowlisted handle is pinned to the GitHub
+    # account that first signs in with it: GitHub hands out renamed handles
+    # again, and a new owner of the handle can't sign in as the tester.
     class TesterBindingsController < ActionController::API
       include ClientIp
 
@@ -21,6 +23,7 @@ module Api
 
       def create
         return refuse("Tester sign-in isn't set up on this site yet.", :service_unavailable) unless Github.configured?
+        # A chunked sign-in's length is its body's (ActionDispatch::Request#content_length).
         return refuse("The sign-in is larger than #{MAX_BODY_BYTES / 1.kilobyte} KiB.", :content_too_large) if request.content_length.to_i > MAX_BODY_BYTES
 
         payload = JSON.parse(request.raw_post)
@@ -29,8 +32,13 @@ module Api
         signature = MachineSignature.verify!(payload, namespace: MachineSignature::TESTER_NAMESPACE)
         identity = Github.client.app_token_user(payload["github_token"])
         Github.client.revoke(payload["github_token"])
+        if (listed = Tester.find_by(login: identity.login.downcase)) && !listed.account?(identity.id)
+          return refuse("@#{identity.login} is a different GitHub account from the tester the admin added under that handle, so it can't sign in as that tester.", :forbidden)
+        end
+
         TesterBinding.bind!(machine_id: signature.machine_id, identity:)
-        tester = Tester.allowlisted?(identity.login)
+        listed&.pin!(identity.id)
+        tester = listed.present?
         render json: {
           login: identity.login,
           tester:,

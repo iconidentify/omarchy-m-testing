@@ -14,5 +14,9 @@ class Tester < ApplicationRecord
 
   def bindings = TesterBinding.where(github_login: login)
 
+  # The GitHub account this handle is pinned to: the first to sign in with it.
+  def account?(id) = github_id.nil? || github_id == id
+  def pin!(id) = github_id.nil? && update!(github_id: id)
+
   def to_param = login
 end

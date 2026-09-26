@@ -117,6 +117,27 @@ class TesterSignInTest < ActionDispatch::IntegrationTest
     assert_equal "maralcbr", Report.sole.tester_login
   end
 
+  test "an allowlisted handle is pinned to the first GitHub account that signs in with it" do
+    sign_in_tester
+    assert_equal 4242, Tester.find_by!(login: "maralcbr").github_id
+
+    github.issue(GoldenSignIn::TOKEN, "maralcbr", id: 999) # the handle, renamed away and registered by someone else
+    body = sign_in_tester
+    assert_response :forbidden
+    assert_match "a different GitHub account from the tester the admin added", body["error"]
+    assert_equal 4242, TesterBinding.sole.github_id
+  end
+
+  test "an oversized sign-in is refused, also when sent chunked" do
+    # Rack::Test always sets a Content-Length, so this goes to the app itself, as a chunked upload arrives.
+    env = Rack::MockRequest.env_for("/api/v1/tester_bindings", method: "POST", input: GoldenSignIn.text + (" " * 9.kilobytes),
+                                    "CONTENT_TYPE" => "application/json", "HTTP_TRANSFER_ENCODING" => "chunked", "REMOTE_ADDR" => "10.0.0.1")
+    env.delete("CONTENT_LENGTH")
+    status, = Rails.application.call(env)
+    assert_equal 413, status
+    assert_equal 0, TesterBinding.count
+  end
+
   test "sign-ins are rate-limited per network" do
     Api::V1::TesterBindingsController::PER_HOUR.times { sign_in_tester "{" }
     sign_in_tester

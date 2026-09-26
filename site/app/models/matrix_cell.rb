@@ -12,8 +12,7 @@ class MatrixCell
 
   # reports: oldest first, all on the same configuration. only_testers: count tester runs only.
   def self.from(reports, feature_id, only_testers: false)
-    latest = {}
-    tester_latest = {}
+    latest = {} # machine => [state, tester run?], from its latest report that tested the feature
     tested = []
     reports.each do |report|
       tester = report.tester?
@@ -23,10 +22,9 @@ class MatrixCell
       next if state.nil? || state == "not-tested"
 
       tested << report
-      latest[report.machine_key] = state
-      tester_latest[report.machine_key] = state if tester
+      latest[report.machine_key] = [ state, tester ]
     end
-    new(latest.values.tally, tested.reverse, tester_latest.values.tally)
+    new(latest.values.map(&:first).tally, tested.reverse, latest.values.select(&:last).map(&:first).tally)
   end
 
   def initialize(tallies, reports, tester_tallies = {})

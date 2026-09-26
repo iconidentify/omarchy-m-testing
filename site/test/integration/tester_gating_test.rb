@@ -63,6 +63,18 @@ class TesterGatingTest < ActionDispatch::IntegrationTest
     assert_equal "partial", cell(M2, "gpu")["data-state"]
   end
 
+  test "a machine's latest run decides: a community run after its tester run takes the tester colour away" do
+    bind_machine "a", "tester-one"
+    upload_report golden("m2-max-image2"), machine: "a"
+    TesterBinding.delete_all
+    upload_report golden_with("m2-max-image2", GPU_FAILS), machine: "a"
+
+    get "/matrix"
+    gpu = cell(M2, "gpu")
+    assert_equal "unconfirmed", gpu["data-state"]
+    assert_nil gpu["data-verified"]
+  end
+
   test "removing a tester from the allowlist takes their runs out of the matrix colours" do
     bind_machine "a", "tester-one"
     upload_report golden("m2-max-image2"), machine: "a"

@@ -7,6 +7,8 @@ class CreateTestersAndTesterBindings < ActiveRecord::Migration[8.1]
   def up
     create_table :testers do |t|
       t.string :login, null: false
+      # Pinned by the first sign-in with the handle (renamed handles are reissued).
+      t.bigint :github_id
       t.timestamps
     end
     add_index :testers, :login, unique: true
