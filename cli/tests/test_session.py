@@ -271,17 +271,18 @@ if __name__ == "__main__":
 # -- serials the scrubber learned survive a resume ------------------------------------------
 
 USB_SERIAL = "201405280001"
+HEADPHONES = "Marcelo's AirPods Pro"
 
 
 def _cards(ctx):
     return [{"id": "audio.sound-cards", "kind": "automatic", "status": "pass",
-             "evidence": [f'device.serial = "Generic_USB_Audio_{USB_SERIAL}"']}]
+             "evidence": [f'device.serial = "Generic_USB_Audio_{USB_SERIAL}"', f"Device 7C:C1:80:12:34:56 {HEADPHONES}"]}]
 
 
 def _sinks(ctx):
     ctx.host.prompt(LISTEN)
     return [{"id": "audio.default-sink", "kind": "automatic", "status": "pass",
-             "evidence": [f"default sink: alsa_output.usb-Generic_USB_Audio_{USB_SERIAL}-00.analog-stereo"]}]
+             "evidence": [f"default sink: alsa_output.usb-Generic_USB_Audio_{USB_SERIAL}-00.analog-stereo", f"last output: {HEADPHONES}"]}]
 
 
 CARDS = Section("cards", "Cards", "Names the sound cards.", ("audio.sound-cards",), _cards)
@@ -289,15 +290,16 @@ SINKS = Section("sinks", "Sinks", "Names the default sink.", ("audio.default-sin
 
 
 class LearnedSerialsTest(unittest.TestCase):
-    def test_a_serial_one_section_named_is_removed_from_a_section_run_after_resuming(self):
+    def test_a_serial_or_device_name_one_section_named_is_removed_from_a_section_run_after_resuming(self):
         first = RecordedHost(with_home(recording()), answers=[ENTER, INTERRUPT])
         self.assertNotEqual(main(["--dry-run"], first, sections=(CARDS, SINKS)), 0)
         checkpoint = first.written[CHECKPOINT]
-        self.assertEqual(json.loads(checkpoint)["done"]["cards"][0]["evidence"], ['device.serial = "<serial>"'])
+        self.assertEqual(json.loads(checkpoint)["done"]["cards"][0]["evidence"], ['device.serial = "<serial>"', "Device <mac> <device-name>"])
 
         second = RecordedHost(with_home(recording(), checkpoint=checkpoint), answers=[ENTER, ENTER, "y"])
         self.assertEqual(main(["--dry-run"], second, sections=(CARDS, SINKS)), 0)
 
         report = json.loads(second.written[REPORT_FILE])
         self.assertNotIn(USB_SERIAL, second.written[REPORT_FILE])
-        self.assertIn("default sink: alsa_output.usb-<serial>-00.analog-stereo", report["checks"][1]["evidence"])
+        self.assertEqual(report["checks"][1]["evidence"], ["default sink: alsa_output.usb-<serial>-00.analog-stereo", "last output: <device-name>"])
+        self.assertNotIn("Marcelo", second.written[REPORT_FILE])
