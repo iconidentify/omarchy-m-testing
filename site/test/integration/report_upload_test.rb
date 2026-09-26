@@ -44,17 +44,56 @@ class ReportUploadTest < ActionDispatch::IntegrationTest
 
   test "reports that don't match the schema are rejected and not stored" do
     with_serial = GoldenReports.json("m2-max-image2").tap { |r| r["machine"]["serial_number"] = "C02XXXXXXXXX" }
-    unknown_check = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0]["id"] = "made.up" }
+    bad_check_id = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0]["id"] = "Not An Id" }
+    unclassified = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0].delete("classification") }
+    no_catalogue_version = GoldenReports.json("m2-max-image2").tap { |r| r.delete("catalogue_version") }
     outdated = GoldenReports.json("m2-max-image2").tap { |r| r["schema_version"] = 0 }
     not_an_object = []
 
-    [ with_serial, unknown_check, outdated, not_an_object ].each do |report|
+    [ with_serial, bad_check_id, unclassified, no_catalogue_version, outdated, not_an_object ].each do |report|
       upload report.to_json
       assert_response :unprocessable_content
       assert_match "does not match report schema v1", response.parsed_body["error"]
       assert response.parsed_body["details"].any?
     end
     assert_equal 0, Report.count
+  end
+
+  test "check ids the feature catalogue doesn't know are rejected with an upgrade message" do
+    report = GoldenReports.json("m2-max-image2").tap { |r| r["checks"][0]["id"] = "made.up" }
+
+    upload report.to_json
+
+    assert_response :unprocessable_content
+    assert_match "Update omarchy-m-test", response.parsed_body["error"]
+    assert_equal [ "unknown check id made.up" ], response.parsed_body["details"]
+    assert_equal 0, Report.count
+  end
+
+  test "every check id in the golden reports is in the feature catalogue" do
+    GoldenReports.paths.each do |path|
+      assert_empty Catalogue.unknown_check_ids(JSON.parse(File.read(path))), File.basename(path)
+    end
+  end
+
+  test "the report page explains each result in plain words, with its layer and catalogue version" do
+    upload GoldenReports.text("m2-max-image2")
+    get path_of(response.parsed_body["report_url"])
+
+    assert_select "li#check-system\\.identity .outcome.outcome-works", "works"
+    assert_select "li#check-system\\.identity .feature", "Device tree, asahi layer"
+    assert_select "dd", "feature catalogue v1"
+    assert_select ".credit", /CC BY 3\.0/
+  end
+
+  test "a failed result shows the catalogue's words for its outcome" do
+    report = GoldenReports.json("m2-max-image2")
+    report["checks"][0].merge!("status" => "fail", "classification" => report["checks"][0]["classification"].merge("outcome" => "not-in-aurora"))
+
+    upload report.to_json
+    get path_of(response.parsed_body["report_url"])
+
+    assert_select "li#check-system\\.identity .outcome.outcome-not-in-aurora", "not yet supported by Aurora"
   end
 
   test "a body that isn't JSON is a bad request" do

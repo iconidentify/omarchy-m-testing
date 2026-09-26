@@ -5,7 +5,7 @@
   "description": "The report the omarchy-m-test CLI produces and the site's /api/v1 upload accepts. Shared by cli/ and site/; golden reports in schema/golden/ must validate against it. Only allowlisted, privacy-safe fields are permitted, so every object rejects unknown properties.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "tool", "consent_version", "machine", "checks"],
+  "required": ["schema_version", "tool", "consent_version", "catalogue_version", "machine", "checks"],
   "properties": {
     "schema_version": {
       "description": "Report schema version. Bumped on any incompatible change.",
@@ -22,6 +22,11 @@
     },
     "consent_version": {
       "description": "Version of the disclaimer the user accepted.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "catalogue_version": {
+      "description": "Version of the feature catalogue (catalogue/catalogue.json) the results were classified with.",
       "type": "integer",
       "minimum": 1
     },
@@ -46,9 +51,9 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "kind", "status", "evidence"],
+        "required": ["id", "kind", "status", "evidence", "classification"],
         "properties": {
-          "id": { "description": "Known check id. The site rejects ids it doesn't know.", "enum": ["system.identity"] },
+          "id": { "description": "Check id. The known ids are the catalogue's checks; the site rejects ids it doesn't know.", "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9-]+)+$", "maxLength": 80 },
           "kind": { "enum": ["automatic", "human"] },
           "status": { "enum": ["pass", "fail", "skip"] },
           "evidence": {
@@ -56,6 +61,27 @@
             "type": "array",
             "maxItems": 50,
             "items": { "type": "string", "maxLength": 500 }
+          },
+          "classification": {
+            "description": "The result explained against the feature catalogue: Aurora's expected state first, then Asahi's.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["outcome", "feature", "layer", "expected"],
+            "properties": {
+              "outcome": { "enum": ["works", "fails", "not-in-aurora", "not-in-asahi", "not-in-omarchy", "not-applicable", "unknown-hardware", "not-tested"] },
+              "feature": { "description": "Catalogue feature id.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 80 },
+              "layer": { "enum": ["asahi", "aurora", "omarchy"] },
+              "expected": {
+                "description": "Each layer's expected state for this Mac, from the catalogue. Empty when the catalogue doesn't cover the chip.",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "asahi": { "enum": ["upstream", "linux-asahi", "yes", "wip", "tba", "no", "out-of-tree", "see-notes", "absent"] },
+                  "aurora": { "enum": ["supported", "asahi", "unsupported", "unknown", "absent"] },
+                  "omarchy": { "enum": ["supported", "unsupported", "absent"] }
+                }
+              }
+            }
           }
         }
       }

@@ -1,0 +1,30 @@
+name: Catalogue drift
+
+# Flags when Asahi's published feature tables no longer match the catalogue's
+# Asahi layer. Runs weekly and on demand rather than on every push, so an
+# upstream edit never breaks unrelated pull requests. A red run means: run
+# `python catalogue/asahi_tables.py update --live`, review, bump
+# catalogue_version and refresh catalogue/asahi-snapshot/.
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  drift:
+    name: Asahi tables vs catalogue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compare with Asahi's main branch
+        run: |
+          set -o pipefail
+          python catalogue/asahi_tables.py check --live | tee drift.txt
+      - name: Summarise drift
+        if: failure()
+        run: |
+          { echo "## Asahi's feature tables drifted from the catalogue"; echo; echo '```'; cat drift.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

@@ -22,6 +22,17 @@ jobs:
         working-directory: cli
         run: python -m unittest discover -s tests -t . -v
 
+  catalogue:
+    name: Feature catalogue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Asahi layer matches the pinned snapshot of Asahi's tables
+        run: python catalogue/asahi_tables.py check
+
   schema:
     name: Report schema
     runs-on: ubuntu-latest

@@ -7,7 +7,9 @@ import json
 from typing import Sequence
 
 from . import TOOL_NAME, TOOL_VERSION, checks, report
+from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
+from .explain import explain, line, load_catalogue
 from .host import Host, NetworkError
 from .machine import NotAppleSilicon, identify
 
@@ -19,6 +21,7 @@ EXIT_OK = 0
 EXIT_CANCELLED = 1
 EXIT_REFUSED = 2
 EXIT_UPLOAD_FAILED = 3
+EXIT_BAD_INPUT = 4
 
 
 class _Exit(Exception):
@@ -48,6 +51,8 @@ def _parse(argv: Sequence[str], host: Host) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="run and write the report, but never upload it")
     parser.add_argument("--output", default=DEFAULT_OUTPUT, help=f"where to write the report (default: {DEFAULT_OUTPUT})")
     parser.add_argument("--site", default=DEFAULT_SITE, help=f"site to upload to (default: {DEFAULT_SITE})")
+    parser.add_argument("--catalogue", metavar="FILE", help="use this feature catalogue instead of the bundled one (for trying a catalogue change)")
+    parser.add_argument("--explain", metavar="REPORT", help="explain a saved report's results against the catalogue; runs no checks")
     parser.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
     return parser.parse_args(list(argv))
 
@@ -57,6 +62,15 @@ def main(argv: Sequence[str], host: Host) -> int:
         args = _parse(argv, host)
     except _Exit as done:
         return done.status
+
+    try:
+        catalogue = load_catalogue(host, args.catalogue)
+    except CatalogueError as problem:
+        host.show(f"The feature catalogue {args.catalogue or '(bundled)'} can't be used: {problem}. Nothing was run.")
+        return EXIT_BAD_INPUT
+
+    if args.explain:
+        return EXIT_OK if explain(host, args.explain, catalogue) else EXIT_BAD_INPUT
 
     try:
         machine = identify(host)
@@ -77,11 +91,11 @@ def main(argv: Sequence[str], host: Host) -> int:
         return EXIT_CANCELLED
 
     host.show(f"Checking {machine.model}...")
-    results = [checks.system_identity(machine)]
-    for result in results:
-        host.show(f"  {result['status'].upper():4}  {result['id']}")
+    built = report.build(machine, [checks.system_identity(machine)], catalogue)
+    for result in built["checks"]:
+        host.show(line(result, result["classification"], catalogue))
 
-    text = report.to_text(report.build(machine, results))
+    text = report.to_text(built)
     host.write_file(args.output, text)
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)

@@ -5,15 +5,19 @@ from __future__ import annotations
 import json
 
 from . import SCHEMA_VERSION, TOOL_NAME, TOOL_VERSION
+from .catalogue import Catalogue
 from .consent import CONSENT_VERSION
 from .machine import Machine
 
 
-def build(machine: Machine, checks: list[dict]) -> dict:
+def build(machine: Machine, checks: list[dict], catalogue: Catalogue) -> dict:
+    """The report, with every check result explained against the catalogue."""
+    classified = [{**check, "classification": catalogue.classify(check, machine.soc, machine.board)} for check in checks]
     return {
         "schema_version": SCHEMA_VERSION,
         "tool": {"name": TOOL_NAME, "version": TOOL_VERSION},
         "consent_version": CONSENT_VERSION,
+        "catalogue_version": catalogue.version,
         "machine": {
             "model": machine.model,
             "board": machine.board,
@@ -22,7 +26,7 @@ def build(machine: Machine, checks: list[dict]) -> dict:
             "arch": machine.arch,
             "kernel": machine.kernel,
         },
-        "checks": checks,
+        "checks": classified,
     }
 
 

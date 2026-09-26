@@ -14,8 +14,13 @@ module Api
         render json: { error: "The report is not valid JSON." }, status: :bad_request
       else
         problems = ReportSchema.errors(payload)
+        unknown = problems.any? ? [] : Catalogue.unknown_check_ids(payload)
         if problems.any?
           render json: { error: "The report does not match report schema v#{ReportSchema::VERSION}.", details: problems },
+                 status: :unprocessable_content
+        elsif unknown.any?
+          render json: { error: "The report has checks this site doesn't know (feature catalogue v#{Catalogue.version}). Update omarchy-m-test and run it again.",
+                         details: unknown.map { |id| "unknown check id #{id}" } },
                  status: :unprocessable_content
         else
           report = Report.create!(body: payload, schema_version: payload.fetch("schema_version"))
