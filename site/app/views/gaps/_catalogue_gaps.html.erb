@@ -1,12 +1,13 @@
-<%# locals: (gaps:) %>
+<%# locals: (gaps:, kind:) %>
 <table class="list">
-  <thead><tr><th>Feature</th><th>Layer</th><th>Chips</th></tr></thead>
+  <thead><tr><th>Feature</th><th>Layer</th><th>Chips</th><% if admin? %><th></th><% end %></tr></thead>
   <tbody>
     <% gaps.each do |gap| %>
       <tr class="gap-row" data-feature="<%= gap.feature["id"] %>">
         <td><a href="<%= feature_path(gap.feature["id"]) %>"><%= gap.feature["name"] %></a></td>
         <td><span class="layer layer-<%= gap.feature["layer"] %>"><%= gap.feature["layer"] %></span></td>
         <td><%= gap.chips.map { |chip| Catalogue.chip_name(chip) }.join(", ") %></td>
+        <% if admin? %><td><%= issue_link(IssueDraft.for_catalogue_gap(gap, kind:, feature_url: feature_url(gap.feature["id"]))) %></td><% end %>
       </tr>
     <% end %>
   </tbody>

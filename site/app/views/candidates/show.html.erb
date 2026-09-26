@@ -6,10 +6,10 @@
 </p>
 <%= card "promotion" do %>
   <p class="verdict verdict-<%= @set.verdict %>" id="verdict" data-verdict="<%= @set.verdict %>"><%= @set.verdict_words %></p>
-  <% if @set.regressions.any? %>
-    <ul class="links" id="regressions">
-      <% @set.regressions.each do |finding| %>
-        <li class="finding"><%= finding.row.model_name %> (<%= finding.row.configuration.label %>): <a href="<%= feature_path(finding.feature["id"]) %>"><%= finding.feature["name"] %></a>, <%= finding.cell.summary %></li>
+  <% if @set.failures.any? %>
+    <ul class="links" id="failures">
+      <% @set.failures.each do |finding| %>
+        <li class="finding" data-state="<%= finding.cell.state %>"><%= state_badge(finding.cell.state) %> <%= finding.row.model_name %> (<%= finding.row.configuration.label %>): <a href="<%= feature_path(finding.feature["id"]) %>"><%= finding.feature["name"] %></a>, <%= finding.cell.summary %></li>
       <% end %>
     </ul>
   <% end %>

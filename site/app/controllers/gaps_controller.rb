@@ -1,5 +1,7 @@
 class GapsController < ApplicationController
   def show
-    @gaps = KernelGaps.new(Report.visible.to_a)
+    reports = Report.visible.to_a
+    @gaps = KernelGaps.new(reports)
+    @regressions = Regressions.open(reports)
   end
 end

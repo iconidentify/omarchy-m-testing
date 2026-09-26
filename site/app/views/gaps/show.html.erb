@@ -2,6 +2,29 @@
 <h1>Kernel gaps</h1>
 <p class="subtitle">What to work on next: features Asahi supports that Aurora lacks, and what real Macs found missing or unclaimed.</p>
 
+<%= card "regressions", id: "regressions" do %>
+  <p class="dim">Features that stopped working: the newest run on that model and stack fails where a tester's earlier run on the same model and stack found it working.</p>
+  <% if @regressions.empty? %>
+    <p class="dim">None open.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Feature</th><th>Mac</th><th>Stack</th><th>Last verified pass</th><th>Runs with it</th><% if admin? %><th></th><% end %></tr></thead>
+      <tbody>
+        <% @regressions.each do |regression| %>
+          <tr class="regression-row" data-feature="<%= regression.feature_id %>" data-board="<%= regression.board %>" data-stack="<%= regression.stack %>">
+            <td><a href="<%= feature_path(regression.feature_id) %>"><%= Catalogue.feature_name(regression.feature_id) %></a> <span class="layer layer-<%= regression.layer %>"><%= regression.layer %></span></td>
+            <td><a href="<%= model_path(regression.board) %>"><%= regression.latest.short_model_name %></a></td>
+            <td><%= regression.latest.stack_words %> <%= regression.latest.omarchy_version %></td>
+            <td class="pass"><%= link_to "#{regression.pass.stack_words} #{regression.pass.omarchy_version}", report_path(regression.pass) %></td>
+            <td><%= safe_join(regression.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report)) }, " ") %><%= " +#{regression.reports.size - 5}" if regression.reports.size > 5 %></td>
+            <% if admin? %><td><%= issue_link(IssueDraft.for_regression(regression, url_for: report_link_for)) %></td><% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>
+
 <%= card "found on real macs", id: "reported" do %>
   <% { "not-in-aurora" => "Not yet in Aurora", "not-in-asahi" => "Not yet in Asahi", "unknown-hardware" => "Unknown hardware" }.each do |outcome, title| %>
     <% gaps = @gaps.reported(outcome) %>
@@ -10,7 +33,7 @@
       <p class="dim">None reported.</p>
     <% else %>
       <table class="list">
-        <thead><tr><th>Feature</th><th>Chip</th><th>Macs</th><th>Reports</th></tr></thead>
+        <thead><tr><th>Feature</th><th>Chip</th><th>Macs</th><th>Reports</th><% if admin? %><th></th><% end %></tr></thead>
         <tbody>
           <% gaps.each do |gap| %>
             <tr class="gap-row" data-outcome="<%= outcome %>" data-feature="<%= gap.feature_id %>">
@@ -18,6 +41,7 @@
               <td><%= gap.chip %> <span class="dim">(<%= gap.soc %>)</span></td>
               <td><%= gap.models.join(", ") %></td>
               <td><%= safe_join(gap.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report)) }, " ") %><%= " +#{gap.reports.size - 5}" if gap.reports.size > 5 %></td>
+              <% if admin? %><td><%= issue_link(IssueDraft.for_reported_gap(gap, url_for: report_link_for)) %></td><% end %>
             </tr>
           <% end %>
         </tbody>
@@ -33,7 +57,7 @@
     <p class="dim">None reported.</p>
   <% else %>
     <table class="list">
-      <thead><tr><th>Hardware</th><th>What it is</th><th>Chip</th><th>Macs</th><th>Machines</th><th>Reports</th></tr></thead>
+      <thead><tr><th>Hardware</th><th>What it is</th><th>Chip</th><th>Macs</th><th>Machines</th><th>Reports</th><% if admin? %><th></th><% end %></tr></thead>
       <tbody>
         <% unclaimed.each do |hardware| %>
           <tr class="unclaimed-row" data-compatible="<%= hardware.compatible %>" data-outcome="<%= hardware.outcome %>">
@@ -49,6 +73,7 @@
             <td><%= hardware.models.join(", ") %></td>
             <td class="machines"><%= hardware.machines %></td>
             <td><%= safe_join(hardware.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report)) }, " ") %><%= " +#{hardware.reports.size - 5}" if hardware.reports.size > 5 %></td>
+            <% if admin? %><td><%= issue_link(IssueDraft.for_unclaimed(hardware, url_for: report_link_for)) %></td><% end %>
           </tr>
         <% end %>
       </tbody>
@@ -60,12 +85,12 @@
   <% if @gaps.missing_in_aurora.empty? %>
     <p class="dim">The catalogue lists nothing Asahi supports that Aurora is known to lack.</p>
   <% else %>
-    <%= render "gaps/catalogue_gaps", gaps: @gaps.missing_in_aurora %>
+    <%= render "gaps/catalogue_gaps", gaps: @gaps.missing_in_aurora, kind: :missing %>
   <% end %>
 <% end %>
 
 <%= card "asahi has it, not verified in aurora", id: "unverified-in-aurora" do %>
   <p class="dim">Asahi supports these on the chips listed; Aurora hasn't been qualified on them yet.</p>
-  <%= render "gaps/catalogue_gaps", gaps: @gaps.unverified_in_aurora %>
+  <%= render "gaps/catalogue_gaps", gaps: @gaps.unverified_in_aurora, kind: :unverified %>
   <p class="credit dim"><%= Catalogue.asahi_credit %></p>
 <% end %>

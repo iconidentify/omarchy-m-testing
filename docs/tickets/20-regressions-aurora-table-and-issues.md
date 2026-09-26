@@ -8,7 +8,7 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Regression classification only against a verified earlier pass on the same model and stack
-- [ ] Aurora feature-support table per chip generation, from tester-verified runs, with sources
-- [ ] One-click prefilled issue (title, body with linked reports, target repo by layer)
-- [ ] Seam B tests for regressions, the table and issue prefill
+- [x] Regression classification only against a verified earlier pass on the same model and stack
+- [x] Aurora feature-support table per chip generation, from tester-verified runs, with sources
+- [x] One-click prefilled issue (title, body with linked reports, target repo by layer)
+- [x] Seam B tests for regressions, the table and issue prefill

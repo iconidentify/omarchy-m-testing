@@ -114,7 +114,7 @@ class PagesTest < ActionDispatch::IntegrationTest
     assert_select "dd", "converged 4.0.0"
     assert_select "dd", "omarchy, limine, encryption on"
     assert_select "li#check-setup\\.first-boot-hardware .status.status-fail", "FAIL"
-    assert_select "li#check-setup\\.first-boot-hardware .badge-regression", "doesn't work, but should on this Mac"
+    assert_select "li#check-setup\\.first-boot-hardware .badge-fails", "doesn't work, but should on this Mac"
     assert_select ".packages summary", "packages (13)"
   end
 end

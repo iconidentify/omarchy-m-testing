@@ -1,0 +1,57 @@
+<% content_for :title, "Aurora feature support" %>
+<h1>Aurora feature support</h1>
+<p class="subtitle">What the Aurora kernel (<a href="https://github.com/omacom/linux">omacom/linux</a>) supports on each Apple Silicon chip generation, from tester-verified runs on it, next to what the feature catalogue expects.</p>
+
+<% if @support.empty? %>
+  <%= card "no verified runs yet" do %>
+    <p class="dim">No tester has uploaded a run on the Aurora kernel yet. Community runs show on the <a href="<%= matrix_path %>">matrix</a>; this table counts tester runs only.</p>
+  <% end %>
+<% end %>
+
+<% @support.chips.each do |chip| %>
+  <%= card chip.name, id: "chip-#{chip.key}", klass: "aurora-chip" do %>
+    <p class="dim">
+      <%= pluralize(chip.machines, "tester machine") %>, <%= pluralize(chip.reports.size, "run") %>: <%= chip.models.join(", ") %>.
+      Aurora <%= chip.aurora_versions.join(", ") %>.
+    </p>
+    <div class="matrix-scroll">
+      <table class="list aurora-table">
+        <thead><tr><th>Feature</th><th>On Aurora</th><th>Expected in Aurora</th><th>Asahi</th><th>Sources</th></tr></thead>
+        <tbody>
+          <% @support.features.each do |feature| %>
+            <% cell = chip.cell(feature["id"]) %>
+            <tr class="aurora-row" data-chip="<%= chip.key %>" data-feature="<%= feature["id"] %>" data-state="<%= cell.state %>">
+              <td><a href="<%= feature_path(feature["id"]) %>"><%= feature["name"] %></a> <span class="layer layer-<%= feature["layer"] %>"><%= feature["layer"] %></span></td>
+              <td class="verified" title="<%= cell.summary %>"><%= state_badge(cell.state) %><% if cell.tested? %> <span class="dim"><%= pluralize(cell.machines, "machine") %></span><% end %></td>
+              <td class="<%= expected_class("aurora", cell.expected_aurora) %>"><%= expected_words(cell.expected_aurora) %></td>
+              <td class="<%= expected_class("asahi", cell.expected_asahi) %>"><%= expected_words(cell.expected_asahi) %></td>
+              <td class="sources">
+                <% if cell.tested? %>
+                  <%= safe_join(cell.reports.first(5).map { |report| link_to(report.public_id.first(8), report_path(report), title: "#{report.short_model_name}, linux-aurora #{report.aurora_version}, #{uploaded_at(report)}") }, " ") %><%= " +#{cell.reports.size - 5}" if cell.reports.size > 5 %>
+                  <span class="dim">(<%= cell.aurora_versions.join(", ") %>)</span>
+                <% else %>
+                  <span class="dim">–</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+<% end %>
+
+<% if @support.untested_chips.any? %>
+  <%= card "not yet verified", id: "untested-chips" do %>
+    <p class="dim">No tester run on Aurora yet on <%= @support.untested_chips.map { |key| Catalogue.chip_name(key) }.join(", ") %>. The <a href="<%= features_path %>">feature pages</a> show what the catalogue expects there.</p>
+  <% end %>
+<% end %>
+
+<%= card "sources", id: "sources" do %>
+  <ul class="links">
+    <li>On Aurora: tester runs only (a signed-in, allowlisted tester's machine) on the <code><%= AuroraSupport::PACKAGE %></code> kernel. Each machine counts once, with its latest run that tested the feature; testers who disagree make it partial. Each row links the runs behind it and the Aurora versions they ran.</li>
+    <li>Expected in Aurora: <a href="<%= Catalogue.data.dig("sources", "aurora", "url") %>"><%= Catalogue.data.dig("sources", "aurora", "title") %></a>, feature catalogue v<%= Catalogue.version %>. <%= Catalogue.data.dig("sources", "aurora", "note") %></li>
+    <li>Asahi: <%= Catalogue.asahi_credit %></li>
+    <li>As data: <a href="<%= api_v1_aurora_path(format: :json) %>">aurora.json</a> (CC0, apart from the Asahi states' credit).</li>
+  </ul>
+<% end %>

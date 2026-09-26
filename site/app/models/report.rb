@@ -84,11 +84,31 @@ class Report < ApplicationRecord
 
   def tester? = Tester.allowlisted?(tester_login)
 
-  # Result per catalogue feature this report tested: feature id => ResultState.
-  def feature_states
-    @feature_states ||= checks.group_by { |check| check.dig("classification", "feature") }
-                              .transform_values { |group| ResultState.combine(group.map { |check| check.dig("classification", "outcome") }) }
+  # Result per catalogue feature this report tested, from its checks' outcomes
+  # alone: feature id => ResultState, where a failure is "fails".
+  def tested_states
+    @tested_states ||= checks.group_by { |check| check.dig("classification", "feature") }
+                             .transform_values { |group| ResultState.combine(group.map { |check| check.dig("classification", "outcome") }) }
   end
+
+  # tested_states, with a failure a "regression" where a verified earlier run
+  # on the same model and stack passed (Regressions).
+  def feature_states
+    @feature_states ||= tested_states.to_h do |feature_id, state|
+      [ feature_id, state == "fails" && regressed_from(feature_id) ? "regression" : state ]
+    end
+  end
+
+  # The verified earlier pass a failing feature regressed from, or nil.
+  def regressed_from(feature_id) = Regressions.current.pass_before(self, feature_id)
+
+  def regression?(feature_id) = feature_states[feature_id] == "regression"
+
+  # Upload order: the order runs happened in, as far as the site knows.
+  def upload_order = [ created_at, id ]
+
+  # The Aurora kernel package's version, or nil when the run isn't on Aurora.
+  def aurora_version = package_version("linux-aurora")
 
   def to_param = public_id
 

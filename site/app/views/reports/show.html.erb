@@ -32,7 +32,12 @@
             <span class="check-id"><%= check["id"] %></span>
             <% if (classification = check["classification"]) %>
               <%= outcome_badge(classification["outcome"]) %>
+              <% if classification["outcome"] == "fails" && @report.regression?(classification["feature"]) %>
+                <% pass = @report.regressed_from(classification["feature"]) %>
+                <a class="badge badge-regression regression" href="<%= report_path(pass) %>" title="A tester's earlier run on this model and stack found it working (<%= pass.stack_words %> <%= pass.omarchy_version %>, <%= uploaded_at(pass) %>)">regression</a>
+              <% end %>
               <span class="feature"><%= Catalogue.feature(classification["feature"])&.fetch("name") || classification["feature"] %>, <%= classification["layer"] %> layer</span>
+              <%= issue_link(IssueDraft.for_check(@report, check, url_for: report_link_for)) if admin? && !@report.hidden? && IssueDraft.check?(check) %>
             <% end %>
             <% if (score = check["score"]).is_a?(Hash) %>
               <span class="score">score <strong><%= score_words(score["value"]) %></strong> <%= BenchmarkScores::UNITS.fetch(score["unit"], score["unit"]) %> (<%= score["tool"] %>, suite <%= score["suite"] %>) · <a href="<%= benchmarks_path(anchor: "benchmark-#{check["id"].delete_prefix("benchmark.")}-suite-#{score["suite"]}") %>">compare</a></span>

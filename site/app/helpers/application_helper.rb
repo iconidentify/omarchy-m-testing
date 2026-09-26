@@ -55,6 +55,16 @@ module ApplicationHelper
     end
   end
 
+  # The admin's one-click prefilled GitHub issue (IssueDraft), opened in a new tab; nothing for anyone else.
+  def issue_link(draft)
+    return unless admin?
+
+    link_to "open issue on #{draft.repo}", draft.url, class: "issue-link", target: "_blank", rel: "noopener noreferrer",
+                                                    title: draft.title, data: { repo: draft.repo }
+  end
+
+  def report_link_for = ->(report) { report_url(report) }
+
   def uploaded_at(report) = report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC")
 
   def check_section(check_id) = check_id.split(".").first
