@@ -20,4 +20,10 @@ Postgres connection settings come from `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD
 
 ## Deploy
 
-Railway builds `Dockerfile` from the repository root (`railway.json`), so the schema, catalogue and installer sit next to `site/` in the image and no path overrides are needed. `bin/rails db:prepare` runs before each deploy; `/up` is the health check. Production variables: `DATABASE_URL` (from the Postgres service), `SECRET_KEY_BASE`.
+Railway project `omarchy-m-testing`, service `site` (plus a `Postgres` service), connected to this GitHub repo and deploying every push to `main`. Railway no longer reads `railway.json` for new services, so these settings live on the service itself:
+
+- Build: `site/Dockerfile`, context the repository root (variable `RAILWAY_DOCKERFILE_PATH=site/Dockerfile`), so the schema, catalogue and installer sit next to `site/` in the image and no path overrides are needed.
+- Pre-deploy command `bin/rails db:prepare`; health check `/up` (120 s).
+- Watch paths: `site/**`, `schema/**`, `catalogue/catalogue.json`, `installer/install.sh`.
+- Variables: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `SECRET_KEY_BASE` (secret, only in Railway), `RAILS_MAX_THREADS=3`.
+- Domains: `omarchy-m-testing.org` and `www.omarchy-m-testing.org` (DNS at Porkbun; `www` redirects to the apex in the app).

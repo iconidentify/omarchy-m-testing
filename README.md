@@ -31,7 +31,7 @@ To check a download by hand:
 ## Releasing and deploying
 
 - **CLI**: bump `TOOL_VERSION` in `cli/omarchy_m_test/__init__.py`, merge, then push a tag `v<version>` on `main`. `.github/workflows/release.yml` builds `omarchy-m-test.tar.gz` (`release/build.sh`), signs it with the `RELEASE_SIGNING_KEY` Actions secret and publishes it with its `.sig` and a `VERSION` file as the latest GitHub release.
-- **Site**: Railway (project `omarchy-m-testing`, service `site` plus Postgres) deploys every push to `main` from `site/Dockerfile` (see `railway.json`), running `bin/rails db:prepare` first. Secrets (`SECRET_KEY_BASE`) live in Railway variables only.
+- **Site**: Railway (project `omarchy-m-testing`, service `site` plus Postgres) deploys every push to `main` from `site/Dockerfile`, running `bin/rails db:prepare` first (settings in `site/README.md`). Secrets (`SECRET_KEY_BASE`) live in Railway variables only.
 - **Smoke test** against production: `release/smoke.sh` (install, `--dry-run`, upload a golden report, delete it).
 
 The spec is in this repo's issues.
