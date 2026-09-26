@@ -186,6 +186,30 @@ class CheckpointTest(unittest.TestCase):
                 self.assertEqual(status, 0)
                 self.assertNotIn(RESUME, prompts(mac))
 
+    def test_skip_still_applies_to_the_sections_left_when_resuming(self):
+        mac = tone_mac([ENTER, ENTER], checkpoint=self.interrupted())
+
+        status = main(["--dry-run", "--skip", "tone"], mac, sections=SECTIONS)
+
+        self.assertEqual(status, 0)
+        self.assertNotIn(VOLUME_DOWN, mac.commands_run)
+
+    def test_ctrl_c_after_the_report_is_written_offers_no_resume(self):
+        mac = tone_mac([ENTER, "y", INTERRUPT])
+
+        status = main([], mac, sections=SECTIONS)
+
+        self.assertEqual(status, 130)
+        self.assertIn(REPORT_FILE, mac.written)
+        self.assertNotIn("resume", mac.output.split("Interrupted")[-1])
+
+    def test_ctrl_c_mid_run_says_it_can_resume(self):
+        mac = tone_mac([ENTER, INTERRUPT])
+
+        main(["--dry-run"], mac, sections=SECTIONS)
+
+        self.assertIn("resume where it stopped", mac.output.split("Interrupted")[-1])
+
     def test_a_damaged_checkpoint_is_ignored(self):
         mac = tone_mac([ENTER, "y"], checkpoint="{not json")
 

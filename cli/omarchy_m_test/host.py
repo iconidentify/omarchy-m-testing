@@ -127,6 +127,10 @@ class RealHost:
 
     def write_file(self, path: str, text: str) -> None:
         """Write whole or not at all: a checkpoint cut short by a crash must not be half a file."""
+        if os.path.exists(path) and not os.path.isfile(path):  # /dev/stdout, a FIFO
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            return
         directory = os.path.dirname(path)
         if directory:
             os.makedirs(directory, exist_ok=True)

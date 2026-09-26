@@ -95,12 +95,13 @@ def main(argv: Sequence[str], host: Host, sections: Sequence[Section] = APPLE) -
 
 
 def _interruptible(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> int:
+    args.resumable = False
     try:
         return _run(args, host, sections)
     except KeyboardInterrupt:
         host.show(
             f"\nInterrupted. Everything {TOOL_NAME} changed was put back and nothing was uploaded."
-            f"\nRun {TOOL_NAME} again to resume where it stopped."
+            + (f"\nRun {TOOL_NAME} again to resume where it stopped." if args.resumable else "")
         )
         return EXIT_INTERRUPTED
 
@@ -164,12 +165,15 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
         return EXIT_CANCELLED
 
     key = run_key(machine, catalogue, TOOL_VERSION)
-    state = _resume(ui, saved, key, sections)
+    state = _resume(ui, saved, key, sections, skip)
     if state is None:
         state = State(_choose(ui, sections, skip), key=key)
+    # Anything an earlier run left that couldn't be put back yet stays registered.
+    state.restorers[:0] = changes.pending
     changes.pending = state.restorers
     changes.persist = lambda: checkpoint.save(state)
     checkpoint.save(state)
+    args.resumable = checkpoint.path is not None
 
     ui.text(f"Checking {machine.model}...")
     try:
@@ -202,6 +206,7 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     text = report.to_text(privacy.enforce(built, scrubber))
     host.write_file(args.output, text)
     checkpoint.clear()
+    args.resumable = False
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)
 
@@ -225,7 +230,7 @@ def _report_failed_restores(host: Host, changes: Changes) -> None:
         )
 
 
-def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section]) -> State | None:
+def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section], skip: set[str]) -> State | None:
     """The saved state to carry on from, if there is one for this run and the human wants it."""
     if saved is None or saved.key != key or not saved.done:
         return None
@@ -237,7 +242,8 @@ def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section])
         return None
     ui.text(f"An earlier run stopped with {len(saved.done)} section(s) done; left to run: {', '.join(left)}.")
     if ui.confirm("Resume where it stopped?", default=True):
-        return State(saved.selected, dict(saved.done), [], key)
+        selected = [s for s in saved.selected if s in saved.done or s not in skip]
+        return State(selected, dict(saved.done), [], key)
     return None
 
 

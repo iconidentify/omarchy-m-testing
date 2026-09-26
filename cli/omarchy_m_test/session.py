@@ -78,7 +78,7 @@ class Changes:
             try:
                 self.persist()
             except Exception:
-                return
+                pass  # a checkpoint that can't be written mustn't stop the rest being put back
 
     def take_failures(self) -> list[tuple[Restorer, str]]:
         failed, self.failed = self.failed, []

@@ -17,7 +17,10 @@ def run() -> int:
     try:
         return main(sys.argv[1:], RealHost())
     except KeyboardInterrupt:
-        print("\nInterrupted. Nothing was uploaded.", file=sys.stderr)
+        try:
+            print("\nInterrupted. Nothing was uploaded.", file=sys.stderr)
+        except OSError:
+            pass  # the terminal is gone
         return 130
 
 
