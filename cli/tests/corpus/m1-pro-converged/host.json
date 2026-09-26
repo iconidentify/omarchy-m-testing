@@ -1,7 +1,7 @@
 {
   "description": "MacBook Pro (14-inch, M1 Pro, 2021) on the converged image, over SSH: raw host answers for record mode",
   "source": "Real run of omarchy-m-test 0.1.2 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac: the converged stack (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root) after the mx-mac migration. Every answer is what the Mac gave, except the camera, function-key and ports answers (checks added after this run): those are stand-ins, noted on each entry, until the next dogfood run records them.",
-  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a tunnel and a bridge). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a tunnel and a bridge). NetworkManager's <info> and dtc's <stdout> are their own. 'forbidden' lists the decoys and the lab hostname. The camera module's serial in the ISP's log lines is swapped for a fake of the same shape too.",
   "forbidden": [
     "omarchy-m1-pro",
     "kestrel",
@@ -17,7 +17,9 @@
     "3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0",
     "d4c2a8f1e6b3907a5c1d",
     "5e2b9c14-7a3d-4f68-b1e0-c9d2a4f7e316",
-    "maint@example.org"
+    "maint@example.org",
+    "CC295517CQXKRTV2F",
+    "35353932 51433731"
   ],
   "env": {
     "SSH_CONNECTION": "10.200.4.9 49281 10.88.0.12 22",

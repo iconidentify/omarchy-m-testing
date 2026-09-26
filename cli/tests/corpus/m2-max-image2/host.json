@@ -1,7 +1,7 @@
 {
   "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install: raw host answers for record mode",
-  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted. The camera, function-key and ports answers are stand-ins, noted on each entry, until the next dogfood run records them.",
-  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
+  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached). The inventory answers come from the booted kernel's own package, linux-aurora 7.1.12.aurora2-2 and its headers (device tree, module aliases, build config), and the kernel log's failed AVD probe. The live audio, display and keyboard-light answers come from outputs/m2-image2-acceptance/ (37-audio-state.txt, 37-mic-capture.txt, 37-speakersafetyd-unit.txt, 39-display-check-session.txt, owner-look-listen.sh), with the panel backlight level and the volume reconstructed and noted. The M2 has since been reinstalled with converged image 4, so image 2's own answers (mac-check, encryption, the backlight level, the volume) can no longer be captured and stay reconstructed; tests/corpus/m2-max-converged is its real run. The camera, function-key and ports answers are stand-ins, noted on each entry (checks added after image 2's runs).",
+  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape, and the camera module's serial (in the ISP's log lines), before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
   "forbidden": [
     "omarchy-m2-max",
     "kestrel",
@@ -24,7 +24,9 @@
     "10.118.110.232",
     "10.159.16.3",
     "fe80::c712:bd3:b033:120c",
-    "10.139.113.3"
+    "10.139.113.3",
+    "CC2411719QXRWTVDC",
+    "31313432 51393137"
   ],
   "commands": [
     {
@@ -614,13 +616,14 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M2 on 2026-09-27 (tests/corpus/m2-max-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
       "text": "0 1 2 3\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
-      "text": "600000\n"
+      "text": "912000\n",
+      "note": "the M2 Max's real range, read by its converged-image run on 2026-09-27 (tests/corpus/m2-max-converged; the top performance state sits behind boost)"
     },
     "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
       "text": "2424000\n"
@@ -630,32 +633,36 @@
     },
     "/sys/devices/system/cpu/cpufreq/policy4/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M2 on 2026-09-27 (tests/corpus/m2-max-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/related_cpus": {
       "text": "4 5 6 7\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq": {
-      "text": "660000\n"
+      "text": "702000\n",
+      "note": "the M2 Max's real range, read by its converged-image run on 2026-09-27 (tests/corpus/m2-max-converged; the top performance state sits behind boost)"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq": {
-      "text": "3504000\n"
+      "text": "3264000\n",
+      "note": "the M2 Max's real range, read by its converged-image run on 2026-09-27 (tests/corpus/m2-max-converged; the top performance state sits behind boost)"
     },
     "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": {
       "text": "schedutil\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/scaling_driver": {
       "text": "apple-cpufreq\n",
-      "note": "reconstructed, not captured on the Mac: M2 Max: 4 efficiency cores, two clusters of 4 performance cores"
+      "note": "confirmed on the M2 on 2026-09-27 (tests/corpus/m2-max-converged: the same CPU clusters, apple-cpufreq on each)"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/related_cpus": {
       "text": "8 9 10 11\n"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_min_freq": {
-      "text": "660000\n"
+      "text": "702000\n",
+      "note": "the M2 Max's real range, read by its converged-image run on 2026-09-27 (tests/corpus/m2-max-converged; the top performance state sits behind boost)"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_max_freq": {
-      "text": "3504000\n"
+      "text": "3264000\n",
+      "note": "the M2 Max's real range, read by its converged-image run on 2026-09-27 (tests/corpus/m2-max-converged; the top performance state sits behind boost)"
     },
     "/sys/devices/system/cpu/cpufreq/policy8/scaling_governor": {
       "text": "schedutil\n"
@@ -696,5 +703,5 @@
       "iio:device0"
     ]
   },
-  "dirs_note": "Directories: the asahi GPU device name is the kernel log's (406400000.gpu); the Vulkan ICD is vulkan-asahi's; power_supply lists only the battery 62-battery-before.txt read; the cpufreq policies and ranges are reconstructed. Reconstructed answers are replaced by the v0.1 dogfood recording. The ambient light sensor's iio device number is reconstructed (the display check globbed iio:device*)."
+  "dirs_note": "Directories: the asahi GPU device name is the kernel log's (406400000.gpu); the Vulkan ICD is vulkan-asahi's; power_supply lists only the battery 62-battery-before.txt read; the cpufreq policies and ranges were reconstructed; the M2's converged run (tests/corpus/m2-max-converged, 2026-09-27) confirms the GPU at 406400000 and the three policies, and gave the real ranges. The ambient light sensor's iio device number is reconstructed (the display check globbed iio:device*)."
 }

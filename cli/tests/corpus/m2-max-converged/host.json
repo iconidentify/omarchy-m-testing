@@ -1,0 +1,679 @@
+{
+  "description": "MacBook Pro (16-inch, M2 Max, 2023) on converged image 4, over SSH: raw host answers for record mode",
+  "source": "Real run of omarchy-m-test 0.1.3 --dry-run --record on the M2 Max, 2026-09-27 (Brisbane), over SSH with nobody at the Mac, a few minutes after a fresh install of converged image 4 (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root). vulkan-tools and mesa-utils aren't installed. Every answer is what the Mac gave, except the camera, function-key and ports answers (checks added after this run): those are stand-ins, noted on each entry, until the next dogfood run records them.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>, <serial>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a bridge and a tunnel) plus NetworkManager's own \"Wired connection 1\" and lo. NetworkManager's <info> is its own. 'forbidden' lists the decoys and the lab hostname. The camera module's serial in the ISP's log lines is swapped for a fake of the same shape too.",
+  "forbidden": [
+    "omarchy-m2-max",
+    "kestrel",
+    "/home/kestrel",
+    "Wattlebird-5G",
+    "Galah-Bridge",
+    "Ibis-Tun",
+    "10.61.23.147",
+    "10.61.23.1",
+    "10.200.4.9",
+    "10.88.0.12",
+    "7a:3e:51:c0:9d:24",
+    "3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0",
+    "d4c2a8f1e6b3907a5c1d",
+    "5e2b9c14-7a3d-4f68-b1e0-c9d2a4f7e316",
+    "maint@example.org",
+    "C02XK7HZJG5J",
+    "CC2411719QXRWTVDC",
+    "31313432 51393137"
+  ],
+  "env": {
+    "SSH_CONNECTION": "10.61.23.147 50257 10.61.23.1 22",
+    "XDG_SESSION_ID": "19",
+    "HOME": "/home/kestrel"
+  },
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.12-2-10-ARCH\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 0,
+      "stdout": "Wattlebird-5G\nWired connection 1\nGalah-Bridge\nlo\nIbis-Tun\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy 4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001\nomarchy-settings 4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001\nomarchy-mac 0.1.0-5.362376005140001\nomarchy-mac-boot 20260926-1.362376005140001\nlinux-aurora 7.1.12.aurora2-10\nlinux-aurora 7.1.12.aurora2-10\nm1n1-aurora 1.6.1.aurora1-3\nm1n1-aurora 1.6.1.aurora1-3\nuboot-asahi 2026.07.asahi2-4\nlimine 12.9.0-1\nmesa 1:26.2.3-1\nvulkan-asahi 1:26.2.3-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy-dev' was not found\nerror: package 'omarchy-settings-dev' was not found\nerror: package 'omarchy-mac-keyring' was not found\n"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/mapper/root[/@]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/mapper/root"
+      ],
+      "returncode": 0,
+      "stdout": "crypt btrfs\npart crypto_LUKS\ndisk \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "mac-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-27T00:25:06+10:00 omarchy-m2-max systemd[1]: Omarchy first-boot hardware setup deferred from the image build skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/image/deferred-steps\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-a",
+        "-H",
+        "",
+        "--include=compatible",
+        "--include=status",
+        "/sys/firmware/devicetree/base"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree-properties.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-H",
+        "-E",
+        "^(OF_FULLNAME|DRIVER)=",
+        "--include=uevent",
+        "/sys/devices"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uevents.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "zcat",
+        "/proc/config.gz"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel-config.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "vulkaninfo: command not found\n"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "eglinfo: command not found\n"
+    },
+    {
+      "argv": [
+        "bundled:apple-display-check",
+        "--read-only"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "display-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,140,28%,500\ninput2::kana,leds,0,0%,1\ninput2::numlock,leds,1,100%,1\ninput2::capslock,leds,0,0%,1\ninput2::scrolllock,leds,0,0%,1\ninput2::compose,leds,0,0%,1\nkbd_backlight,leds,219,86%,255\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "215"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Failed to set brightness: Operation not permitted\n"
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "audio-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 0,
+      "stdout": "omarchy_asahi_mic.monitor\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 3 parec --raw --format=s16le --channels=1 --rate=48000 --device=\"$2\" | python3 -c \"$1\"",
+        "sh",
+        "import array, math, sys\ndata = sys.stdin.buffer.read()\nsamples = array.array('h', data[: len(data) // 2 * 2])\nif sys.byteorder == 'big':\n    samples.byteswap()\npeak = max(map(abs, samples), default=0)\nrms = math.sqrt(sum(v * v for v in samples) / len(samples)) if samples else 0.0\nprint(f'samples {len(samples)} peak {peak} rms {rms:.1f}')\n",
+        "omarchy_asahi_mic.monitor"
+      ],
+      "returncode": 0,
+      "stdout": "samples 65536 peak 857 rms 75.2\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j416-convolver\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "inspect",
+        "@DEFAULT_AUDIO_SINK@"
+      ],
+      "returncode": 0,
+      "stdout": "id 78, type PipeWire:Interface:Node\n    adapt.follower.spa-node = \"\"\n    audio.allowed-rates = \"[96000, 88200, 48000, 44100]\"\n    audio.channels = \"2\"\n    audio.position = \"[\"FL\", \"FR\"]\"\n  * client.id = \"77\"\n    clock.quantum-limit = \"8192\"\n    device.api = \"dsp\"\n    device.icon-name = \"audio-speakers\"\n  * factory.id = \"10\"\n    library.name = \"audioconvert/libspa-audioconvert\"\n  * media.class = \"Audio/Sink\"\n    media.name = \"MacBook Pro J416 Speakers\"\n    node.autoconnect = \"true\"\n  * node.description = \"MacBook Pro J416 Speakers\"\n    node.driver-id = \"60\"\n    node.group = \"filter-chain-1760-19\"\n    node.link-group = \"filter-chain-1760-19\"\n    node.loop.name = \"data-loop.0\"\n  * node.name = \"audio_effect.j416-convolver\"\n    node.virtual = \"false\"\n    node.want-driver = \"true\"\n    object.register = \"false\"\n  * object.serial = \"86\"\n    port.group = \"stream.0\"\n  * priority.session = \"850\"\n    resample.disable = \"true\"\n    resample.prefill = \"true\"\n    state.default-volume = \"0.343\"\n    stream.is-live = \"true\"\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "get-volume",
+        "78"
+      ],
+      "returncode": 0,
+      "stdout": "Volume: 0.70 [MUTED]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "78",
+        "0.30"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-mute",
+        "78",
+        "0"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "python3 -c \"$1\" | pacat --raw --format=s16le --channels=2 --rate=48000 --device=\"$2\"",
+        "sh",
+        "import math, struct, sys\nrate = 48000\nn = 2 * rate\nfade = rate // 20\ndef level(i):\n    return min(1.0, i / fade, (n - i) / fade)\nwave = (int(8000 * level(i) * math.sin(2 * math.pi * 440 * i / rate)) for i in range(n))\nsys.stdout.buffer.write(b''.join(struct.pack('<hh', v, v) for v in wave))\n",
+        "audio_effect.j416-convolver"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-mute",
+        "78",
+        "1"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "78",
+        "0.70"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 5 bluetoothctl devices Paired 2>/dev/null | grep -c \"^Device \""
+      ],
+      "returncode": 1,
+      "stdout": "0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "19",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=kbd_backlight",
+        "info"
+      ],
+      "returncode": 0,
+      "stdout": "kbd_backlight,leds,219,86%,255\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "dtc",
+        "-I",
+        "fs",
+        "-O",
+        "dts",
+        "/proc/device-tree"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "dtc: command not found\n"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=NetworkManager.service",
+        "--unit=iwd.service",
+        "--output=short-precise",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "wifi.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=systemd-logind.service",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "logind.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": "Linux omarchy-m2-max 7.1.12-2-10-ARCH #1 SMP PREEMPT_DYNAMIC Fri, 25 Sep 2026 07:35:14 +0000 aarch64 GNU/Linux\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lspci",
+        "-nn"
+      ],
+      "returncode": 0,
+      "stdout": "00:00.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n00:01.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n01:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4388 802.11ax Dual Band Wireless LAN Controller [14e4:4434] (rev 04)\n01:00.1 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4388 Bluetooth Controller [14e4:5f72] (rev 04)\n02:00.0 SD Host controller [0805]: Genesys Logic, Inc GL9755 SD Host Controller [17a0:9755] (rev 01)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "devices",
+        "-j"
+      ],
+      "returncode": 1,
+      "stdout": "HYPRLAND_INSTANCE_SIGNATURE not set! (is hyprland running?)\n\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ip",
+        "-brief",
+        "address"
+      ],
+      "returncode": 0,
+      "stdout": "lo               UNKNOWN        10.200.4.9/8 10.88.0.12/128 \nwlan0            UP             10.61.23.147/24 10.61.23.1/64 \nWattlebird-5G       UNKNOWN        10.200.4.9/32 10.88.0.12/128 10.61.23.147/64 \nWattlebird-5G          DOWN           10.61.23.1/16 \nthunderbolt0     UP             10.200.4.9/16 10.88.0.12/64 \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for d in /sys/class/video4linux/video*; do [ -e \"$d\" ] || continue; drv=$(readlink \"$d/device/driver\"); echo \"${d##*/} ${drv##*/}\"; done"
+      ],
+      "returncode": 0,
+      "stdout": "video0 apple-isp\n",
+      "stderr": "",
+      "note": "stand-in: the camera's video devices weren't captured; kernel.log has apple-isp probing and loading its firmware. Same stand-in as m2-max-image2 (this Mac); the next dogfood run records it"
+    },
+    {
+      "argv": [
+        "timeout",
+        "20",
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-i",
+        "/dev/video0",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, video4linux2,v4l2, from '/dev/video0':\n  Duration: N/A, start: 0.000000, bitrate: 746496 kb/s\n  Stream #0:0: Video: rawvideo (NV12 / 0x3231564E), nv12, 1920x1080, 746496 kb/s, 30 fps, 30 tbr, 1000k tbn\nStream mapping:\n  Stream #0:0 -> #0:0 (rawvideo (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Stream #0:0: Video: wrapped_avframe, nv12(progressive), 1920x1080, q=2-31, 200 kb/s, 30 fps, 30 tbn\n[out#0/null @ 0xaaaacafe0000] video:13KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=   30 fps= 29 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.98x\n",
+      "note": "stand-in: no frame capture was recorded; the stream is the ISP's 1920x1080 mode from kernel.log's CISP_CMD_CH_CAMERA_CONFIG_GET list (0x780 x 0x438). Same stand-in as m2-max-image2 (this Mac); the next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for p in /sys/class/typec/port*; do\n  n=${p##*/port}\n  case $n in ''|*[!0-9]*) continue;; esac\n  if [ -e \"/sys/class/typec/port$n-partner\" ]; then partner=yes; else partner=no; fi\n  data=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/data_role\" 2>/dev/null)\n  power=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/power_role\" 2>/dev/null)\n  echo \"typec $n partner=$partner data=$data power=$power\"\ndone\nfor d in /sys/bus/usb/devices/*; do\n  [ -r \"$d/speed\" ] || continue\n  case ${d##*/} in *:*) continue;; usb*) kind=root;; *) kind=device;; esac\n  class=$(cat \"$d/bDeviceClass\" 2>/dev/null)\n  if [ \"$class\" = 00 ]; then class=$(cat \"$d\"/*:*/bInterfaceClass 2>/dev/null | head -n 1); fi\n  echo \"usb $kind speed=$(cat \"$d/speed\") class=$class\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "typec 0 partner=yes data=host power=source\ntypec 1 partner=yes data=host power=source\ntypec 2 partner=no data=device power=sink\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\nusb root speed=480 class=09\nusb root speed=10000 class=09\n",
+      "stderr": "",
+      "note": "stand-in reconstructed from the M2's evidence: three USB-C ports (usb-pd@38, @3b, @3f in kernel.log), one holding the Thunderbolt lab link the corpus runs go over and one the 3440x1440 display mac-check lists as USB-2; the roles and root hub speeds are reconstructed. Same stand-in as m2-max-image2 (this Mac); the next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "if [ ! -d /sys/bus/thunderbolt/devices ]; then echo nobus; exit 0; fi\nfor d in /sys/bus/thunderbolt/devices/*; do\n  [ -r \"$d/uevent\" ] || continue\n  line=\"thunderbolt ${d##*/} $(sed -n 's/^DEVTYPE=//p' \"$d/uevent\")\"\n  for f in generation rx_speed rx_lanes authorized; do\n    if [ -r \"$d/$f\" ]; then line=\"$line $f=$(tr -d ' \\n' < \"$d/$f\")\"; fi\n  done\n  echo \"$line\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "thunderbolt 0-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=2 authorized=1\nthunderbolt 0-0:1.1 thunderbolt_retimer\nthunderbolt 0-1 thunderbolt_xdomain rx_speed=10.0Gb/s rx_lanes=2\nthunderbolt 1-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 2-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt domain0 thunderbolt_domain\nthunderbolt domain1 thunderbolt_domain\nthunderbolt domain2 thunderbolt_domain\n",
+      "stderr": "",
+      "note": "stand-in reconstructed from kernel.log: thunderbolt-apple-acio brings up three domains, domain 0 linked to another Mac (the lab link: 'new host found', USB4 Gen2 on two lanes) through a retimer; speeds and lanes are reconstructed. Same stand-in as m2-max-image2 (this Mac); the next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card1-eDP-1 connected enabled 3456x2234\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 connected enabled 3440x1440\nconnector card2-USB-3 disconnected disabled \n",
+      "stderr": "",
+      "note": "stand-in reconstructed from mac-check.txt ('USB-2 3440x1440@60', 'eDP-1 3456x2234@120') and the DRM connector the display uses (card2-USB-2); the other connectors and card numbers are reconstructed. Same stand-in as m2-max-image2 (this Mac); the next dogfood run records it"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
+      ],
+      "returncode": 0,
+      "stdout": "unavailable\n",
+      "stderr": "",
+      "note": "derived from this run's real `hyprctl devices -j` answer over SSH (exit 1): the script prints 'unavailable'"
+    }
+  ],
+  "files": {
+    "/proc/device-tree/compatible": {
+      "text": "apple,j416c\u0000apple,t6021\u0000apple,arm-platform\u0000"
+    },
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (16-inch, M2 Max, 2023)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "omarchy-m2-max\n"
+    },
+    "/etc/os-release": {
+      "text": "NAME=\"Arch Linux ARM\"\nPRETTY_NAME=\"Arch Linux ARM\"\nID=archarm\nID_LIKE=arch\nBUILD_ID=rolling\nANSI_COLOR=\"38;2;23;147;209\"\nHOME_URL=\"https://archlinuxarm.org/\"\nDOCUMENTATION_URL=\"https://archlinuxarm.org/wiki\"\nSUPPORT_URL=\"https://archlinuxarm.org/forum\"\nBUG_REPORT_URL=\"https://github.com/archlinuxarm/PKGBUILDs/issues\"\nLOGO=archlinux-logo\n"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/image/target.booted": {
+      "text": "format=1\nplatform=apple-silicon\n"
+    },
+    "/var/lib/omarchy/factory-sealed": null,
+    "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
+    "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
+      "text": "31\n"
+    },
+    "/sys/class/power_supply/macsmc-ac/type": {
+      "text": "Mains\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Full\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "100\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "912000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2424000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1 2 3\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_min_freq": {
+      "text": "702000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/cpuinfo_max_freq": {
+      "text": "3264000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/related_cpus": {
+      "text": "4 5 6 7\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_min_freq": {
+      "text": "702000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/cpuinfo_max_freq": {
+      "text": "3264000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy8/related_cpus": {
+      "text": "8 9 10 11\n"
+    },
+    "/sys/module/hid_apple/parameters/fnmode": null
+  },
+  "dirs": {
+    "/home": [
+      "kestrel"
+    ],
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.json"
+    ],
+    "/sys/bus/iio/devices": [
+      "iio:device0",
+      "iio:device1"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-ac",
+      "macsmc-battery",
+      "tps6598x-source-psy-0-0038",
+      "tps6598x-source-psy-0-003a",
+      "tps6598x-source-psy-0-003b",
+      "tps6598x-source-psy-0-003f"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "boost",
+      "policy0",
+      "policy4",
+      "policy8"
+    ]
+  }
+}

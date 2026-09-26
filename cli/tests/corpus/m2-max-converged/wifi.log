@@ -1,0 +1,184 @@
+Sep 27 00:34:55.597981 omarchy-m2-max systemd[1]: Starting Network Manager...
+Sep 27 00:34:55.632831 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6328] NetworkManager (version 1.58.1-1) is starting... (boot:3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:34:55.632841 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6328] Read config: /etc/NetworkManager/NetworkManager.conf, /usr/lib/NetworkManager/conf.d/{20-connectivity.conf,20-omarchy-mac-wifi.conf}, /etc/NetworkManager/conf.d/omarchy-wifi-powersave.conf
+Sep 27 00:34:55.639368 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6393] manager[0xaaaad8240a00]: monitoring kernel firmware directory '/lib/firmware'.
+Sep 27 00:34:55.685760 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6857] hostname: omarchy-m2-max: using hostnamed
+Sep 27 00:34:55.685765 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6857] hostname: omarchy-m2-max hostname changed from (none) to "omarchy-m2-max"
+Sep 27 00:34:55.685871 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6858] dns-mgr: init: dns=systemd-resolved rc-manager=symlink, plugin=systemd-resolved
+Sep 27 00:34:55.686805 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6868] rfkill0: found Wi-Fi radio killswitch (at /sys/devices/platform/soc/580000000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/ieee80211/phy0/rfkill0) (driver brcmfmac)
+Sep 27 00:34:55.686957 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6869] manager[0xaaaad8240a00]: rfkill: Wi-Fi hardware radio set enabled
+Sep 27 00:34:55.686962 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6869] manager[0xaaaad8240a00]: rfkill: WWAN hardware radio set enabled
+Sep 27 00:34:55.688877 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6888] Loaded device plugin: NMAtmManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-adsl.so)
+Sep 27 00:34:55.691548 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6915] Loaded device plugin: NMBluezManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-bluetooth.so)
+Sep 27 00:34:55.692875 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.6928] Loaded device plugin: NMOvsFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-ovs.so)
+Sep 27 00:34:55.707719 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7077] Loaded device plugin: NMTeamFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-team.so)
+Sep 27 00:34:55.708383 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7083] Loaded device plugin: NMWifiFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wifi.so)
+Sep 27 00:34:55.708676 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7086] Loaded device plugin: NMWwanFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wwan.so)
+Sep 27 00:34:55.708828 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7088] manager: rfkill: Wi-Fi enabled by radio killswitch; enabled by state file
+Sep 27 00:34:55.708855 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7088] manager: rfkill: WWAN enabled by radio killswitch; enabled by state file
+Sep 27 00:34:55.708875 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7088] manager: Networking is enabled by state file
+Sep 27 00:34:55.708998 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7089] settings: Loaded settings plugin: keyfile (internal)
+Sep 27 00:34:55.710031 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7100] dhcp: init: Using DHCP client 'internal'
+Sep 27 00:34:55.710117 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7101] manager: (lo): new Loopback device (/org/freedesktop/NetworkManager/Devices/1)
+Sep 27 00:34:55.710704 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7106] device (lo): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:34:55.710912 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7109] device (lo): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:34:55.711280 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7112] device (lo): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:34:55.713554 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7135] manager: (wlan0): new 802.11 Wi-Fi device (/org/freedesktop/NetworkManager/Devices/2)
+Sep 27 00:34:55.713752 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7137] device (wlan0): state change: unmanaged -> unavailable (reason 'managed', managed-type: 'external')
+Sep 27 00:34:55.720942 omarchy-m2-max systemd[1]: Starting Wireless service...
+Sep 27 00:34:55.731976 omarchy-m2-max systemd[1]: Started Network Manager.
+Sep 27 00:34:55.731978 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7319] bus-manager: acquired D-Bus service "org.freedesktop.NetworkManager"
+Sep 27 00:34:55.732458 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7324] ovsdb: disconnected from ovsdb
+Sep 27 00:34:55.732492 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7324] device (lo): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.732573 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7325] device (lo): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.732672 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7326] device (lo): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.732846 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7328] device (lo): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.733428 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7334] device (lo): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.733481 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7334] device (lo): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 00:34:55.733651 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7336] device (lo): Activation: successful, device activated.
+Sep 27 00:34:55.733803 omarchy-m2-max NetworkManager[1198]: <info>  [1790433295.7338] manager: startup complete
+Sep 27 00:34:55.755831 omarchy-m2-max iwd[1238]: Wireless daemon version 3.12
+Sep 27 00:34:55.756041 omarchy-m2-max iwd[1238]: Loaded configuration from /usr/lib/omarchy-mac/iwd/main.conf
+Sep 27 00:34:55.756074 omarchy-m2-max systemd[1]: Started Wireless service.
+Sep 27 00:34:55.756211 omarchy-m2-max iwd[1238]: station: Network configuration is disabled.
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]: Wiphy: 0, Name: phy0
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         Permanent Address: 7a:3e:51:c0:9d:24
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         2.4GHz Band:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 Bitrates (non-HT):
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          1.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          2.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          5.5 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         11.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          6.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          9.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         12.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         18.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         24.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         36.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         48.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         54.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HT Capabilities:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         HT20
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Short GI for 20Mhz
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HT RX MCS indexes:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         0-15
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HE Capabilities
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Interface Types: station
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         5GHz Band:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 Bitrates (non-HT):
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          6.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          9.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         12.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         18.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         24.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         36.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         48.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         54.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HT Capabilities:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         HT40
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Short GI for 20Mhz
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Short GI for 40Mhz
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HT RX MCS indexes:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         0-15
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 VHT Capabilities:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         160 Mhz operation
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Short GI for 80Mhz
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Short GI for 160 and 80 + 80 Mhz
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max RX MCS: 0-9 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max TX MCS: 0-9 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HE Capabilities
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Interface Types: station
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE RX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE TX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         6GHz Band:
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 Bitrates (non-HT):
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          6.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                          9.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         12.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         18.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         24.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         36.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         48.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         54.0 Mbps
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                 HE Capabilities
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Interface Types: station
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE RX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                         Max HE TX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         Ciphers: BIP-CMAC-256 BIP-GMAC-256 BIP-GMAC-128 CCMP-256
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                  GCMP-256 GCMP-128 BIP-CMAC-128 CCMP-128
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:                  TKIP
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         Supported iftypes: ad-hoc station ap p2p-client p2p-go p2p-device
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]:         Driver Flags: DefaultInterface
+Sep 27 00:34:55.756559 omarchy-m2-max iwd[1238]: Wiphy phy0 will only use the default interface
+Sep 27 00:34:56.275913 omarchy-m2-max iwd[1238]: event: state, old: disconnected, new: autoconnect_quick
+Sep 27 00:34:56.278600 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.2785] manager: (Wattlebird-5G): new Tun device (/org/freedesktop/NetworkManager/Devices/3)
+Sep 27 00:34:56.279875 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.2798] device (wlan0): new IWD device state is disconnected
+Sep 27 00:34:56.280192 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.2801] device (wlan0): state change: unavailable -> disconnected (reason 'supplicant-available', managed-type: 'full')
+Sep 27 00:34:56.281037 omarchy-m2-max iwd[1238]: udev interface=Wattlebird-5G ifindex=3
+Sep 27 00:34:56.353362 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3533] manager: (Wattlebird-5G): new Bridge device (/org/freedesktop/NetworkManager/Devices/4)
+Sep 27 00:34:56.354567 omarchy-m2-max iwd[1238]: udev interface=Wattlebird-5G ifindex=4
+Sep 27 00:34:56.375621 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3756] device (Wattlebird-5G): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:34:56.375751 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3757] device (Wattlebird-5G): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:34:56.375950 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3759] device (Wattlebird-5G): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:34:56.376000 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3759] device (Wattlebird-5G): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376058 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3760] device (Wattlebird-5G): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376102 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3760] device (Wattlebird-5G): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376148 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3761] device (Wattlebird-5G): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376548 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3765] device (Wattlebird-5G): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376598 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3765] device (Wattlebird-5G): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 00:34:56.376679 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3766] manager: NetworkManager state is now CONNECTED_LOCAL
+Sep 27 00:34:56.376750 omarchy-m2-max NetworkManager[1198]: <info>  [1790433296.3767] device (Wattlebird-5G): Activation: successful, device activated.
+Sep 27 00:34:57.060119 omarchy-m2-max iwd[1238]: event: connect-info, ssid: Wattlebird-5G, bss: 7a:3e:51:c0:9d:24, signal: -47, load: 4/255
+Sep 27 00:34:57.060119 omarchy-m2-max iwd[1238]: event: state, old: autoconnect_quick, new: connecting (auto)
+Sep 27 00:34:57.084383 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.0843] device (wlan0): new IWD device state is connecting
+Sep 27 00:34:57.085167 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.0851] device (wlan0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:34:57.085448 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.0854] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.085783 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.0857] manager: NetworkManager state is now CONNECTING
+Sep 27 00:34:57.086092 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.0860] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.320184 omarchy-m2-max iwd[1238]: event: state, old: connecting (auto), new: connected
+Sep 27 00:34:57.321364 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.3213] device (wlan0): new IWD device state is connected
+Sep 27 00:34:57.321493 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.3214] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.329689 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.3296] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 27 00:34:57.342020 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.3420] dhcp4 (wlan0): state changed new lease, address=10.61.23.147, acd pending
+Sep 27 00:34:57.521946 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5219] dhcp4 (wlan0): state changed new lease, address=10.61.23.1
+Sep 27 00:34:57.526625 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5266] policy: set 'Wattlebird-5G' (wlan0) as default for IPv4 routing and DNS
+Sep 27 00:34:57.529272 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5292] device (wlan0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.530832 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5308] device (wlan0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.531010 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5309] device (wlan0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 27 00:34:57.531389 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5313] manager: NetworkManager state is now CONNECTED_SITE
+Sep 27 00:34:57.531673 omarchy-m2-max NetworkManager[1198]: <info>  [1790433297.5316] device (wlan0): Activation: successful, device activated.
+Sep 27 00:34:58.184913 omarchy-m2-max NetworkManager[1198]: <info>  [1790433298.1848] manager: NetworkManager state is now CONNECTED_GLOBAL
+Sep 27 00:35:00.588714 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5886] device (Wattlebird-5G): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:35:00.589400 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5893] device (Wattlebird-5G): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 00:35:00.589720 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5897] device (Wattlebird-5G): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:35:00.589890 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5898] device (Wattlebird-5G): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.589986 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5899] device (Wattlebird-5G): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.590047 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5900] device (Wattlebird-5G): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.590616 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5906] device (Wattlebird-5G): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.591074 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5910] device (Wattlebird-5G): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.591127 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5911] device (Wattlebird-5G): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 00:35:00.591384 omarchy-m2-max NetworkManager[1198]: <info>  [1790433300.5913] device (Wattlebird-5G): Activation: successful, device activated.
+Sep 27 00:35:04.698280 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.6982] device (thunderbolt0): driver '(null)' does not support carrier detection.
+Sep 27 00:35:04.698626 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.6986] device (thunderbolt0): driver 'thunderbolt-net' does not support carrier detection.
+Sep 27 00:35:04.698991 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.6989] manager: (thunderbolt0): new Ethernet device (/org/freedesktop/NetworkManager/Devices/5)
+Sep 27 00:35:04.705262 omarchy-m2-max iwd[1238]: udev interface=thunderbolt0 ifindex=5
+Sep 27 00:35:04.706178 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7061] device (thunderbolt0): state change: unmanaged -> unavailable (reason 'managed', managed-type: 'external')
+Sep 27 00:35:04.706647 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7066] device (thunderbolt0): driver 'thunderbolt-net' does not support carrier detection.
+Sep 27 00:35:04.708384 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7083] settings: (thunderbolt0): created default wired connection 'Wattlebird-5G'
+Sep 27 00:35:04.708817 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7088] device (thunderbolt0): state change: unavailable -> disconnected (reason 'none', managed-type: 'full')
+Sep 27 00:35:04.708959 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7089] policy: auto-activating connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:35:04.709550 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7095] device (thunderbolt0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 00:35:04.710267 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7102] device (thunderbolt0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 27 00:35:04.710514 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7105] device (thunderbolt0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 27 00:35:04.710771 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7107] device (thunderbolt0): driver 'thunderbolt-net' does not support carrier detection.
+Sep 27 00:35:04.711229 omarchy-m2-max NetworkManager[1198]: <info>  [1790433304.7112] device (thunderbolt0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 27 00:35:05.869255 omarchy-m2-max NetworkManager[1198]: <info>  [1790433305.8692] device (thunderbolt0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 27 00:35:05.899429 omarchy-m2-max NetworkManager[1198]: <info>  [1790433305.8994] device (thunderbolt0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 27 00:35:05.899471 omarchy-m2-max NetworkManager[1198]: <info>  [1790433305.8994] device (thunderbolt0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 27 00:35:05.899627 omarchy-m2-max NetworkManager[1198]: <info>  [1790433305.8996] device (thunderbolt0): Activation: successful, device activated.

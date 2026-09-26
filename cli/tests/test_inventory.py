@@ -145,6 +145,23 @@ class GoldenInventoryTest(unittest.TestCase):
                          "361 hardware nodes: 310 claimed by a driver, 31 with no device of their own, "
                          "5 that no driver binds by design (CPU frequency clusters, timer, SMBIOS), 14 disabled, 1 unclaimed")
 
+    def test_the_m2_max_on_the_converged_image_has_a_driver_for_every_node(self):
+        rec = json.loads(open(os.path.join(HERE, "recordings", "m2-max-converged.json"), encoding="utf-8").read())
+        rec["files"][f"{rec['env']['HOME']}/.local/state/omarchy-m-test/checkpoint.json"] = None
+        status, mac, report = run(rec)
+
+        self.assertEqual(status, 0)
+        self.assertEqual(mac.written[REPORT_FILE], golden("m2-max-converged"))
+        # The real M2 on image 4: the video decoder's firmware is there now, and nothing is unclaimed.
+        self.assertEqual(report["inventory"]["unclaimed"], [])
+        found = hardware(report)
+        self.assertEqual({k: v["status"] for k, v in found.items()}, {
+            "hardware.drivers": "pass", "hardware.firmware": "pass", "hardware.probe-errors": "fail", "hardware.kernel-config": "pass",
+        })
+        # The display coprocessors' Type-C routes wait for a display crossbar Aurora doesn't have yet.
+        self.assertIn("platform 315c00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@315c00000/typec-routes/route@0: "
+                      "failed to get display crossbar", found["hardware.probe-errors"]["evidence"])
+
 
 class PrivacyTest(unittest.TestCase):
     def test_the_inventory_holds_only_node_types_statuses_and_driver_states(self):
