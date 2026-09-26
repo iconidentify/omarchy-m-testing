@@ -1,0 +1,13 @@
+{
+  "recording_version": 1,
+  "description": "An x86_64 PC laptop: no device tree at all",
+  "source": "Synthetic: x86 machines have no /proc/device-tree",
+  "commands": [
+    {"argv": ["uname", "-m"], "returncode": 0, "stdout": "x86_64\n", "stderr": ""}
+  ],
+  "files": {
+    "/proc/device-tree/model": null,
+    "/proc/device-tree/compatible": null
+  },
+  "dirs": {}
+}

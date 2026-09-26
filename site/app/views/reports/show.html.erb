@@ -1,0 +1,23 @@
+<% content_for :title, "#{@report.machine["model"]} report" %>
+<article class="report">
+  <h1><%= @report.machine["model"] %></h1>
+  <dl class="machine">
+    <dt>Chip</dt><dd><%= @report.machine["chip"] %> (<%= @report.machine["soc"] %>, board <%= @report.machine["board"] %>)</dd>
+    <dt>Kernel</dt><dd><%= @report.machine["kernel"] %></dd>
+    <dt>Tool</dt><dd><%= @report.body.dig("tool", "name") %> <%= @report.body.dig("tool", "version") %></dd>
+    <dt>Uploaded</dt><dd><%= @report.created_at.utc.strftime("%Y-%m-%d %H:%M UTC") %></dd>
+  </dl>
+
+  <h2>Checks</h2>
+  <ul class="checks">
+    <% @report.checks.each do |check| %>
+      <li class="check check-<%= check["status"] %>" id="check-<%= check["id"] %>">
+        <span class="status"><%= check["status"].upcase %></span>
+        <span class="check-id"><%= check["id"] %></span>
+        <% if check["evidence"].any? %>
+          <pre class="evidence"><%= check["evidence"].join("\n") %></pre>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</article>

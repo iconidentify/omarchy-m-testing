@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Reports written by local runs
+omarchy-m-test-report.json
+
+# Rails
+/site/.bundle/
+/site/vendor/bundle/
+/site/log/*
+!/site/log/.keep
+/site/tmp/*
+!/site/tmp/.keep
+/site/storage/
+/site/config/master.key
+/site/config/credentials/*.key
+/site/.env*

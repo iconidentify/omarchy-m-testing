@@ -1,0 +1,18 @@
+# Connection settings come from the standard libpq variables (PGHOST, PGPORT,
+# PGUSER, PGPASSWORD) in development and test, and from DATABASE_URL in production.
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: omarchy_m_testing_development
+
+test:
+  <<: *default
+  database: omarchy_m_testing_test
+
+production:
+  <<: *default
+  url: <%= ENV["DATABASE_URL"] %>
