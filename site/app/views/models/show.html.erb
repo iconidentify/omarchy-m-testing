@@ -1,0 +1,37 @@
+<% content_for :title, @latest.short_model_name %>
+<h1><%= @latest.short_model_name %></h1>
+<p class="subtitle"><%= @latest.chip %> · <%= Catalogue.chip_name(@chip) %> generation · SoC <%= @latest.soc %> · board <%= @latest.board %></p>
+
+<%= card "features" do %>
+  <div class="matrix-scroll">
+    <table class="list features-table">
+      <thead>
+        <tr>
+          <th>Feature</th><th>Asahi</th><th>Aurora</th><th>Omarchy</th>
+          <% @rows.each do |row| %><th class="config-head"><%= row.configuration.label %></th><% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% @matrix.features.each do |feature| %>
+          <% expected = Catalogue.expected(feature, @chip, @latest.board) %>
+          <tr id="feature-<%= feature["id"] %>">
+            <td><a href="<%= feature_path(feature["id"]) %>"><%= feature["name"] %></a> <span class="layer layer-<%= feature["layer"] %>"><%= feature["layer"] %></span></td>
+            <% Catalogue::LAYERS.each do |layer| %>
+              <td class="<%= expected_class(layer, expected&.dig(layer)) %>"><%= expected_words(expected&.dig(layer)) %></td>
+            <% end %>
+            <% @rows.each do |row| %>
+              <% cell = row.cell(feature["id"]) %>
+              <%= matrix_cell(cell, feature_id: feature["id"], link: cell.reports.first && report_path(cell.reports.first)) %>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <%= render "shared/legend" %>
+  <p class="credit dim">Asahi states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0.</p>
+<% end %>
+
+<%= card "reports" do %>
+  <%= render "shared/report_list", reports: @rows.flat_map(&:reports).sort_by(&:created_at).reverse %>
+<% end %>

@@ -1,0 +1,22 @@
+<% content_for :title, "Models" %>
+<h1>Models</h1>
+<%= card "macs with reports" do %>
+  <% if @models.empty? %>
+    <p class="dim">No reports yet.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Mac</th><th>Chip</th><th>Board</th><th>Stacks / versions</th><th>Reports</th></tr></thead>
+      <tbody>
+        <% @models.each do |board, rows| %>
+          <tr class="model-row" id="model-<%= board %>">
+            <td><a href="<%= model_path(board) %>"><%= rows.first.model_name %></a></td>
+            <td><%= rows.first.chip %></td>
+            <td class="dim"><%= board %> · <%= rows.first.soc %></td>
+            <td><%= rows.map { |row| row.configuration.label }.join(", ") %></td>
+            <td><%= rows.sum { |row| row.reports.size } %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>

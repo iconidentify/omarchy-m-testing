@@ -1,0 +1,29 @@
+<%# locals: (rows:, features:) %>
+<div class="matrix-scroll">
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th class="row-head" scope="col">Mac · stack / version</th>
+        <% features.each do |feature| %>
+          <th class="feature-head layer-<%= feature["layer"] %>" scope="col">
+            <a href="<%= feature_path(feature["id"]) %>" title="<%= feature["name"] %> (<%= Catalogue::LAYER_WORDS[feature["layer"]] %>)"><span><%= feature["name"] %></span></a>
+          </th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.each do |row| %>
+        <tr class="matrix-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>">
+          <th class="row-head" scope="row">
+            <a href="<%= model_path(row.configuration.board) %>"><%= row.model_name %></a>
+            <span class="row-meta"><%= row.configuration.label %> · <%= pluralize(row.reports.size, "report") %></span>
+          </th>
+          <% features.each do |feature| %>
+            <% cell = row.cell(feature["id"]) %>
+            <%= matrix_cell(cell, feature_id: feature["id"], link: cell.reports.first && report_path(cell.reports.first)) %>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

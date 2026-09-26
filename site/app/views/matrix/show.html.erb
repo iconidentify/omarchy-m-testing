@@ -1,0 +1,16 @@
+<% content_for :title, "Compatibility matrix" %>
+<h1>Compatibility matrix</h1>
+<nav class="filters" aria-label="Stack">
+  <%= link_to "all stacks", matrix_path, class: ("current" if @stack.nil?) %>
+  <% CompatibilityMatrix::STACKS.each do |stack| %>
+    <%= link_to Report::STACK_WORDS[stack], matrix_path(stack:), class: ("current" if @stack == stack) %>
+  <% end %>
+</nav>
+<%= card "model × stack/version" do %>
+  <% if @matrix.empty? %>
+    <p class="dim">No reports<%= " on #{Report::STACK_WORDS[@stack]}" if @stack %> yet.</p>
+  <% else %>
+    <%= render "shared/matrix", rows: @matrix.rows, features: @matrix.features %>
+  <% end %>
+  <%= render "shared/legend" %>
+<% end %>

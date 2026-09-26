@@ -1,13 +1,19 @@
 class ReportsController < ApplicationController
-  before_action :set_report
+  before_action :set_report, except: :index
   before_action :require_deletion_token, only: %i[deletion destroy]
 
+  def index
+    @reports = Report.visible.newest_first
+  end
+
   def show
+    raise ActiveRecord::RecordNotFound if @report.hidden? && !admin?
   end
 
   def deletion
   end
 
+  # Deletes the row, and with it the report body and all its evidence.
   def destroy
     @report.destroy!
     render :deleted
