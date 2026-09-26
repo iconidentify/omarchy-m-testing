@@ -6,12 +6,13 @@ import argparse
 import json
 from typing import Sequence
 
-from . import TOOL_NAME, TOOL_VERSION, checks, report, updates
+from . import TOOL_NAME, TOOL_VERSION, checks, privacy, report, updates
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
 from .host import Host, NetworkError
 from .machine import NotAppleSilicon, identify
+from .recording import RecordingHost
 
 DEFAULT_SITE = "https://omarchy-m-testing.org"
 DEFAULT_OUTPUT = "omarchy-m-test-report.json"
@@ -53,6 +54,7 @@ def _parse(argv: Sequence[str], host: Host) -> argparse.Namespace:
     parser.add_argument("--site", default=DEFAULT_SITE, help=f"site to upload to (default: {DEFAULT_SITE})")
     parser.add_argument("--catalogue", metavar="FILE", help="use this feature catalogue instead of the bundled one (for trying a catalogue change)")
     parser.add_argument("--explain", metavar="REPORT", help="explain a saved report's results against the catalogue; runs no checks")
+    parser.add_argument("--record", metavar="FILE", help="also save what this Mac answered, scrubbed, as a test recording")
     parser.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
     return parser.parse_args(list(argv))
 
@@ -65,6 +67,23 @@ def main(argv: Sequence[str], host: Host) -> int:
 
     updates.notify(host)
 
+    if not args.record:
+        return _run(args, host)
+
+    # Record mode: nothing more runs after the disclaimer is declined, and a
+    # refused machine's recording holds only what identifying it read.
+    recorder = RecordingHost(host)
+    status = _run(args, recorder)
+    if status == EXIT_CANCELLED:
+        return status
+    if status != EXIT_REFUSED:
+        recorder.capture_sources()
+    recorder.save(args.record, learn=status != EXIT_REFUSED)
+    host.show(f"Recording saved to {args.record} (scrubbed).")
+    return status
+
+
+def _run(args: argparse.Namespace, host: Host) -> int:
     try:
         catalogue = load_catalogue(host, args.catalogue)
     except CatalogueError as problem:
@@ -97,7 +116,8 @@ def main(argv: Sequence[str], host: Host) -> int:
     for result in built["checks"]:
         host.show(line(result, result["classification"], catalogue))
 
-    text = report.to_text(built)
+    scrubber = privacy.Scrubber.for_host(host)
+    text = report.to_text(privacy.enforce(built, scrubber))
     host.write_file(args.output, text)
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)

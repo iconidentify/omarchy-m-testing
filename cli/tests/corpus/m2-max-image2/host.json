@@ -1,0 +1,153 @@
+{
+  "description": "MacBook Pro 16-inch M2 Max (j416c, t6021), Aurora kernel, converged image-2 install: raw host answers for record mode",
+  "source": "Real evidence from the M2 Max, 2026-09-13 to 2026-09-26: diagnostics/m2-usbc-20260913 (kernel log, device tree), outputs/m2-image2-acceptance/41-deferred-evidence.txt (offline first-boot failure), operations/asahi-brcmfmac-6ghz-73/logs/boot-1-failure.log (5 GHz first join), operations/logind-usb-connector/issue.md (lid close with a USB-C monitor attached).",
+  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
+  "forbidden": [
+    "omarchy-m2-max",
+    "kestrel",
+    "Bellbird7C21-56",
+    "Bellbird7C21",
+    "/home/kestrel",
+    "4F4D-5801",
+    "f3f9c677-2a72-552b-4f98-974165e366e7",
+    "1ecca69d-65b5-2499-d795-7b1dbf2397e3",
+    "1a:07:05:06:76:70:89:10:49:1c:a8:51:06:49",
+    "10.33.202.75",
+    "10.155.4.108",
+    "a7eae2c603ca2b6a0ff4aa6723fab870",
+    "506dba8cd9bc8f82ff1dbbf1ea3c482d",
+    "19cb5303-6637-3988-ecd0-1235a3c55b23",
+    "f0:c0:7b:98:e6:d4",
+    "fe80::4b9d:64a3:afd:ba19",
+    "77cb54c5-d17d-7fcc-397b-6d108f09e4e4",
+    "77:ef:01:3f:c2:88",
+    "10.118.110.232",
+    "10.159.16.3",
+    "fe80::c712:bd3:b033:120c",
+    "10.139.113.3"
+  ],
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.12-2-2-ARCH\n",
+      "stderr": "",
+      "note": "release from the kernel log's 'Linux version' line"
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 0,
+      "stdout": "Bellbird7C21-56\nBellbird7C21\n",
+      "stderr": "",
+      "note": "the two saved connections the Wi-Fi journal activates"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel.log"
+      },
+      "stderr": "",
+      "note": "journalctl -k of the 2026-09-13 boot (kernel-after-alias.log), default short format"
+    },
+    {
+      "argv": [
+        "dtc",
+        "-I",
+        "fs",
+        "-O",
+        "dts",
+        "/proc/device-tree"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree.dts"
+      },
+      "stderr": "",
+      "note": "j416c device tree decompiled from the Aurora kernel package's DTB (j416c-before.dts); m1n1 fills per-unit values such as MAC addresses at boot"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "first-boot.log"
+      },
+      "stderr": "",
+      "note": "journal lines quoted in 41-deferred-evidence.txt: the offline first-boot failure (vulkan.sh, target not found) and the rerun that completed"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=NetworkManager.service",
+        "--unit=iwd.service",
+        "--output=short-precise",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "wifi.log"
+      },
+      "stderr": "",
+      "note": "boot-1-failure.log: the first join that got no lease and the second attempt that did"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=systemd-logind.service",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "lid.log"
+      },
+      "stderr": "",
+      "note": "lid close suspending with a USB-C monitor attached, as quoted in the logind issue draft (timestamps and host trimmed there)"
+    }
+  ],
+  "files": {
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (16-inch, M2 Max, 2023)\u0000"
+    },
+    "/proc/device-tree/compatible": {
+      "text": "apple,j416c\u0000apple,t6021\u0000apple,arm-platform\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "omarchy-m2-max\n"
+    }
+  },
+  "dirs": {
+    "/home": [
+      "kestrel"
+    ]
+  }
+}

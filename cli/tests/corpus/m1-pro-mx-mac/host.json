@@ -1,0 +1,108 @@
+{
+  "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac: raw host answers for record mode",
+  "source": "Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them.",
+  "pseudonymized": "Committed evidence is pseudonymized: every Wi-Fi network name, MAC address, IP address, UUID, boot id and account name in it was swapped for a fake of the same shape before commit, so the corpus exercises the scrubber on real log formats without publishing the real values. 'forbidden' lists the identifiers (decoys and lab hostnames) that must never survive into a recording or report.",
+  "forbidden": [
+    "omarchy-m1-pro",
+    "kestrel",
+    "fe80::4bd6:ad26:defe:d029",
+    "10.52.165.194"
+  ],
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.13-1-1-ARCH\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n",
+      "note": "stand-in: the evidence doesn't list the saved connections"
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uname-a.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lspci",
+        "-nn"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "lspci.txt"
+      },
+      "stderr": "",
+      "note": "network controllers only, as the evidence kept them"
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "devices",
+        "-j"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "hyprctl-devices.json"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ip",
+        "-brief",
+        "address"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "ip-address.txt"
+      },
+      "stderr": "",
+      "note": "the Wi-Fi line only, as the evidence kept it"
+    }
+  ],
+  "files": {
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
+    },
+    "/proc/device-tree/compatible": {
+      "text": "apple,j314s\u0000apple,t6000\u0000apple,arm-platform\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "omarchy-m1-pro\n"
+    }
+  },
+  "dirs": {
+    "/home": [
+      "kestrel"
+    ]
+  }
+}

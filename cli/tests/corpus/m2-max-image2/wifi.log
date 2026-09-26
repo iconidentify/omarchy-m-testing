@@ -1,0 +1,121 @@
+IDX BOOT ID                          FIRST ENTRY                  LAST ENTRY
+ -1 a7eae2c603ca2b6a0ff4aa6723fab870 Sat 2026-09-26 08:36:46 AEST Sat 2026-09-26 08:47:27 AEST
+  0 506dba8cd9bc8f82ff1dbbf1ea3c482d Sat 2026-09-26 08:47:52 AEST Sat 2026-09-26 08:55:14 AEST
+Sep 26 08:40:28.990377 omarchy-m2-max kernel: ieee80211 phy0: brcmf_escan_timeout: timer expired
+Sep 26 08:40:33.600095 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6000] device (wlan0): Activation: starting connection 'Bellbird7C21-56' (19cb5303-6637-3988-ecd0-1235a3c55b23)
+Sep 26 08:40:33.600158 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6001] audit: op="connection-add-activate" uuid="19cb5303-6637-3988-ecd0-1235a3c55b23" name="Bellbird7C21-56" pid=33938 uid=1000 result="success"
+Sep 26 08:40:33.600296 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6002] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 26 08:40:33.600401 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6003] manager: NetworkManager state is now CONNECTING
+Sep 26 08:40:33.600481 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6004] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 26 08:40:33.610273 omarchy-m2-max iwd[11021]: event: connect-info, ssid: Bellbird7C21-56, bss: f0:c0:7b:98:e6:d4, signal: -39, load: 9/255
+Sep 26 08:40:33.610273 omarchy-m2-max iwd[11021]: event: state, old: autoconnect_full, new: connecting
+Sep 26 08:40:33.610570 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.6105] device (wlan0): new IWD device state is connecting
+Sep 26 08:40:33.624378 omarchy-m2-max kernel: ieee80211 phy0: brcmf_c_set_joinpref_default: Set join_pref error (-52)
+Sep 26 08:40:33.839713 omarchy-m2-max iwd[11021]: event: state, old: connecting, new: connected
+Sep 26 08:40:33.840382 omarchy-m2-max kernel: ieee80211 phy0: brcmf_p2p_send_action_frame: Unknown Frame: category 0x5, action 0x4
+Sep 26 08:40:33.840405 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.8403] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful.  Connected to 'Bellbird7C21-56'.
+Sep 26 08:40:33.840522 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.8405] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 26 08:40:33.847737 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.8477] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 26 08:40:33.848157 omarchy-m2-max NetworkManager[11014]: <info>  [1790376033.8481] device (wlan0): new IWD device state is connected
+Sep 26 08:40:35.517477 omarchy-m2-max avahi-daemon[10978]: Joining mDNS multicast group on interface wlan0.IPv6 with address fe80::4b9d:64a3:afd:ba19.
+Sep 26 08:40:35.517510 omarchy-m2-max avahi-daemon[10978]: New relevant interface wlan0.IPv6 for mDNS.
+Sep 26 08:40:35.517520 omarchy-m2-max avahi-daemon[10978]: Registering new address record for fe80::4b9d:64a3:afd:ba19 on wlan0.*.
+Sep 26 08:41:16.464186 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4641] device (wlan0): disconnecting for new activation request.
+Sep 26 08:41:16.464200 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4641] device (wlan0): state change: ip-config -> deactivating (reason 'new-activation', managed-type: 'full')
+Sep 26 08:41:16.478424 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4784] dhcp4 (wlan0): canceled DHCP transaction
+Sep 26 08:41:16.478441 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4784] dhcp4 (wlan0): state changed no lease
+Sep 26 08:41:16.478859 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4788] manager: NetworkManager state is now CONNECTED_LOCAL
+Sep 26 08:41:16.479766 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.4797] audit: op="connection-add-activate" uuid="77cb54c5-d17d-7fcc-397b-6d108f09e4e4" name="Bellbird7C21" pid=33938 uid=1000 result="success"
+Sep 26 08:41:16.501422 omarchy-m2-max iwd[11021]: event: state, old: connected, new: disconnecting
+Sep 26 08:41:16.505740 omarchy-m2-max iwd[11021]: event: state, old: disconnecting, new: disconnected
+Sep 26 08:41:16.505817 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5058] device (wlan0): new IWD device state is disconnecting
+Sep 26 08:41:16.505915 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5059] device (wlan0): state change: deactivating -> disconnected (reason 'new-activation', managed-type: 'full')
+Sep 26 08:41:16.506025 omarchy-m2-max avahi-daemon[10978]: Withdrawing address record for fe80::4b9d:64a3:afd:ba19 on wlan0.
+Sep 26 08:41:16.506040 omarchy-m2-max avahi-daemon[10978]: Leaving mDNS multicast group on interface wlan0.IPv6 with address fe80::4b9d:64a3:afd:ba19.
+Sep 26 08:41:16.506049 omarchy-m2-max avahi-daemon[10978]: Interface wlan0.IPv6 no longer relevant for mDNS.
+Sep 26 08:41:16.506528 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5065] device (wlan0): Activation: starting connection 'Bellbird7C21' (77cb54c5-d17d-7fcc-397b-6d108f09e4e4)
+Sep 26 08:41:16.506750 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5067] device (wlan0): new IWD device state is disconnected
+Sep 26 08:41:16.506992 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5069] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 26 08:41:16.507081 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5070] manager: NetworkManager state is now CONNECTING
+Sep 26 08:41:16.507214 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5072] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 26 08:41:16.520577 omarchy-m2-max iwd[11021]: event: connect-info, ssid: Bellbird7C21, bss: 77:ef:01:3f:c2:88, signal: -35, load: 63/255
+Sep 26 08:41:16.520577 omarchy-m2-max iwd[11021]: event: state, old: disconnected, new: connecting
+Sep 26 08:41:16.520715 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.5207] device (wlan0): new IWD device state is connecting
+Sep 26 08:41:16.533379 omarchy-m2-max kernel: ieee80211 phy0: brcmf_c_set_joinpref_default: Set join_pref error (-52)
+Sep 26 08:41:16.649606 omarchy-m2-max iwd[11021]: event: state, old: connecting, new: connected
+Sep 26 08:41:16.651646 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.6516] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful.  Connected to 'Bellbird7C21'.
+Sep 26 08:41:16.651857 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.6518] device (wlan0): new IWD device state is connected
+Sep 26 08:41:16.651995 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.6519] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 26 08:41:16.660199 omarchy-m2-max NetworkManager[11014]: <info>  [1790376076.6601] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 26 08:41:17.039451 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.0394] dhcp4 (wlan0): state changed new lease, address=10.118.110.232, acd pending
+Sep 26 08:41:17.182469 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1824] dhcp4 (wlan0): state changed new lease, address=10.118.110.232
+Sep 26 08:41:17.182949 omarchy-m2-max avahi-daemon[10978]: Joining mDNS multicast group on interface wlan0.IPv4 with address 10.118.110.232.
+Sep 26 08:41:17.187160 omarchy-m2-max avahi-daemon[10978]: New relevant interface wlan0.IPv4 for mDNS.
+Sep 26 08:41:17.187171 omarchy-m2-max avahi-daemon[10978]: Registering new address record for 10.118.110.232 on wlan0.IPv4.
+Sep 26 08:41:17.188113 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1880] policy: set 'Bellbird7C21' (wlan0) as default for IPv4 routing and DNS
+Sep 26 08:41:17.189229 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set search domain list to: iot.home.arpa
+Sep 26 08:41:17.189422 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set default route setting: yes
+Sep 26 08:41:17.189734 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set DNS server list to: 10.159.16.3
+Sep 26 08:41:17.190558 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1905] device (wlan0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 26 08:41:17.191853 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1918] device (wlan0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 26 08:41:17.191892 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1918] device (wlan0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 26 08:41:17.192072 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1920] manager: NetworkManager state is now CONNECTED_SITE
+Sep 26 08:41:17.192237 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.1922] device (wlan0): Activation: successful, device activated.
+Sep 26 08:41:17.856215 omarchy-m2-max NetworkManager[11014]: <info>  [1790376077.8562] manager: NetworkManager state is now CONNECTED_GLOBAL
+Sep 26 08:41:18.013464 omarchy-m2-max avahi-daemon[10978]: Joining mDNS multicast group on interface wlan0.IPv6 with address fe80::c712:bd3:b033:120c.
+Sep 26 08:41:18.013496 omarchy-m2-max avahi-daemon[10978]: New relevant interface wlan0.IPv6 for mDNS.
+Sep 26 08:41:18.013505 omarchy-m2-max avahi-daemon[10978]: Registering new address record for fe80::c712:bd3:b033:120c on wlan0.*.
+Sep 26 08:41:19.054594 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0545] device (wlan0): disconnecting for new activation request.
+Sep 26 08:41:19.054617 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0546] device (wlan0): state change: activated -> deactivating (reason 'new-activation', managed-type: 'full')
+Sep 26 08:41:19.065412 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0654] dhcp4 (wlan0): canceled DHCP transaction
+Sep 26 08:41:19.065425 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0654] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 26 08:41:19.065442 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0654] dhcp4 (wlan0): state changed no lease
+Sep 26 08:41:19.066819 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0668] audit: op="connection-activate" uuid="19cb5303-6637-3988-ecd0-1235a3c55b23" name="Bellbird7C21-56" pid=33938 uid=1000 result="success"
+Sep 26 08:41:19.067108 omarchy-m2-max avahi-daemon[10978]: Withdrawing address record for 10.118.110.232 on wlan0.
+Sep 26 08:41:19.067154 omarchy-m2-max avahi-daemon[10978]: Leaving mDNS multicast group on interface wlan0.IPv4 with address 10.118.110.232.
+Sep 26 08:41:19.071401 omarchy-m2-max avahi-daemon[10978]: Interface wlan0.IPv4 no longer relevant for mDNS.
+Sep 26 08:41:19.093126 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client reset search domain list.
+Sep 26 08:41:19.093404 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set default route setting: no
+Sep 26 08:41:19.093644 omarchy-m2-max iwd[11021]: event: state, old: connected, new: disconnecting
+Sep 26 08:41:19.093839 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client reset DNS server list.
+Sep 26 08:41:19.096761 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.0967] manager: NetworkManager state is now CONNECTED_LOCAL
+Sep 26 08:41:19.101093 omarchy-m2-max iwd[11021]: event: state, old: disconnecting, new: disconnected
+Sep 26 08:41:19.101296 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1012] device (wlan0): new IWD device state is disconnecting
+Sep 26 08:41:19.101499 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1014] device (wlan0): state change: deactivating -> disconnected (reason 'new-activation', managed-type: 'full')
+Sep 26 08:41:19.101722 omarchy-m2-max avahi-daemon[10978]: Withdrawing address record for fe80::c712:bd3:b033:120c on wlan0.
+Sep 26 08:41:19.101757 omarchy-m2-max avahi-daemon[10978]: Leaving mDNS multicast group on interface wlan0.IPv6 with address fe80::c712:bd3:b033:120c.
+Sep 26 08:41:19.101777 omarchy-m2-max avahi-daemon[10978]: Interface wlan0.IPv6 no longer relevant for mDNS.
+Sep 26 08:41:19.102943 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1029] device (wlan0): Activation: starting connection 'Bellbird7C21-56' (19cb5303-6637-3988-ecd0-1235a3c55b23)
+Sep 26 08:41:19.103711 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1036] device (wlan0): new IWD device state is disconnected
+Sep 26 08:41:19.104274 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1042] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 26 08:41:19.104349 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1043] manager: NetworkManager state is now CONNECTING
+Sep 26 08:41:19.104594 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1045] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 26 08:41:19.105681 omarchy-m2-max iwd[11021]: event: connect-info, ssid: Bellbird7C21-56, bss: f0:c0:7b:98:e6:d4, signal: -39, load: 9/255
+Sep 26 08:41:19.105681 omarchy-m2-max iwd[11021]: event: state, old: disconnected, new: connecting
+Sep 26 08:41:19.105929 omarchy-m2-max NetworkManager[11014]: <info>  [1790376079.1059] device (wlan0): new IWD device state is connecting
+Sep 26 08:41:20.111395 omarchy-m2-max kernel: ieee80211 phy0: brcmf_cfg80211_get_station: GET STA INFO failed, -52
+Sep 26 08:41:21.290403 omarchy-m2-max kernel: ieee80211 phy0: brcmf_c_set_joinpref_default: Set join_pref error (-52)
+Sep 26 08:41:21.764618 omarchy-m2-max iwd[11021]: event: state, old: connecting, new: connected
+Sep 26 08:41:21.765782 omarchy-m2-max NetworkManager[11014]: <info>  [1790376081.7657] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful.  Connected to 'Bellbird7C21-56'.
+Sep 26 08:41:21.766084 omarchy-m2-max NetworkManager[11014]: <info>  [1790376081.7660] device (wlan0): new IWD device state is connected
+Sep 26 08:41:21.766338 omarchy-m2-max NetworkManager[11014]: <info>  [1790376081.7663] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 26 08:41:21.780146 omarchy-m2-max NetworkManager[11014]: <info>  [1790376081.7801] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 26 08:41:22.941457 omarchy-m2-max avahi-daemon[10978]: Joining mDNS multicast group on interface wlan0.IPv6 with address fe80::4b9d:64a3:afd:ba19.
+Sep 26 08:41:22.941490 omarchy-m2-max avahi-daemon[10978]: New relevant interface wlan0.IPv6 for mDNS.
+Sep 26 08:41:22.941497 omarchy-m2-max avahi-daemon[10978]: Registering new address record for fe80::4b9d:64a3:afd:ba19 on wlan0.*.
+Sep 26 08:41:24.296627 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.2966] dhcp4 (wlan0): state changed new lease, address=10.155.4.108, acd pending
+Sep 26 08:41:24.433497 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4334] dhcp4 (wlan0): state changed new lease, address=10.155.4.108
+Sep 26 08:41:24.433989 omarchy-m2-max avahi-daemon[10978]: Joining mDNS multicast group on interface wlan0.IPv4 with address 10.155.4.108.
+Sep 26 08:41:24.440017 omarchy-m2-max avahi-daemon[10978]: New relevant interface wlan0.IPv4 for mDNS.
+Sep 26 08:41:24.440039 omarchy-m2-max avahi-daemon[10978]: Registering new address record for 10.155.4.108 on wlan0.IPv4.
+Sep 26 08:41:24.441011 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4409] policy: set 'Bellbird7C21-56' (wlan0) as default for IPv4 routing and DNS
+Sep 26 08:41:24.442106 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set search domain list to: home.arpa
+Sep 26 08:41:24.442601 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set default route setting: yes
+Sep 26 08:41:24.443116 omarchy-m2-max systemd-resolved[10766]: wlan0: Bus client set DNS server list to: 10.139.113.3
+Sep 26 08:41:24.444115 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4440] device (wlan0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 26 08:41:24.445905 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4458] device (wlan0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 26 08:41:24.446057 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4460] device (wlan0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 26 08:41:24.446523 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4465] manager: NetworkManager state is now CONNECTED_SITE
+Sep 26 08:41:24.446634 omarchy-m2-max NetworkManager[11014]: <info>  [1790376084.4466] device (wlan0): Activation: successful, device activated.
+Sep 26 08:41:25.096895 omarchy-m2-max NetworkManager[11014]: <info>  [1790376085.0968] manager: NetworkManager state is now CONNECTED_GLOBAL
+Sep 26 08:41:26.503920 omarchy-m2-max systemd[1]: NetworkManager-dispatcher.service: Deactivated successfully.

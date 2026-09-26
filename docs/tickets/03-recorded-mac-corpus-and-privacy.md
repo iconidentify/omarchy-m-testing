@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] A record mode captures host-boundary responses into a replayable recording, scrubbed before it is saved
-- [ ] Recordings seeded from existing M2 and M1 evidence and replayable in the Seam A tests
-- [ ] Allowlist privacy model: only permitted fields reach the report; evidence lines pass a scrubber for MAC addresses, IP addresses, Wi-Fi network names, home paths, hostnames, usernames and long hex identifiers
-- [ ] Evidence limited to text and at most 64 KiB per report
-- [ ] A zero-leak test runs the scrubber over real M1/M2 kernel logs and device-tree dumps and fails on any forbidden identifier
+- [x] A record mode captures host-boundary responses into a replayable recording, scrubbed before it is saved
+- [x] Recordings seeded from existing M2 and M1 evidence and replayable in the Seam A tests
+- [x] Allowlist privacy model: only permitted fields reach the report; evidence lines pass a scrubber for MAC addresses, IP addresses, Wi-Fi network names, home paths, hostnames, usernames and long hex identifiers
+- [x] Evidence limited to text and at most 64 KiB per report
+- [x] A zero-leak test runs the scrubber over real M1/M2 kernel logs and device-tree dumps and fails on any forbidden identifier
