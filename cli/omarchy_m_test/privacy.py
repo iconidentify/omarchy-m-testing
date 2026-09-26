@@ -70,6 +70,8 @@ REPORT_ALLOWLIST: dict[str, Any] = {
     "system": _SYSTEM,
     "inventory": _INVENTORY,
     "checks": [_CHECK],
+    # Added by signing.py after the allowlist is applied; listed so the allowlist stays the schema.
+    "signature": {"public_key": True, "signature": True},
 }
 # Free-text report fields that are scrubbed like evidence. The model is the
 # device-tree model string, constrained by the schema, and is left alone.

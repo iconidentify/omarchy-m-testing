@@ -3,9 +3,7 @@ require "test_helper"
 # Seam B: the evidence rules (text only, at most 64 KiB per report) hold at
 # upload too, for reports that pass the schema.
 class ReportEvidenceTest < ActionDispatch::IntegrationTest
-  def upload(report)
-    post "/api/v1/reports", params: report.to_json, headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
-  end
+  def upload(report) = upload_report(report)
 
   def with_checks(*evidence)
     GoldenReports.json("m2-max-image2").tap do |report|

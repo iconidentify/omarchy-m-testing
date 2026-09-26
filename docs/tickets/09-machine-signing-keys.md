@@ -8,8 +8,8 @@
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Key created on first run, stored with user-only permissions, reused on later runs; no prompt
-- [ ] Every report carries the machine's public key and a signature over the report
-- [ ] Site rejects reports with invalid signatures and rate-limits per key (and per IP)
-- [ ] "Two or more distinct machines agree" in 08 counts distinct machine keys
-- [ ] Seam A and B tests for signing, verification and rejection of tampered reports
+- [x] Key created on first run, stored with user-only permissions, reused on later runs; no prompt
+- [x] Every report carries the machine's public key and a signature over the report
+- [x] Site rejects reports with invalid signatures and rate-limits per key (and per IP)
+- [x] "Two or more distinct machines agree" in 08 counts distinct machine keys
+- [x] Seam A and B tests for signing, verification and rejection of tampered reports

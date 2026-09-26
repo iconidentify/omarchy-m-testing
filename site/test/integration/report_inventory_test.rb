@@ -3,7 +3,7 @@ require "test_helper"
 # Seam B: the hardware inventory of the golden reports on the report page.
 class ReportInventoryTest < ActionDispatch::IntegrationTest
   def upload_and_show(name)
-    post "/api/v1/reports", params: GoldenReports.text(name), headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+    upload_report golden(name)
     assert_response :created
     get URI(response.parsed_body["report_url"]).request_uri
     assert_response :success
@@ -36,7 +36,7 @@ class ReportInventoryTest < ActionDispatch::IntegrationTest
 
   test "a report without an inventory shows no hardware section" do
     report = GoldenReports.json("m2-max-image2").tap { |r| r.delete("inventory") }
-    post "/api/v1/reports", params: report.to_json, headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+    upload_report report
     assert_response :created
     get URI(response.parsed_body["report_url"]).request_uri
 
@@ -49,8 +49,9 @@ class ReportInventoryTest < ActionDispatch::IntegrationTest
     with_value = GoldenReports.json("m2-max-image2").tap { |r| r["inventory"]["nodes"][0]["compatible"] = "serial-number = C02XXXXXXXXX" }
 
     [ with_path, with_value ].each do |report|
-      post "/api/v1/reports", params: report.to_json, headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+      upload_report report
       assert_response :unprocessable_content
+      assert_match "does not match report schema", response.parsed_body["error"]
     end
     assert_equal 0, Report.count
   end
