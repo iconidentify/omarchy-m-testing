@@ -4,13 +4,13 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent (needs the owner to run `railway login` on the build Mac first)
+**Status:** done
 
 Parent spec: maralcbr/omarchy-m-testing#1
 
-- [ ] Site and Postgres deployed on the owner's Railway account, auto-deploying from `main`
-- [ ] Porkbun DNS: apex alias to Railway, `www` redirect; HTTPS certificate valid
-- [ ] Tagged releases publish a signed CLI tarball; the signing public key is pinned in the installer and README
-- [ ] The installer verifies the signature, installs under the user's local share directory and puts `omarchy-m-test` on the PATH; re-running upgrades in place
-- [ ] The CLI checks for a newer release before each run and says so
-- [ ] An end-to-end smoke test (install, run in `--dry-run`, upload a golden report) passes against production
+- [x] Site and Postgres deployed on the owner's Railway account, auto-deploying from `main`
+- [x] Porkbun DNS: apex alias to Railway, `www` redirect; HTTPS certificate valid
+- [x] Tagged releases publish a signed CLI tarball; the signing public key is pinned in the installer and README
+- [x] The installer verifies the signature, installs under the user's local share directory and puts `omarchy-m-test` on the PATH; re-running upgrades in place
+- [x] The CLI checks for a newer release before each run and says so
+- [x] An end-to-end smoke test (install, run in `--dry-run`, upload a golden report) passes against production
