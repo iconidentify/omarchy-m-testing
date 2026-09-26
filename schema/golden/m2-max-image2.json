@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 2,
-  "catalogue_version": 3,
+  "catalogue_version": 4,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1024,6 +1024,40 @@
       "classification": {
         "outcome": "not-tested",
         "feature": "gpu",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "video.h264-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the test card in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "video.hevc-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the test card in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
         "layer": "asahi",
         "expected": {
           "asahi": "linux-asahi",

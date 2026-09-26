@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "consent_version": 2,
-  "catalogue_version": 3,
+  "catalogue_version": 4,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1032,6 +1032,40 @@
       }
     },
     {
+      "id": "video.h264-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the test card in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "video.hevc-on-screen",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: no Wayland desktop session to show the test card in"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "video-decoder",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "display.outputs",
       "kind": "automatic",
       "status": "pass",
@@ -1330,6 +1364,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQMadczztURkT6hBYv5/vwHP3XXgTLdwN2NVn4jMDqF\nEcmcpXZe+HC7Fy/ry529Qpqo0wVZNIJWywoU+Nya70+wU=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQCxj2cecCMixtNGv2ONItjb/XI4x5+r+lhyJBODGp0\n/SSVWUGtkSatzc/MZjccDXTQPp0j0D25dBOBMDAd2IYAk=\n-----END SSH SIGNATURE-----"
   }
 }

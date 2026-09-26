@@ -91,7 +91,7 @@ class GoldenRunsTest(unittest.TestCase):
         _, _, report = run(M2_MAX)
 
         prefixes = {check["id"].split(".")[0] for check in report["checks"]}
-        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "display", "audio", "network", "input", "power", "cpu"})
+        self.assertEqual(prefixes, {"system", "boot", "packages", "setup", "hardware", "gpu", "video", "display", "audio", "network", "input", "power", "cpu"})
         self.assertTrue(all(check["kind"] == "automatic" for check in report["checks"]))
 
     def test_the_offline_first_boot_failure_on_the_m2_is_a_failure_even_after_the_rerun(self):

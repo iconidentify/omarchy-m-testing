@@ -81,9 +81,9 @@ RECORDED_SOURCES: tuple[list[str], ...] = (
     ["ip", "-brief", "address"],
 )
 
-# Binary files whose content may be kept: none yet. A check that reads a
-# binary it produced itself (a screenshot of a test card) adds its prefix.
-RECORDABLE_BINARY_PREFIXES: tuple[str, ...] = ()
+# Binary files whose content may be kept: only ones a check produced itself,
+# such as the video check's screenshots of its test card (video.py).
+RECORDABLE_BINARY_PREFIXES: tuple[str, ...] = ("/tmp/omarchy-m-test-video.",)
 
 
 class RecordingMiss(Exception):
