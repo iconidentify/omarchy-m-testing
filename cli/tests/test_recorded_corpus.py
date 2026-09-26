@@ -78,6 +78,44 @@ DEVICE_SERIALS = {
     ("pw-dump",): ('    "node.name": "bluez_output.7C_C1_80_12_34_56.1",\n    "api.bluez5.path": "/org/bluez/hci0/dev_7C_C1_80_12_34_56",\n',
                    ("7C_C1_80_12_34_56",)),
 }
+# Names people give their devices, in the formats the tools print them, each with what
+# must not come out and what must stay readable; a display mode that isn't an e-mail
+# address; and edid-decode's raw hex dump (the serial as bytes).
+DEVICE_NAMES = {
+    ("bluetoothctl", "devices"): ("Device 7C:C1:80:12:34:56 Marcelo's AirPods Pro\nController F0:C0:7B:98:E6:D4 Kestrel's MacBook Pro [default]\n"
+                                  "Device 11:22:33:44:55:66 Magic Keyboard\n[CHG] Device 7C:C1:80:12:34:56 RSSI: -60\n",
+                                  ("Marcelo", "Kestrel"), ("Device <mac> <device-name>", "Controller <mac> <device-name> [default]",
+                                                           "Device <mac> Magic Keyboard", "Device <mac> RSSI: -60")),
+    ("bluetoothctl", "info", "7C:C1:80:12:34:56"): (
+        "Device 7C:C1:80:12:34:56 (public)\n\tName: Marcelo's AirPods Pro\n\tAlias: Kestrel Pods\n\tClass: 0x00240418\n\tPaired: yes\n"
+        "[CHG] Device 7C:C1:80:12:34:56 Alias: Pods of Kestrel\n",
+        ("Marcelo", "Kestrel"), ("Device <mac> (public)", "\tAlias: <device-name>", "\tClass: 0x00240418", "Alias: <device-name>"),
+    ),
+    ("pw-dump",): (
+        '[\n  {\n    "id": 60,\n    "info": {\n      "props": {\n        "device.api": "bluez5",\n        "api.bluez5.address": "7C:C1:80:12:34:56",\n'
+        '        "device.alias": "O\'Neill\'s Pods",\n        "device.description": "Marcelo\'s AirPods Pro"\n      }\n    }\n  },\n'
+        '  {\n    "id": 61,\n    "info": {\n      "props": {\n        "node.name": "alsa_output.platform-sound.HiFi__Speaker__sink",\n'
+        '        "node.description": "MacBook Pro Speakers"\n      }\n    }\n  }\n]\n',
+        ("Marcelo", "O'Neill"), ('"node.description": "MacBook Pro Speakers"', '"device.description": "<device-name>"', '"device.alias": "<device-name>"'),
+    ),
+    ("pactl", "list", "sinks"): (
+        "Sink #60\n\tName: bluez_output.7C_C1_80_12_34_56.1\n\tDescription: Marcelo's AirPods Pro\n"
+        "Sink #61\n\tName: alsa_output.platform-sound.HiFi__Speaker__sink\n\tDescription: MacBook Pro Speakers\n",
+        ("Marcelo",), ("\tDescription: <device-name>", "\tDescription: MacBook Pro Speakers"),
+    ),
+    ("wpctl", "status"): (" ├─ Sinks:\n │  *   60. Marcelo's AirPods Pro             [vol: 0.40]\n │      61. MacBook Pro Speakers [vol: 0.45]\n",
+                          ("Marcelo",), ("60. <device-name>", "61. MacBook Pro Speakers")),
+    ("hostnamectl",): ("   Static hostname: kestrels-mac\n   Pretty hostname: Kestrel's MacBook Pro\n  Hardware Vendor: Apple Inc.\n",
+                       ("Kestrel", "kestrels-mac"), ("Pretty hostname: <device-name>", "Hardware Vendor: Apple Inc.")),
+    ("hyprctl", "monitors", "all"): ("Monitor USB-2 (ID 1):\n\t3440x1440@59.97300 at 1728x0\n", (), ("\t3440x1440@59.97300 at 1728x0",)),
+    ("edid-decode", "/sys/class/drm/card1-DP-2/edid", "--raw"): (
+        "edid-decode (hex):\n\n00 ff ff ff ff ff ff 00 10 ac 42 a2 4c 4c 4b 42\n1c 21 01 04 b5 50 21 78 3b 8f 05 ad 50 45 a8 25\n"
+        "00 00 00 ff 00 39 52 4b 58 5a 4e 33 0a 20 20 20\n\n----------------\n\nBlock 0, Base EDID:\n",
+        ("4c 4c 4b 42", "39 52 4b 58"), ("edid-decode (hex):\n\n[hex dump removed]\n\n----------------", "Block 0, Base EDID:"),
+    ),
+}
+# Read as a file: /etc/machine-info holds the pretty hostname too.
+MACHINE_INFO = ("/etc/machine-info", 'PRETTY_HOSTNAME="Kestrel\'s MacBook Pro"\nCHASSIS=laptop\n')
 # sysfs files that hold nothing but a serial.
 SERIAL_FILES = {
     "/sys/bus/usb/devices/1-2/serial": "201405280001\n",
@@ -255,6 +293,39 @@ class ZeroLeakTest(unittest.TestCase):
                     self.assertIn(kept, plain)
         self.assertEqual({path: saved["files"][path] for path in SERIAL_FILES}, {path: {"text": "<serial>\n"} for path in SERIAL_FILES})
 
+    def test_device_names_hex_dumps_and_display_modes(self):
+        for stdout, secrets, _ in DEVICE_NAMES.values():
+            for value in secrets:
+                self.assertIn(value, stdout)  # the fixtures really hold what must not come out
+        machine = RecordedHost({
+            "recording_version": 1, "description": "device names", "source": "tests",
+            "commands": [{"argv": list(argv), "returncode": 0, "stdout": stdout, "stderr": ""} for argv, (stdout, _, _) in DEVICE_NAMES.items()],
+            "files": {MACHINE_INFO[0]: {"text": MACHINE_INFO[1]}},
+            "dirs": {},
+        })
+        recorder = RecordingHost(machine)
+        recorder.capture_sources(list(DEVICE_NAMES))
+        recorder.read_file(MACHINE_INFO[0])
+        saved = recorder.recording(privacy.Scrubber())
+        contract = ReportPrivacyContractTest()
+        # In a report, each tool's output is one check's evidence, a line at a time.
+        enforced = privacy.enforce(contract.report([contract.check(stdout.splitlines()) for stdout, _, _ in DEVICE_NAMES.values()]),
+                                   privacy.Scrubber())
+        outputs = {
+            "recording": ([c["stdout"] for c in saved["commands"]], saved["files"][MACHINE_INFO[0]]["text"]),
+            "report": (["\n".join(check["evidence"]) + "\n" for check in enforced["checks"]], None),
+        }
+        for output, (texts, machine_info) in outputs.items():
+            for (argv, (_, secrets, kept)), text in zip(DEVICE_NAMES.items(), texts):
+                with self.subTest(output=output, tool=" ".join(argv)):
+                    for value in secrets:
+                        self.assertNotIn(value.lower(), text.lower())
+                    for value in kept:
+                        self.assertIn(value, text)
+            if machine_info is not None:
+                self.assertEqual(machine_info, 'PRETTY_HOSTNAME="<device-name>"\nCHASSIS=laptop\n')
+        self.assertEqual(enforced["checks"][-1]["evidence"].count(privacy.HEX_DUMP_NOTE), 1)
+
     def test_scrubbed_evidence_keeps_its_placeholders(self):
         text = record("m2-max-image2").written[RECORDING_FILE]
         for placeholder in ("<hostname>", "<user>", "<home>", "<ssid>", "<mac>", "<ip>", "<uuid>", "<hex>"):
@@ -337,6 +408,13 @@ class ReportPrivacyContractTest(unittest.TestCase):
 
         self.assertEqual(evidence[:3], ['{"name": "eDP-1", "serial": "<serial>"}', "E: ID_SERIAL_SHORT=<serial>", "E: ID_SERIAL_SHORT=<serial>"])
         self.assertEqual(evidence[3:], lines[3:])
+
+    def test_a_bluetooth_controller_named_after_the_host_stays_the_hostname(self):
+        lines = ["Controller F0:C0:7B:98:E6:D4 omarchy-m2-max [default]", "Sep 26 08:40:28 omarchy-m2-max kernel: PM: suspend entry (s2idle)"]
+
+        evidence = privacy.enforce(self.report([self.check(lines)]), privacy.Scrubber(hostnames=["omarchy-m2-max"]))["checks"][0]["evidence"]
+
+        self.assertEqual(evidence, ["Controller <mac> <hostname> [default]", "Sep 26 08:40:28 <hostname> kernel: PM: suspend entry (s2idle)"])
 
     def test_a_short_common_account_name_leaves_the_model_alone(self):
         report = self.report([self.check(["kernel: Machine model: Apple MacBook Pro (16-inch, M2 Max, 2023)"])])

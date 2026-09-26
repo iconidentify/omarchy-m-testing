@@ -27,7 +27,7 @@ results of the finished ones, pending restorers) is written to
 $XDG_STATE_HOME/omarchy-m-test/checkpoint.json (~/.local/state/...). A run that
 finds one for the same tool, catalogue, Mac and kernel offers to resume: the
 finished sections aren't run again, the interrupted one starts over. It also
-keeps the serial values the scrubber learned from the finished sections, so the
+keeps the serial values and device names the scrubber learned from the finished sections, so the
 resumed run removes them from its own evidence too. The checkpoint is removed
 once the report is written.
 """
@@ -192,9 +192,10 @@ class State:
     restorers: list[Restorer] = field(default_factory=list)
     key: dict[str, Any] = field(default_factory=dict)
     shared: dict[str, Any] = field(default_factory=dict)
-    # Serial values the scrubber learned from finished sections (privacy.Scrubber.learn_serials),
+    # Serial values the scrubber learned from finished sections (privacy.Scrubber.learn),
     # so a resumed run still removes them from the sections it runs; the file is only the user's.
     serials: list[str] = field(default_factory=list)
+    names: list[str] = field(default_factory=list)  # device names likewise
 
     def to_text(self) -> str:
         return json.dumps({
@@ -204,6 +205,7 @@ class State:
             "done": self.done,
             "shared": self.shared,
             **({"serials": self.serials} if self.serials else {}),
+            **({"names": self.names} if self.names else {}),
             "restorers": [
                 {
                     "description": r.description, "argv": list(r.argv),
@@ -228,7 +230,7 @@ class State:
             ]
             done = {str(k): list(v) for k, v in data.get("done", {}).items()}
             return cls([str(s) for s in data.get("selected", [])], done, restorers, dict(data.get("key", {})), dict(data.get("shared", {})),
-                       [str(s) for s in data.get("serials", [])])
+                       [str(s) for s in data.get("serials", [])], [str(n) for n in data.get("names", [])])
         except (ValueError, TypeError, KeyError, AttributeError):
             return None
 

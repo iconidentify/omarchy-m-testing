@@ -363,11 +363,11 @@ class RecordingHost:
 
     def recording(self, scrubber: Scrubber) -> dict[str, Any]:
         """The scrubbed recording of everything captured so far."""
-        for entry in self.commands:  # a serial one output names is removed from all of them
-            scrubber.learn_serials(entry["stdout"] + "\n" + entry["stderr"])
+        for entry in self.commands:  # a serial or device name one output names is removed from all of them
+            scrubber.learn(entry["stdout"] + "\n" + entry["stderr"])
         for data in self.files.values():
             if data is not None:
-                scrubber.learn_serials(data.decode("utf-8", "replace"))
+                scrubber.learn(data.decode("utf-8", "replace"))
         recording = {
             "recording_version": RECORDING_VERSION,
             "description": "Recorded by omarchy-m-test --record",

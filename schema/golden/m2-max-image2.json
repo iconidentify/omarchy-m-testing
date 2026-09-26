@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "consent_version": 2,
   "catalogue_version": 6,
