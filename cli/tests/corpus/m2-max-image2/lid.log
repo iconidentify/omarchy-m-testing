@@ -1,0 +1,3 @@
+systemd-logind[860]: Lid closed.
+systemd-logind[860]: Suspending...
+kernel: PM: suspend entry (s2idle)

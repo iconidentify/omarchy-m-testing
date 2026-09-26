@@ -17,6 +17,9 @@ module Api
         if problems.any?
           render json: { error: "The report does not match report schema v#{ReportSchema::VERSION}.", details: problems },
                  status: :unprocessable_content
+        elsif (problems = ReportEvidence.errors(payload)).any?
+          render json: { error: "The report's evidence must be text and at most 64 KiB.", details: problems },
+                 status: :unprocessable_content
         else
           report = Report.create!(body: payload, schema_version: payload.fetch("schema_version"))
           render json: {

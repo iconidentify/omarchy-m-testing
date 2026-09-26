@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "omarchy-m-test",
+    "version": "0.1.0"
+  },
+  "consent_version": 1,
+  "machine": {
+    "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
+    "board": "j314s",
+    "soc": "t6000",
+    "chip": "M1 Pro",
+    "arch": "aarch64",
+    "kernel": "7.1.13-1-1-ARCH"
+  },
+  "checks": [
+    {
+      "id": "system.identity",
+      "kind": "automatic",
+      "status": "pass",
+      "evidence": [
+        "model: Apple MacBook Pro (14-inch, M1 Pro, 2021)",
+        "compatible: apple,j314s apple,t6000 apple,arm-platform",
+        "chip: M1 Pro (t6000)",
+        "kernel: 7.1.13-1-1-ARCH"
+      ]
+    }
+  ]
+}

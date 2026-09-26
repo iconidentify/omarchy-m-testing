@@ -1,0 +1,91 @@
+{
+  "recording_version": 1,
+  "description": "MacBook Pro 14-inch M1 Pro (j314s, t6000) on mx-mac",
+  "source": "omarchy-m-test --record against tests/corpus/m1-pro-mx-mac/ (scrubbed). Real evidence from the M1 Pro, 2026-09-12: reviews/pr-9835/m1-hardware.log and m1-validation.md (uname, model, PCI, Hyprland input devices, Wi-Fi address). No kernel log or device-tree dump of the M1 exists yet; the v0.1 dogfood run records them.",
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.13-1-1-ARCH\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME",
+        "connection",
+        "show"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "not captured in the seed evidence\n"
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": "Linux <hostname> 7.1.13-1-1-ARCH #1 SMP PREEMPT_DYNAMIC Wed, 09 Sep 2026 09:28:26 +0000 aarch64 GNU/Linux\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lspci",
+        "-nn"
+      ],
+      "returncode": 0,
+      "stdout": "01:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4387 802.11ax Dual Band Wireless LAN Controller [14e4:4433] (rev 07)\n01:00.1 Network controller [0280]: Broadcom Inc. and subsidiaries BRCM4387 Bluetooth Controller [14e4:5f71] (rev 07)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "devices",
+        "-j"
+      ],
+      "returncode": 0,
+      "stdout": "{\n\"mice\": [\n    {\n        \"address\": \"0xaaab1fe8d4f0\",\n        \"name\": \"apple-spi-trackpad\",\n        \"defaultSpeed\": 0.00000,\n        \"scrollFactor\": -1.00\n    }\n],\n\"keyboards\": [\n    {\n        \"address\": \"0xaaab1fe63220\",\n        \"name\": \"apple-smc-power/lid-events\",\n        \"rules\": \"\",\n        \"model\": \"\",\n        \"layout\": \"us\",\n        \"variant\": \"\",\n        \"options\": \"compose:caps,shift:both_capslock_cancel\",\n        \"active_layout_index\": 0,\n        \"active_keymap\": \"English (US)\",\n        \"capsLock\": false,\n        \"numLock\": true,\n        \"main\": false\n    },    {\n        \"address\": \"0xaaab1fe2a8d0\",\n        \"name\": \"apple-spi-keyboard\",\n        \"rules\": \"\",\n        \"model\": \"\",\n        \"layout\": \"us\",\n        \"variant\": \"\",\n        \"options\": \"compose:caps,shift:both_capslock_cancel\",\n        \"active_layout_index\": 0,\n        \"active_keymap\": \"English (US)\",\n        \"capsLock\": false,\n        \"numLock\": true,\n        \"main\": true\n    }\n],\n\"tablets\": [\n\n],\n\"touch\": [\n\n],\n\"switches\": [\n    {\n        \"address\": \"0xaaab1fe51280\",\n        \"name\": \"Apple SMC power/lid events\"\n    }\n]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ip",
+        "-brief",
+        "address"
+      ],
+      "returncode": 0,
+      "stdout": "wlan0            UP             <ip>/24 <ip>/64 \n",
+      "stderr": ""
+    }
+  ],
+  "files": {
+    "/proc/device-tree/compatible": {
+      "text": "apple,j314s\u0000apple,t6000\u0000apple,arm-platform\u0000"
+    },
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "<hostname>\n"
+    }
+  },
+  "dirs": {
+    "/home": [
+      "<user>"
+    ]
+  }
+}

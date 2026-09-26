@@ -186,7 +186,7 @@ class RecordedHostTest(unittest.TestCase):
         with self.assertRaises(RecordingMiss):
             mac.run(["cat", "/etc/hostname"])
         with self.assertRaises(RecordingMiss):
-            mac.list_dir("/home")
+            mac.list_dir("/root")
         with self.assertRaises(RecordingMiss):
             mac.prompt("anything?")
 

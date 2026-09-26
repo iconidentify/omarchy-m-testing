@@ -1,0 +1,51 @@
+{
+"mice": [
+    {
+        "address": "0xaaab1fe8d4f0",
+        "name": "apple-spi-trackpad",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    }
+],
+"keyboards": [
+    {
+        "address": "0xaaab1fe63220",
+        "name": "apple-smc-power/lid-events",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "compose:caps,shift:both_capslock_cancel",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": true,
+        "main": false
+    },    {
+        "address": "0xaaab1fe2a8d0",
+        "name": "apple-spi-keyboard",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "compose:caps,shift:both_capslock_cancel",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": true,
+        "main": true
+    }
+],
+"tablets": [
+
+],
+"touch": [
+
+],
+"switches": [
+    {
+        "address": "0xaaab1fe51280",
+        "name": "Apple SMC power/lid events"
+    }
+]
+}
