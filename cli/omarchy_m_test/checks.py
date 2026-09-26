@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import audio as live_audio, display as live_display, hardware, inventory, scripts
+from . import audio as live_audio, display as live_display, hardware, inventory, network as live_network, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -35,7 +35,7 @@ ORDER = (
     "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
     "audio.speaker-amps-unlocked", "audio.microphone-mapping",
     "audio.microphone-signal", "audio.speaker-tone", "audio.headphone-detection",
-    "network.wifi", "network.wifi-backend", "network.bluetooth",
+    "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
     "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
     "power.battery",
     "cpu.frequency-scaling",
@@ -112,7 +112,9 @@ def audio(ctx: Context) -> list[dict]:
 
 
 def network(ctx: Context) -> list[dict]:
-    return mac_check(ctx)
+    """mac-check's Wi-Fi and Bluetooth checks, then pairing a device and the first join after a driver reload."""
+    automatic = mac_check(ctx)
+    return [*automatic, *live_network.run(ctx, automatic)]
 
 
 def input_devices(ctx: Context) -> list[dict]:
