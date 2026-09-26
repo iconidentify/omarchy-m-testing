@@ -1,6 +1,6 @@
-# Issue tracker: GitHub
+# Issue tracker: GitHub, with local build tickets
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+Specs and issues for this repo live as GitHub issues (use the `gh` CLI). Exception: build tickets from `to-tickets` are NOT published to GitHub. They live as local files under `docs/tickets/`, one file per ticket numbered in dependency order, with an index in `docs/tickets/README.md`. Tick their criteria as work lands, and delete the whole `docs/tickets/` folder once the build is done.
 
 ## Conventions
 

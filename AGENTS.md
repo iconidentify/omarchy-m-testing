@@ -13,7 +13,7 @@ Hardware testing for Omarchy on Apple Silicon (M-series) Macs: the `omarchy-m-te
 
 ### Issue tracker
 
-Issues and specs live in this repo's GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+Specs and issues live in this repo's GitHub Issues (`gh` CLI); build tickets live locally in `docs/tickets/` and are deleted after the build. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
