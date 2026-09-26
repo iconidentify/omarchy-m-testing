@@ -10,6 +10,16 @@ class KernelGaps
     def models = reports.map(&:short_model_name).uniq
   end
 
+  # Hardware no driver claimed, from the reports' inventory: one device-tree
+  # node type (its compatible string) with what the catalogue says it is.
+  # outcome is unknown-hardware when the catalogue doesn't know it.
+  UnclaimedHardware = Data.define(:compatible, :outcome, :feature_id, :reports) do
+    def unknown? = outcome == "unknown-hardware"
+    def machines = reports.map(&:machine_key).uniq.size
+    def models = reports.map(&:short_model_name).uniq
+    def chips = reports.map { |report| [ report.chip, report.soc ] }.uniq
+  end
+
   REPORTED_OUTCOMES = %w[not-in-aurora not-in-asahi unknown-hardware].freeze
 
   def initialize(reports)
@@ -34,6 +44,24 @@ class KernelGaps
     end
     found.map { |(feature_id, soc, chip), reports| ReportedGap.new(outcome:, feature_id:, soc:, chip:, reports:) }
          .sort_by { |gap| [ Catalogue.feature_name(gap.feature_id), gap.soc ] }
+  end
+
+  # Unclaimed hardware across the visible reports, unknown hardware first.
+  def unclaimed_hardware
+    found = Hash.new { |hash, key| hash[key] = [] }
+    @reports.each do |report|
+      inventory = report.body["inventory"]
+      next unless inventory.is_a?(Hash)
+
+      Array(inventory["unclaimed"]).each do |entry|
+        next unless entry.is_a?(Hash) && entry["compatible"].is_a?(String)
+
+        key = [ entry["compatible"], entry["outcome"], entry["feature"] ]
+        found[key] << report unless found[key].include?(report)
+      end
+    end
+    found.map { |(compatible, outcome, feature_id), reports| UnclaimedHardware.new(compatible:, outcome:, feature_id:, reports:) }
+         .sort_by { |hardware| [ hardware.unknown? ? 0 : 1, hardware.compatible ] }
   end
 
   private

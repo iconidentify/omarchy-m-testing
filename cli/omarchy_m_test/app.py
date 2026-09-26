@@ -208,7 +208,7 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     results = []
     for section in sections:
         results += state.done[section.id] if section.id in state.done else skipped(section)
-    built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue)
+    built = report.build(machine, found.report(shared.get("boot_loader", "unknown")), results, catalogue, shared.get("inventory"))
 
     signed, unsigned_because = signing.sign(host, privacy.enforce(built, scrubber))
     text = report.to_text(signed)

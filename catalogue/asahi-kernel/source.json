@@ -1,0 +1,11 @@
+{
+  "description": "Asahi's reference kernel build options: asahi-alarm's linux-asahi package config, pinned. omarchy-m-test compares the running kernel's /proc/config.gz with it and reports the differences.",
+  "package": "linux-asahi",
+  "version": "7.1.13.asahi3-2",
+  "repository": "https://github.com/asahi-alarm/PKGBUILDs",
+  "commit": "d585b07f4526f6c2d263ec8270387e684545a57f",
+  "path": "linux-asahi/config",
+  "sha256": "a66145c1b93002e47ae6a9ab09698b4ae4f202cdad09da5e87a6abad080a66aa",
+  "fetched": "2026-09-26",
+  "license": "A Linux kernel configuration (the kernel is GPL-2.0); the PKGBUILDs repository states no license of its own."
+}

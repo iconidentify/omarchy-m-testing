@@ -53,6 +53,13 @@ _SYSTEM = {
     "candidate_set": True,
     "packages": [{"name": True, "version": True}],
 }
+# The hardware inventory: node types, statuses, driver-bound states and
+# counts, and build-option names and values; never a property value or path.
+_INVENTORY = {
+    "nodes": [{"compatible": True, "status": True, "driver": True, "count": True}],
+    "unclaimed": [{"compatible": True, "count": True, "outcome": True, "feature": True, "layer": True}],
+    "kernel_config": {"reference": True, "differences": [{"option": True, "asahi": True, "kernel": True}], "omitted": True},
+}
 _CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION}
 REPORT_ALLOWLIST: dict[str, Any] = {
     "schema_version": True,
@@ -61,6 +68,7 @@ REPORT_ALLOWLIST: dict[str, Any] = {
     "catalogue_version": True,
     "machine": {"model": True, "board": True, "soc": True, "chip": True, "arch": True, "kernel": True},
     "system": _SYSTEM,
+    "inventory": _INVENTORY,
     "checks": [_CHECK],
     # Added by signing.py after the allowlist is applied; listed so the allowlist stays the schema.
     "signature": {"public_key": True, "signature": True},

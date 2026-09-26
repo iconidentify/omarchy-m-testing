@@ -42,6 +42,8 @@
       </ul>
     <% end %>
 
+    <%= render "inventory", inventory: @report.body["inventory"] if @report.body["inventory"].is_a?(Hash) %>
+
     <details class="packages">
       <summary>packages (<%= @report.system["packages"].size %>)</summary>
       <pre><% @report.system["packages"].each do |package| %><%= package["name"].ljust(22) %> <%= package["version"] %>
