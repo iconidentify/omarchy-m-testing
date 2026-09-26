@@ -8,7 +8,8 @@ Two rules, applied to every report before it is written, shown or uploaded:
 2. Scrubbed, text-only, bounded evidence. Every evidence line passes the
    Scrubber, which replaces MAC addresses, IP addresses, Wi-Fi network names,
    home paths, hostnames, usernames, e-mail addresses, serial numbers (of the
-   Mac, displays, audio and USB or Thunderbolt devices), Bluetooth addresses, disk
+   Mac, displays, audio and USB or Thunderbolt devices), Bluetooth addresses, the
+   names people give their devices, hex dumps, disk
    identifiers, UUIDs and long hex identifiers with placeholders such as <mac> or <ssid>.
    Evidence is text only (non-text lines are replaced by a note) and at most
    EVIDENCE_BUDGET_BYTES (64 KiB) per report.
@@ -113,6 +114,39 @@ _LEARNED_SERIAL = re.compile(r"(?!(?:0x)?(.)\1*$)(?!\d{1,7}$)(?!(?:0x)?0+$)(?!0?
 # Files whose whole content is a serial (sysfs), kept only as <serial> in a recording.
 SERIAL_FILES = ("/serial", "/unique_id", "/serial_number")
 
+# Names people give their devices ("Marcelo's AirPods", "Kestrel's MacBook Pro"): the
+# whole name is learned and replaced by <device-name> wherever it appears (learn()).
+# From: bluetoothctl's "Device <address> NAME" lines, and its "Name:"/"Alias:" lines in
+# the same output; any device.alias property; PipeWire and PulseAudio descriptions and
+# nicks of Bluetooth (bluez) devices and nodes; hostnamectl's pretty hostname.
+_BT_ADDRESS = rf"{_HEX}{{2}}(?::{_HEX}{{2}}){{5}}"
+# bluetoothctl's property lines ("[CHG] Device <address> RSSI: -60") aren't names.
+_BT_PROPERTY = r"(?:Name|Alias|Connected|Paired|Bonded|Trusted|Blocked|RSSI|TxPower|Class|Icon|UUIDs?|Modalias|ManufacturerData|ServiceData|LegacyPairing|WakeAllowed|ServicesResolved|Battery Percentage|Powered|Discoverable|Pairable|Discovering|Key)"
+_BT_DEVICE_LINE = re.compile(rf"(?m)^[ \t]*(?:\[[A-Z]+\][ \t]*)?(?:Device|Controller)[ \t]+{_BT_ADDRESS}[ \t]+(?!{_BT_PROPERTY}:)(.+?)(?:[ \t]+\[default\])?[ \t]*$")
+_BT_INFO_NAME = re.compile(r"^[ \t]+(?:Name|Alias):[ \t]*(.+?)[ \t]*$")
+_BT_HEADER = re.compile(rf"^[ \t]*(?:\[[A-Z]+\][ \t]*)?(?:Device|Controller)[ \t]+{_BT_ADDRESS}\b")
+_BT_CHANGED_NAME = re.compile(rf"(?m)^[ \t]*(?:\[[A-Z]+\][ \t]*)?(?:Device|Controller)[ \t]+{_BT_ADDRESS}[ \t]+(?:Name|Alias):[ \t]*(.+?)[ \t]*$")
+_BT_ADDRESS_KIND = re.compile(r"\((?:public|random|static|private)\)")
+# A quoted property value, apostrophes and escaped quotes included ("Marcelo's AirPods").
+_QUOTED = r"""(?:"((?:\\.|[^"\\\n])+)"|'((?:\\.|[^'\\\n])+)')"""
+_ALIAS_PROPERTY = re.compile(rf"""["']?\bdevice\.alias["']?\s*(?:=|:)\s*{_QUOTED}""")
+_BLUEZ_NAME_PROPERTY = re.compile(
+    rf"""(?m)["']?\b(?:device|node)\.(?:description|nick|alias)["']?\s*(?:=|:)\s*{_QUOTED}|^[ \t]+Description:[ \t]*(.+?)[ \t]*$"""
+)
+_PRETTY_HOSTNAME = re.compile(r"""(?mi)^[ \t]*(?:Pretty hostname:[ \t]*|PRETTY_HOSTNAME=["']?)(.+?)["']?[ \t]*$""")
+_BLOCK_START = re.compile(r"(?m)^(?=\S)|^\s*\{\s*$")  # pactl's "Card #52", pw-dump's objects
+_MIN_NAME = 3
+# Stock names no one chose, left alone so "Keyboard" or "Apple Inc." elsewhere stays readable.
+_STOCK_NAMES = {
+    "keyboard", "mouse", "trackpad", "speaker", "speakers", "headphones", "headset", "earbuds", "audio", "controller",
+    "airpods", "airpods pro", "airpods max", "magic keyboard", "magic mouse", "magic trackpad", "apple inc.", "apple",
+    "macbook", "macbook pro", "macbook air", "mac mini", "mac studio", "imac", "iphone", "ipad", "bluetooth",
+}
+# Hex dumps (edid-decode's raw EDID: 16 bytes a line) hold serials as bytes; each run of
+# such lines becomes one HEX_DUMP_NOTE.
+_HEX_DUMP_LINE = re.compile(rf"^[ \t]*(?:{_HEX}+:[ \t]*)?(?:{_HEX}{{2}}[ \t]+){{7,}}{_HEX}{{2}}[ \t]*$")
+HEX_DUMP_NOTE = "[hex dump removed]"
+
 # (pattern, replacement) in the order they are applied. Replacements only
 # use characters none of the later patterns can match.
 _RULES: list[tuple[re.Pattern, Any]] = []
@@ -134,7 +168,12 @@ def _keep_unless_system(group: int, placeholder: str, prefix_groups: tuple[int, 
 def _email(m: re.Match) -> str:
     if _UNIT_SUFFIX.search(m.group(2)):
         return m.group(0)  # systemd template units such as user@1000.service
+    if _MODE.fullmatch(m.group(0)):
+        return m.group(0)  # a display mode such as hyprctl's 3440x1440@59.97300
     return "<email>"
+
+
+_MODE = re.compile(r"\d+x\d+@\d+(?:\.\d+)?(?:Hz)?")
 
 
 # Home-directory paths: the account name and everything under it.
@@ -225,8 +264,9 @@ class Scrubber:
             (re.compile(rf"(?<![\w-]){re.escape(value)}(?![\w-])", flags), placeholder)
             for value, placeholder, flags in hints
         ]
-        self._serial_values: set[str] = set()
-        self._serials: list[re.Pattern] = []
+        self._hint_values = {value.lower() for value, _, _ in hints}
+        self._learned: dict[str, str] = {}  # value -> placeholder
+        self._learned_patterns: list[tuple[re.Pattern, str]] = []
 
     @classmethod
     def for_host(cls, host: Host) -> "Scrubber":
@@ -244,43 +284,99 @@ class Scrubber:
         networks = saved.stdout.splitlines() if saved.returncode == 0 else []
         return cls(hostnames=hostnames, users=users, networks=networks)
 
-    def learn_serials(self, text: str) -> None:
-        """Remember the serial values in `text`'s serial-like fields, to remove them wherever they appear.
+    def learn(self, text: str) -> None:
+        """Remember the serials and device names in `text`, to remove them wherever they appear.
 
-        hyprctl repeats a monitor's serial in its description ("Dell Inc. DELL
-        U3423WE 9RKXZN3"), PipeWire a USB card's in its name. Only
-        identifier-shaped values (_LEARNED_SERIAL) are remembered. scrub()
+        Serials: the values of serial-like fields (hyprctl repeats a monitor's
+        serial in its description, "Dell Inc. DELL U3423WE 9RKXZN3"; PipeWire a
+        USB card's in its name); only identifier-shaped ones (_LEARNED_SERIAL).
+        Device names: see _BT_DEVICE_LINE and the rules after it. scrub()
         learns from the text it is given; a caller scrubbing many texts (a
         recording, a report's evidence) learns from all of them first.
         """
-        for m in SERIAL_FIELD.finditer(text):
-            if _LEARNED_SERIAL.fullmatch(m.group(4)) and m.group(4) not in self._serial_values:
-                self._serial_values.add(m.group(4))
-                self._serials = [
-                    re.compile(rf"(?<![A-Za-z0-9]){re.escape(value)}(?![A-Za-z0-9])")
-                    for value in sorted(self._serial_values, key=len, reverse=True)
-                ]
+        serials = [m.group(4) for m in SERIAL_FIELD.finditer(text) if _LEARNED_SERIAL.fullmatch(m.group(4))]
+        self.remember(serials=serials, names=_device_names(text))
+
+    def remember(self, serials: Iterable[str] = (), names: Iterable[str] = ()) -> None:
+        added = False
+        for values, placeholder in ((serials, "<serial>"), (names, "<device-name>")):
+            for value in values:
+                value = value.strip()
+                if value and value not in self._learned and not value.startswith("<") and (placeholder == "<serial>" or self._is_name(value)):
+                    self._learned[value] = placeholder
+                    added = True
+        if added:
+            self._learned_patterns = [
+                (re.compile(rf"(?<![A-Za-z0-9]){re.escape(value)}(?![A-Za-z0-9])"), placeholder)
+                for value, placeholder in sorted(self._learned.items(), key=lambda item: -len(item[0]))
+            ]
+
+    def _is_name(self, value: str) -> bool:
+        """A device name worth learning: long enough, not stock, and not a hostname, account or network already hinted."""
+        lower = value.lower()
+        return len(value) >= _MIN_NAME and lower not in _NOT_PERSONAL and lower not in _STOCK_NAMES and lower not in self._hint_values
 
     @property
     def serials(self) -> list[str]:
-        """The serial values learned so far, for a checkpoint to hand the next run (learn_serials)."""
-        return sorted(self._serial_values)
+        """The serial values learned so far, for a checkpoint to hand the next run (remember())."""
+        return sorted(value for value, placeholder in self._learned.items() if placeholder == "<serial>")
+
+    @property
+    def names(self) -> list[str]:
+        """The device names learned so far, for a checkpoint to hand the next run (remember())."""
+        return sorted(value for value, placeholder in self._learned.items() if placeholder == "<device-name>")
 
     def scrub(self, text: str) -> str:
-        """Scrub each line on its own, so no pattern can reach across lines (serials learned from the whole text)."""
-        self.learn_serials(text)
-        return "".join(self._scrub_line(line) for line in text.splitlines(keepends=True))
+        """Scrub each line on its own, so no pattern can reach across lines (serials and names learned from the whole text).
+
+        A run of hex dump lines becomes one HEX_DUMP_NOTE.
+        """
+        self.learn(text)
+        lines: list[str] = []
+        for line in text.splitlines(keepends=True):
+            if _HEX_DUMP_LINE.match(line.rstrip("\r\n")):
+                note = HEX_DUMP_NOTE + line[len(line.rstrip("\r\n")):]
+                if not (lines and lines[-1].rstrip("\r\n") == HEX_DUMP_NOTE):
+                    lines.append(note)
+                continue
+            lines.append(self._scrub_line(line))
+        return "".join(lines)
 
     def _scrub_line(self, line: str) -> str:
         body = line.rstrip("\r\n")
         end = line[len(body):]
+        # Learned values first: a whole device name ("Kestrel's MacBook Pro") before a rule takes part of it.
+        for pattern, placeholder in self._learned_patterns:
+            body = pattern.sub(placeholder, body)
         for pattern, replacement in _RULES:
             body = pattern.sub(replacement, body)
         for pattern, placeholder in self._hints:
             body = pattern.sub(placeholder, body)
-        for pattern in self._serials:
-            body = pattern.sub("<serial>", body)
         return body + end
+
+
+def _device_names(text: str) -> list[str]:
+    """The user-given device names in a tool's output (see _BT_DEVICE_LINE)."""
+    names = [m.group(1) for m in _BT_DEVICE_LINE.finditer(text) if not _BT_ADDRESS_KIND.fullmatch(m.group(1))]
+    names += [m.group(1) for m in _BT_CHANGED_NAME.finditer(text)]
+    # bluetoothctl info / show: the indented lines under a "Device <address>" header.
+    in_device = False
+    for line in text.splitlines():
+        if _BT_HEADER.match(line):
+            in_device = True
+        elif in_device and line[:1] in (" ", "\t"):
+            found = _BT_INFO_NAME.match(line)
+            if found:
+                names.append(found.group(1))
+        else:
+            in_device = False
+    names += [m.group(1) or m.group(2) for m in _ALIAS_PROPERTY.finditer(text)]
+    names += [m.group(1) for m in _PRETTY_HOSTNAME.finditer(text)]
+    if "bluez" in text:
+        for block in _BLOCK_START.split(text):
+            if "bluez" in block:
+                names += [m.group(1) or m.group(2) or m.group(3) for m in _BLUEZ_NAME_PROPERTY.finditer(block)]
+    return names
 
 
 def _is_text(line: str) -> bool:
@@ -311,8 +407,13 @@ def scrub_check(check: dict, scrubber: Scrubber) -> dict:
     evidence = check.get("evidence")
     if not isinstance(evidence, list):
         return dict(check)
-    scrubber.learn_serials("\n".join(line for line in evidence if isinstance(line, str)))
-    return {**check, "evidence": [_evidence_line(line, scrubber) for line in evidence]}
+    scrubber.learn("\n".join(line for line in evidence if isinstance(line, str)))
+    return {**check, "evidence": _collapse_hex_notes([_evidence_line(line, scrubber) for line in evidence])}
+
+
+def _collapse_hex_notes(lines: list[str]) -> list[str]:
+    """One HEX_DUMP_NOTE for a run of hex dump lines given as separate evidence lines."""
+    return [line for i, line in enumerate(lines) if not (line == HEX_DUMP_NOTE and i and lines[i - 1] == HEX_DUMP_NOTE)]
 
 
 def enforce(report: dict, scrubber: Scrubber) -> dict:
@@ -325,7 +426,7 @@ def enforce(report: dict, scrubber: Scrubber) -> dict:
 
     for check in report.get("checks", []):
         if isinstance(check.get("evidence"), list):
-            scrubber.learn_serials("\n".join(line for line in check["evidence"] if isinstance(line, str)))
+            scrubber.learn("\n".join(line for line in check["evidence"] if isinstance(line, str)))
     # The truncation note is always reserved, so the total never exceeds the budget.
     budget = EVIDENCE_BUDGET_BYTES - len(TRUNCATED_NOTE.encode("utf-8"))
     exhausted = False
@@ -333,7 +434,7 @@ def enforce(report: dict, scrubber: Scrubber) -> dict:
         if "evidence" not in check:
             continue
         lines = check["evidence"] if isinstance(check["evidence"], list) and not exhausted else []
-        lines = [_evidence_line(line, scrubber) for line in lines]
+        lines = _collapse_hex_notes([_evidence_line(line, scrubber) for line in lines])
         if len(lines) > EVIDENCE_LINES_PER_CHECK:
             dropped = len(lines) - (EVIDENCE_LINES_PER_CHECK - 1)
             lines = lines[: EVIDENCE_LINES_PER_CHECK - 1] + [f"[{dropped} more lines not included]"]
