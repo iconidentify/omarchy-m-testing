@@ -25,12 +25,25 @@
       "argv": [
         "nmcli",
         "--get-values",
-        "NAME",
+        "NAME,TYPE",
         "connection",
         "show"
       ],
       "returncode": 0,
-      "stdout": "<ssid>\n<ssid>\n<ssid>\nlo\n",
+      "stdout": "<ssid>:802-11-wireless\ntailscale0:tun\ndocker0:bridge\nlo:loopback\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "727",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
       "stderr": ""
     },
     {
@@ -320,19 +333,6 @@
     },
     {
       "argv": [
-        "loginctl",
-        "show-session",
-        "727",
-        "--property=Remote",
-        "--property=Seat",
-        "--property=Active"
-      ],
-      "returncode": 0,
-      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
         "brightnessctl",
         "--machine-readable",
         "--device=kbd_backlight",
@@ -475,7 +475,7 @@
         "address"
       ],
       "returncode": 0,
-      "stdout": "lo               UNKNOWN        <ip>/8 <ip>/128 \nwlan0            UP             <ip>/24 <ip>/64 \n<ssid>       UNKNOWN        <ip>/32 <ip>/128 <ip>/64 \n<ssid>          DOWN           <ip>/16 <ip>/64 \n",
+      "stdout": "lo               UNKNOWN        <ip>/8 <ip>/128 \nwlan0            UP             <ip>/24 <ip>/64 \ntailscale0       UNKNOWN        <ip>/32 <ip>/128 <ip>/64 \ndocker0          DOWN           <ip>/16 <ip>/64 \n",
       "stderr": ""
     }
   ],

@@ -15,7 +15,7 @@ from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
 from omarchy_m_test.recording import ENDED, INTERRUPT
 from tests.desktop import (
-    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, TITLES, UNANSWERED, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
+    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
 )
 from tests.schema_validator import errors
@@ -74,7 +74,7 @@ class OmarchyLookTest(unittest.TestCase):
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")
-        self.assertEqual(choose[-len(TITLES.split()):], TITLES.split())
+        self.assertEqual(choose[-len(OFFERED_OVER_SSH):], OFFERED_OVER_SSH)
         self.assertEqual(confirm[:3], ["gum", "confirm", "Upload this report to https://omarchy-m-testing.org?"])
         self.assertIn("Not uploaded", mac.output)
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
@@ -230,15 +230,15 @@ class SectionsTest(unittest.TestCase):
         main(["--skip", "boot"], mac)
 
         choose = ttys(mac)[0][0]
-        self.assertEqual(choose[choose.index("--selected") + 1], ",".join(TITLES.split()[1:]))
+        self.assertEqual(choose[choose.index("--selected") + 1], ",".join(OFFERED_OVER_SSH[1:]))
 
     def test_an_unknown_section_name_is_refused_before_anything_runs(self):
         mac = host(recording())
 
-        status = main(["--skip", "sleep"], mac)
+        status = main(["--skip", "teleport"], mac)
 
         self.assertEqual(status, 4)
-        self.assertIn("--skip takes section names: boot, hardware, graphics, video, display, audio, network, input, camera, ports, power, cpu", mac.output)
+        self.assertIn("--skip takes section names: boot, hardware, graphics, video, display, audio, network, sleep, input, camera, ports, power, cpu", mac.output)
         self.assertEqual(mac.written, {})
 
     def test_ctrl_c_at_the_disclaimer_leaves_nothing_behind(self):

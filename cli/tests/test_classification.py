@@ -83,10 +83,10 @@ def written(mac: RecordedHost) -> dict:
 class ReportRecordsTheCatalogueTest(unittest.TestCase):
     def test_every_report_records_the_catalogue_version_it_used(self):
         _, bundled = run(recording())
-        _, drafted = run(recording(), catalogue=draft(version=7))
+        _, drafted = run(recording(), catalogue=draft(version=CATALOGUE["catalogue_version"] + 1))
 
         self.assertEqual(written(bundled)["catalogue_version"], CATALOGUE["catalogue_version"])
-        self.assertEqual(written(drafted)["catalogue_version"], 7)
+        self.assertEqual(written(drafted)["catalogue_version"], CATALOGUE["catalogue_version"] + 1)
         self.assertEqual(errors(SCHEMA, written(drafted)), [])
 
     def test_a_passing_check_works_and_says_so_in_plain_words(self):

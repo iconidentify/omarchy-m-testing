@@ -4,8 +4,8 @@
     "name": "omarchy-m-test",
     "version": "0.1.3"
   },
-  "consent_version": 2,
-  "catalogue_version": 7,
+  "consent_version": 3,
+  "catalogue_version": 8,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -1347,6 +1347,75 @@
           "asahi": "upstream",
           "aurora": "asahi",
           "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "sleep.lid-suspend",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "suspend-sleep",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "sleep.clamshell",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "clamshell",
+        "layer": "omarchy",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "supported",
+          "omarchy": "supported"
+        }
+      }
+    },
+    {
+      "id": "sleep.wifi-after-resume",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "wifi",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "sleep.thunderbolt-after-resume",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: running over SSH, where it could cut the connection"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "thunderbolt",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "wip",
+          "aurora": "supported"
         }
       }
     },

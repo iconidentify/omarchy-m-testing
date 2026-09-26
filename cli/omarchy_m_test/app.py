@@ -22,7 +22,7 @@ from .machine import NotAppleSilicon, identify
 from .recording import RecordingHost
 from .safety import Guarded
 from .sections import APPLE
-from .session import Changes, Checkpoint, Context, Section, State, run_key, skipped
+from .session import PROGRESS, Changes, Checkpoint, Context, Section, State, run_key, skipped
 from .ui import Ui
 
 DEFAULT_SITE = "https://omarchy-m-testing.org"
@@ -260,7 +260,7 @@ def _report_failed_restores(host: Host, changes: Changes) -> None:
 
 def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section], skip: set[str]) -> State | None:
     """The saved state to carry on from, if there is one for this run and the human wants it."""
-    if saved is None or saved.key != key or not saved.done:
+    if saved is None or saved.key != key or not (saved.done or saved.shared.get(PROGRESS)):
         return None
     known = {section.id for section in sections}
     if not set(saved.selected) <= known or not set(saved.done) <= known:

@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import camera, checks, ports, video
+from . import camera, checks, ports, sleep, video
 from .session import Context, Section
 
 
 def _section(id: str, title: str, description: str, check_ids: tuple[str, ...], run: Callable[[Context], list[dict]],
-             human_checks: tuple[str, ...] = ()) -> Section:
-    return Section(id, title, description, check_ids, lambda ctx: checks.only(check_ids, run(ctx), ctx), human_checks)
+             human_checks: tuple[str, ...] = (), disruptive: bool = False) -> Section:
+    return Section(id, title, description, check_ids, lambda ctx: checks.only(check_ids, run(ctx), ctx), human_checks, disruptive)
 
 
 APPLE: tuple[Section, ...] = (
@@ -45,6 +45,8 @@ APPLE: tuple[Section, ...] = (
     _section("network", "Network", "Wi-Fi, its backend and Bluetooth; then you pair a Bluetooth device, and (at the Mac, not over SSH, with your agreement) the Wi-Fi driver is reloaded to time the first join to a 5 GHz network.", (
         "network.wifi", "network.wifi-backend", "network.bluetooth", "network.bluetooth-pairing", "network.wifi-first-join",
     ), checks.network, ("network.bluetooth-pairing",)),
+    _section("sleep", "Sleep", "You close and open the lid when asked: suspend and resume, then clamshell mode with an external display (the built-in screen off, no sleep), and whether Wi-Fi and Thunderbolt come back after waking up. Only at the Mac, never over SSH.",
+             sleep.CHECK_IDS, sleep.run, disruptive=True),
     _section("input", "Input", "The ambient light sensor and the automatic keyboard light; then you cover the sensor and watch the keyboard light, press the function keys and try the trackpad's gestures.", (
         "input.ambient-light", "input.auto-keyboard-light", "input.keyboard-light-follows-room",
         "input.function-keys", "input.trackpad-gestures",

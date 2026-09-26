@@ -1,14 +1,12 @@
 {
   "description": "MacBook Pro (16-inch, M2 Max, 2023) on converged image 4, over SSH: raw host answers for record mode",
   "source": "Real run of omarchy-m-test 0.1.3 --dry-run --record on the M2 Max, 2026-09-27 (Brisbane), over SSH with nobody at the Mac, a few minutes after a fresh install of converged image 4 (omarchy 4.0.0 quattro, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-10, Limine, LUKS root). vulkan-tools and mesa-utils aren't installed. Every answer is what the Mac gave, except the camera, function-key and ports answers (checks added after this run): those are stand-ins, noted on each entry, until the next dogfood run records them.",
-  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>, <serial>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a bridge and a tunnel) plus NetworkManager's own \"Wired connection 1\" and lo. NetworkManager's <info> is its own. 'forbidden' lists the decoys and the lab hostname. The camera module's serial in the ISP's log lines is swapped for a fake of the same shape too.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <disk>, <email>, <serial>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are three decoys (Wi-Fi, a bridge and a tunnel) plus NetworkManager's own \"Wired connection 1\" and lo. The bridge and tunnel decoys stand in for their interface names: those aren't personal and are no longer learned as network names, so they aren't in 'forbidden'; log lines where record mode had already turned them into <ssid> keep the Wi-Fi decoy. NetworkManager's <info> is its own. 'forbidden' lists the decoys and the lab hostname. The camera module's serial in the ISP's log lines is swapped for a fake of the same shape too.",
   "forbidden": [
     "omarchy-m2-max",
     "kestrel",
     "/home/kestrel",
     "Wattlebird-5G",
-    "Galah-Bridge",
-    "Ibis-Tun",
     "10.61.23.147",
     "10.61.23.1",
     "10.200.4.9",
@@ -50,12 +48,12 @@
       "argv": [
         "nmcli",
         "--get-values",
-        "NAME",
+        "NAME,TYPE",
         "connection",
         "show"
       ],
       "returncode": 0,
-      "stdout": "Wattlebird-5G\nWired connection 1\nGalah-Bridge\nlo\nIbis-Tun\n",
+      "stdout": "Wattlebird-5G:802-11-wireless\nWired connection 1:802-3-ethernet\nGalah-Bridge:bridge\nlo:loopback\nIbis-Tun:tun\n",
       "stderr": ""
     },
     {
