@@ -10,8 +10,8 @@ Everything is read through the host, only when the human is at a terminal:
   exactly as Omarchy's own templates resolve it. Without that command the
   file is read here, and a theme with no colors.toml yet gives its
   alacritty.toml colours.
-- Section titles: `omarchy-ascii TITLE`, the logo's own font (Delta Corps
-  Priest 1), when it is installed and the title fits.
+- Section titles are plain text at the terminal's own (monospace) font,
+  bold in the theme's accent: never a FIGlet font.
 - gum: Omarchy's installer styling (presentation.sh) for any GUM_* the
   user's environment doesn't already set.
 
@@ -29,7 +29,6 @@ from .host import Host
 OMARCHY_DIRS = ("/usr/share/omarchy", "{home}/.local/share/omarchy")
 THEME_DIRS = ("{home}/.local/state/omarchy/current/theme", "{home}/.config/omarchy/current/theme")
 THEME_COLOR = "omarchy-theme-color"
-ASCII = "omarchy-ascii"
 
 # Omarchy's tokyo-night colors.toml.
 TOKYO_NIGHT = {
@@ -83,7 +82,6 @@ class Theme:
     colours: dict[str, str]
     logo: str | None = None
     omarchy: bool = False           # colours came from the user's Omarchy theme
-    has_ascii: bool = False
     gum_env: dict[str, str] = field(default_factory=dict)
 
     def colour(self, name: str) -> str:
@@ -99,10 +97,9 @@ def load(host: Host) -> Theme:
     logo = _logo(host, home)
     colours = _theme_colours(host, home)
     omarchy = colours is not None
-    has_ascii = host.run([ASCII, "--help"]).returncode == 0
     gum = _GUM_OMARCHY if omarchy else _GUM_TOKYO_NIGHT
     gum_env = {key: value for key, value in gum.items() if host.env(key) is None}
-    return Theme(_complete(colours), logo, omarchy, has_ascii, gum_env)
+    return Theme(_complete(colours), logo, omarchy, gum_env)
 
 
 def _complete(colours: dict[str, str] | None) -> dict[str, str]:

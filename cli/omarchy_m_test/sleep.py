@@ -12,7 +12,9 @@ Each lid step, while the human closes and opens the lid:
     connector names, never a monitor's make, model or serial. Its limits
     count polls, not seconds, so the watch is bounded while the Mac is awake
     and simply pauses while it's asleep; the times it prints are the wall
-    clock's, so a suspend shows as a jump;
+    clock's, so a suspend shows as a jump. The human has CLOSE_SECONDS to
+    close the lid; at a terminal the watch runs on it (run_tty) and shows a
+    countdown on one line, and any key ends the wait (the step is skipped);
   - then the system log since the step began (JOURNAL_SCRIPT) is reduced on
     the Mac to event words and times: logind's lid and suspend lines, the
     kernel's PM: suspend entry/exit, a failed suspend, Thunderbolt link
@@ -37,7 +39,11 @@ After the first resume (sleep.wifi-after-resume, sleep.thunderbolt-after-resume)
 what was up before the lid closed (LINKS_SCRIPT: Wi-Fi interfaces up with an
 IPv4 address, Thunderbolt networking interfaces up, the number of
 Thunderbolt/USB4 devices) is polled every second for RECOVERY_SECONDS after
-the kernel's suspend exit. Each passes when everything came back, with how
+the kernel's suspend exit. The human is told first that the run waits up to
+that long, and the polls stay out of the live feed, which says only what
+came back and when: a feed redrawn with the same poll every second for half
+a minute looked like a run stuck in a loop (the M2 Max, 2026-09-27, whose
+Thunderbolt networking didn't come back, so the wait ran its full length). Each passes when everything came back, with how
 long it took; skipped when nothing of the kind was up before. Only interface
 names and counts are printed, never an address.
 
@@ -56,8 +62,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import human
+from .host import LONG_RUNNING
 from .session import Context
-from .ui import Ui
+from .ui import Ui, note, unlogged
 
 LID_SUSPEND = "sleep.lid-suspend"
 CLAMSHELL = "sleep.clamshell"
@@ -65,7 +72,7 @@ WIFI_AFTER = "sleep.wifi-after-resume"
 THUNDERBOLT_AFTER = "sleep.thunderbolt-after-resume"
 CHECK_IDS = (LID_SUSPEND, CLAMSHELL, WIFI_AFTER, THUNDERBOLT_AFTER)
 
-CLOSE_SECONDS = 15   # to close the lid after answering y
+CLOSE_SECONDS = 60   # to close the lid after answering y (15 s was too short to reach for it: M2 Max, 2026-09-27)
 CLOSED_SECONDS = 20  # the lid may stay closed (with the Mac awake) this long before the watch stops
 AFTER_OPEN_SECONDS = 3  # the displays are watched this long after the lid opens
 CLAMSHELL_MIN_CLOSED = 3.0  # a clamshell closed for less says nothing
@@ -82,9 +89,25 @@ MONITORS_SCRIPT = (
     "'"
 )
 
-# Run as `sh -c SCRIPT sh CLOSE CLOSED AFTER` (seconds, counted in 0.5 s polls).
-# Times are hundredths of a second since "start", which is the wall clock in nanoseconds.
-LID_WATCH_SCRIPT = r"""wait=$(($1 * 2)) closed=$(($2 * 2)) after=$(($3 * 2))
+# Half a second, as `tick TEXT` in the watches below: with $tty the terminal's width (0: not on one), TEXT on
+# one line of stderr, cut to fit, and any key returns 0 (the human skipped); `read -t` is bash's, and any
+# other sh just sleeps.
+TICK_FUNCTION = LONG_RUNNING + r"""tick() {
+  if [ "$tty" = 0 ]; then sleep 0.5; return 1; fi
+  printf "\r\033[2K%.$((tty - 1))s" "$1" >&2
+  if [ -z "$1" ]; then sleep 0.5; return 1; fi
+  read -r -s -n 1 -t 0.5 key 2>/dev/null
+  r=$?
+  if [ "$r" = 0 ]; then return 0; fi
+  [ "$r" -gt 128 ] || sleep 0.5
+  return 1
+}
+done_ticking() { if [ "$tty" != 0 ]; then printf '\r\033[2K' >&2; fi; }
+"""
+
+# Run as `sh -c SCRIPT sh CLOSE CLOSED AFTER TTY LABEL` (seconds, counted in 0.5 s polls; TTY the terminal's
+# width, 0 off one; LABEL the countdown's first words). Times are hundredths of a second since "start", the wall clock in nanoseconds.
+LID_WATCH_SCRIPT = TICK_FUNCTION + r"""wait=$(($1 * 2)) closed=$(($2 * 2)) after=$(($3 * 2)) tty=$4 label=$5
 start=$(date +%s%N)
 echo "start $start"
 state=open seen=0 n=0 last=
@@ -93,16 +116,20 @@ while :; do
   case "$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager LidClosed 2>/dev/null)" in
     "b true") lid=closed ;;
     "b false") lid=open ;;
-    *) echo "nolid $t"; exit 0 ;;
+    *) done_ticking; echo "nolid $t"; exit 0 ;;
   esac
   m=$(@MONITORS@)
   if [ "$lid" != "$state" ]; then echo "$lid $t"; state=$lid n=0; if [ "$lid" = closed ]; then seen=1; fi; fi
   if [ "$m" != "$last" ]; then echo "monitors $t $m"; last=$m; fi
   n=$((n + 1))
-  if [ "$seen" = 0 ] && [ "$n" -ge "$wait" ]; then echo "timeout $t"; exit 0; fi
-  if [ "$state" = closed ] && [ "$n" -ge "$closed" ]; then echo "timeout $t"; exit 0; fi
-  if [ "$seen" = 1 ] && [ "$state" = open ] && [ "$n" -ge "$after" ]; then echo "end $t"; exit 0; fi
-  sleep 0.5
+  if [ "$seen" = 0 ] && [ "$n" -ge "$wait" ]; then done_ticking; echo "timeout $t"; exit 0; fi
+  if [ "$state" = closed ] && [ "$n" -ge "$closed" ]; then done_ticking; echo "timeout $t"; exit 0; fi
+  if [ "$seen" = 1 ] && [ "$state" = open ] && [ "$n" -ge "$after" ]; then done_ticking; echo "end $t"; exit 0; fi
+  if [ "$seen" = 0 ]; then
+    if tick "$label: close the lid now, $(( (wait - n + 1) / 2 )) s left (any key skips)"; then done_ticking; echo "skipped $t"; exit 0; fi
+  else
+    tick ""
+  fi
 done""".replace("@MONITORS@", MONITORS_SCRIPT)
 
 # Run as `sh -c SCRIPT sh SINCE` (Unix seconds): this boot's log since then, as event words and Unix times.
@@ -148,9 +175,9 @@ LINKS = ["sh", "-c", LINKS_SCRIPT]
 SLEEP_ONE = ["sleep", "1"]
 
 SUSPEND_WARNING = (
-    "Sleep: unplug any external display first. When you answer y, close the lid within "
-    f"{CLOSE_SECONDS} s, count to ten, and open it again: the Mac should go to sleep and wake up. "
-    "The run waits for the lid, reads the system log, then checks Wi-Fi and Thunderbolt come back. "
+    "Sleep: unplug any external display first. When you answer y, close the lid (the run waits up to "
+    f"{CLOSE_SECONDS} s for it), count to ten, and open it again: the Mac should go to sleep and wake up. "
+    f"After it wakes up the run waits up to {RECOVERY_SECONDS} s for Wi-Fi and Thunderbolt to come back. "
     "If it doesn't carry on after the lid opens, run omarchy-m-test again: it resumes here."
 )
 SUSPEND_QUESTION = "Close the lid to put the Mac to sleep now?"
@@ -158,7 +185,8 @@ CLAMSHELL_CONNECT = (
     "Clamshell: connect an external display (USB-C or HDMI) and wait until the desktop shows on it. Is it showing?"
 )
 CLAMSHELL_WARNING = (
-    f"When you answer y, close the lid within {CLOSE_SECONDS} s, wait about ten seconds and open it again: "
+    "Keep the lid open for now. When you answer y, close the lid (the run waits up to "
+    f"{CLOSE_SECONDS} s for it), wait about ten seconds and open it again: "
     "the Mac should stay awake on the external display, with the built-in screen off."
 )
 CLAMSHELL_QUESTION = "Close the lid with the external display on now?"
@@ -167,6 +195,11 @@ NO_LID_EVENTS = (
     "the system log shows no lid events, so a suspend can't be seen (reading it needs the wheel, adm or systemd-journal group)"
 )
 RECOVERED_NOTE = "The last run stopped during the lid check; its result is read from the system log."
+RECOVERY_WAIT = (
+    f"The Mac woke up. Waiting up to {RECOVERY_SECONDS} s for what was up before it slept to come back "
+    "({what}); the run carries on by itself."
+)
+LID_SKIPPED = "you skipped closing the lid"
 
 
 # -- what the Mac printed -------------------------------------------------------------
@@ -179,7 +212,7 @@ class Lid:
     closed: float | None = None
     opened: float | None = None
     monitors: list[tuple[float, dict[str, bool]]] = field(default_factory=list)
-    end: str = ""  # "end", "timeout" or "nolid"
+    end: str = ""  # "end", "timeout", "nolid" or "skipped" (a key while waiting for the lid)
 
     def first_displays(self) -> dict[str, bool] | None:
         """The monitors when the watch started."""
@@ -219,7 +252,7 @@ def parse_lid(stdout: str) -> Lid:
             lid.opened = t
         elif word == "monitors":
             lid.monitors.append((t, _monitors(tail)))
-        elif word in ("end", "timeout", "nolid"):
+        elif word in ("end", "timeout", "nolid", "skipped"):
             lid.end = word
     return lid
 
@@ -317,8 +350,28 @@ def parse_links(stdout: str) -> Links:
     return links
 
 
-def lid_watch_argv(close: int = CLOSE_SECONDS, closed: int = CLOSED_SECONDS, after: int = AFTER_OPEN_SECONDS) -> list[str]:
-    return ["sh", "-c", LID_WATCH_SCRIPT, "sh", str(close), str(closed), str(after)]
+def lid_watch_argv(close: int = CLOSE_SECONDS, closed: int = CLOSED_SECONDS, after: int = AFTER_OPEN_SECONDS,
+                   tty: int = 0, label: str = "") -> list[str]:
+    return ["sh", "-c", LID_WATCH_SCRIPT, "sh", str(close), str(closed), str(after), str(tty), label]
+
+
+def watch_lid(ctx: Context, label: str, closed: int = CLOSED_SECONDS) -> Lid:
+    """The lid watch: on the terminal when there is one (a countdown, and any key skips), else in the background."""
+    ui = _ui(ctx)
+    terminal = ctx.host.terminal()
+    if terminal is not None:
+        pad = getattr(ui, "pad", "")
+        return parse_lid(ctx.host.run_tty(lid_watch_argv(closed=closed, tty=terminal.width, label=pad + label)).stdout)
+    return parse_lid(ctx.host.run(lid_watch_argv(closed=closed)).stdout)
+
+
+def not_closed(lid: Lid, stopped: bool) -> str:
+    """Why a step whose lid never closed says nothing."""
+    if stopped:
+        return "the run stopped before the lid was closed"
+    if lid.end == "skipped":
+        return LID_SKIPPED
+    return f"the lid wasn't closed within {CLOSE_SECONDS} s"
 
 
 def journal_argv(since: int) -> list[str]:
@@ -377,7 +430,7 @@ def _suspend(ctx: Context, progress: dict, results: dict) -> None:
         results[LID_SUSPEND] = _result(LID_SUSPEND, "skip", ["skipped: you chose not to close the lid"])
         return
     step = _begin(ctx, progress, "suspend", {"logind": _logind(ctx)})
-    lid = parse_lid(ctx.host.run(lid_watch_argv()).stdout)
+    lid = watch_lid(ctx, "Sleep")
     journal = read_journal(ctx, step.since)
     results[LID_SUSPEND] = judge_suspend(lid, journal, step.before.get("logind", {}))
     _after_resume(ctx, results, step, _resumed(lid, journal))
@@ -404,7 +457,7 @@ def _clamshell(ctx: Context, progress: dict, results: dict) -> None:
         results[CLAMSHELL] = _result(CLAMSHELL, "skip", ["skipped: you chose not to close the lid"])
         return
     step = _begin(ctx, progress, "clamshell", {"displays": displays, "logind": _logind(ctx)})
-    lid = parse_lid(ctx.host.run(lid_watch_argv()).stdout)
+    lid = watch_lid(ctx, "Clamshell")
     journal = read_journal(ctx, step.since)
     results[CLAMSHELL] = judge_clamshell(lid, journal, displays, step.before.get("logind", {}))
     _after_resume(ctx, results, step, _resumed(lid, journal))
@@ -523,8 +576,7 @@ def judge_suspend(lid: Lid, journal: Journal | None, logind: dict[str, str], sto
     evidence = [f"before: {describe(first)}"] if first is not None else []
     found = asleep(lid, journal)
     if found.closed is None:
-        why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
-        return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {why}"])
+        return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {not_closed(lid, stopped)}"])
     if found.entry is None and journal.first("lid-closed") is None:
         return _result(LID_SUSPEND, "skip", [*evidence, f"skipped: {NO_LID_EVENTS}"])
     if found.entry is not None:
@@ -564,8 +616,7 @@ def judge_clamshell(lid: Lid, journal: Journal | None, before: dict[str, bool], 
         return _result(CLAMSHELL, "skip", [*evidence, "skipped: logind can't say whether the lid is open or closed"])
     found = asleep(lid, journal, window_end=lid.epoch(lid.opened))
     if found.closed is None:
-        why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {CLOSE_SECONDS} s"
-        return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {why}"])
+        return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {not_closed(lid, stopped)}"])
     if found.entry is None and journal.first("lid-closed") is None:
         return _result(CLAMSHELL, "skip", [*evidence, f"skipped: {NO_LID_EVENTS}"])
     closed_view = lid.displays(until=lid.opened, after=lid.closed) if lid.closed is not None else None
@@ -615,16 +666,43 @@ def _after_resume(ctx: Context, results: dict, step: Step, resumed: float | None
         return
     before = step.links
     wifi, tb = before.wifi_connected(), before.tbnet_up()
+    what = _awaited(before)
+    if what:
+        _ui(ctx).text(RECOVERY_WAIT.format(what=what))
+    quiet = unlogged(ctx.host)  # the feed says what came back, not every poll (see the module docstring)
     polls: list[Links] = []
+    seen = None
     for attempt in range(RECOVERY_POLLS):
-        now = parse_links(ctx.host.run(LINKS).stdout)
+        now = parse_links(quiet.run(LINKS).stdout)
         polls.append(now)
         elapsed = (now.time - resumed) if now.time is not None else attempt
+        state = _state(now, before)
+        if state != seen:
+            note(ctx.host, f"{max(elapsed, 0):.0f} s after waking up: {state}")
+            seen = state
         if (_wifi_back(now, wifi) and _tb_back(now, before)) or elapsed >= RECOVERY_SECONDS:
             break
-        ctx.host.run(SLEEP_ONE)
+        quiet.run(SLEEP_ONE)
     results[WIFI_AFTER] = judge_wifi(before, polls, resumed)
     results[THUNDERBOLT_AFTER] = judge_thunderbolt(before, polls, resumed, _thunderbolt_errors(ctx, step.since, resumed))
+
+
+def _awaited(before: Links) -> str:
+    """What the recovery wait waits for, in words ("" when nothing was up)."""
+    parts = [f"{name} with an address" for name in before.wifi_connected()]
+    parts += [f"{name} (Thunderbolt networking)" for name in before.tbnet_up()]
+    if before.tbdevices:
+        parts.append(f"{before.tbdevices} Thunderbolt/USB4 device(s)")
+    return ", ".join(parts)
+
+
+def _state(now: Links, before: Links) -> str:
+    """What of `before` is up in `now`, in words, for the feed."""
+    parts = [f"{name} {'connected' if name in now.wifi_connected() else 'no address'}" for name in before.wifi_connected()]
+    parts += [f"{name} {'up' if name in now.tbnet_up() else 'down'}" for name in before.tbnet_up()]
+    if before.tbdevices:
+        parts.append(f"{now.tbdevices} of {before.tbdevices} Thunderbolt/USB4 device(s)")
+    return ", ".join(parts) or "nothing to wait for"
 
 
 def _thunderbolt_errors(ctx: Context, since: int, resumed: float) -> int:

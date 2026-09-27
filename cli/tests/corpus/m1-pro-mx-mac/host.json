@@ -461,6 +461,31 @@
       "stdout": "",
       "stderr": "sudo: a password is required\n",
       "note": "stand-in: the M1 evidence was taken over SSH, where sudo has no cached credentials"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n",
+      "note": "as the M2 Max answered on 2026-09-27: mesa-utils alone, nothing installed it needs upgraded"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": "",
+      "note": "as the M2 Max answered on 2026-09-27: mesa-utils alone, nothing installed it needs upgraded"
     }
   ],
   "files": {
@@ -547,7 +572,8 @@
     },
     "/etc/udev/macsmc-battery.conf": null,
     "/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules": null,
-    "/usr/lib/omarchy-mac/battery-charge-limit-restore": null
+    "/usr/lib/omarchy-mac/battery-charge-limit-restore": null,
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": null
   },
   "dirs": {
     "/home": [

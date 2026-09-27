@@ -639,6 +639,31 @@
       "stdout": "",
       "stderr": "sudo: a password is required\n",
       "note": "stand-in: the corpus run is over SSH, where sudo has no cached credentials, so the charge limit isn't changed"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n",
+      "note": "as the M2 Max answered on 2026-09-27: mesa-utils alone, nothing installed it needs upgraded"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": "",
+      "note": "as the M2 Max answered on 2026-09-27: mesa-utils alone, nothing installed it needs upgraded"
     }
   ],
   "files": {

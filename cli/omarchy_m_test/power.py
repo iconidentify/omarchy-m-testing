@@ -28,16 +28,24 @@ back themselves when they're done, read them back and drop the restorer; it
 only runs if they couldn't (an error, Ctrl-C, or the next run after one that
 was killed).
 
+On battery: the last two checks measure the battery while it runs the Mac,
+and on AC power it doesn't show the Mac's draw. So first thing in the
+section, before anything else runs, a Mac on AC power at its seat says so
+and waits up to UNPLUG_SECONDS for the charger to come out (UNPLUG_SCRIPT
+polls the battery's status; at a terminal it shows a countdown on one line,
+and any key stops waiting); over SSH or without a local seat nobody can
+unplug it, so both are skipped. A charger left in skips both, saying so
+when the section gets to them: they never end silently (the M2 Max,
+2026-09-27, said "about ten minutes" and went straight to the report).
+
 Idle power (power.idle-draw): the battery's power_now (microwatts), or
 current_now times voltage_now, sampled every second for IDLE_SECONDS on the
-Mac (IDLE_SCRIPT) while it runs on battery. On AC power the battery doesn't
-show the Mac's draw: at the Mac the human is asked to unplug the charger;
-otherwise (over SSH, no local seat) it's skipped. It fails when the battery
+Mac (IDLE_SCRIPT) while it runs on battery. It fails when the battery
 reports no draw while discharging; the evidence gives the average, lowest and
 highest.
 
-Sleep drain (power.sleep-drain, optional, at the Mac only): the human
-unplugs the charger, closes the lid for about ten minutes and opens it again;
+Sleep drain (power.sleep-drain, optional, at the Mac only, asked only on
+battery): the human closes the lid for about ten minutes and opens it again;
 the tool never puts the Mac to sleep itself (safety.py). The lid watch and the
 system log are the Sleep section's (sleep.py). The battery's energy before
 and after, over the time the kernel says it was asleep, gives the drain in
@@ -92,6 +100,17 @@ RESTORE_SCRIPT = (
 )
 
 IDLE_SECONDS = 30
+UNPLUG_SECONDS = 60
+# Run as `sh -c SCRIPT sh BATTERY_DIR SECONDS TTY LABEL` (TTY the terminal's width, 0 off one):
+# "unplugged", or "timeout STATUS" / "skipped STATUS" (a key).
+UNPLUG_SCRIPT = sleep.TICK_FUNCTION + r"""d=$1 wait=$(($2 * 2)) tty=$3 label=$4 n=0
+while :; do
+  s=$(tr -d ' \n' < "$d/status" 2>/dev/null)
+  if [ "$s" = Discharging ]; then done_ticking; echo "unplugged"; exit 0; fi
+  if [ "$n" -ge "$wait" ]; then done_ticking; echo "timeout $s"; exit 0; fi
+  if tick "$label: unplug the charger now, $(( (wait - n + 1) / 2 )) s left (any key skips)"; then done_ticking; echo "skipped $s"; exit 0; fi
+  n=$((n + 1))
+done"""
 # Above this an idle Apple Silicon laptop is busy with something (it idles at a few watts): said, not failed.
 IDLE_HIGH_WATTS = 15.0
 # Run as `sh -c SCRIPT sh BATTERY_DIR SECONDS`: a line a second, "sample STATUS POWER CURRENT VOLTAGE" (- when unreadable).
@@ -115,17 +134,20 @@ DRAIN_MIN_SECONDS = 300  # asleep for less says too little: the battery's levels
 DRAIN_FAIL_PERCENT_PER_HOUR = 8.0
 
 UNPLUG = (
-    "Idle power: the battery only shows what the Mac draws while it runs on it. "
-    f"When you answer y, the charger should be unplugged; then leave the Mac alone for {IDLE_SECONDS} s."
+    "Power: unplug the charger now. The idle-power check (30 s) and the optional battery drain while asleep "
+    "(about ten minutes) measure the battery while it runs the Mac, which it only does off the charger. "
+    f"The run waits up to {UNPLUG_SECONDS} s for it; without it both are skipped."
 )
-UNPLUG_QUESTION = "Is the charger unplugged?"
+STILL_PLUGGED = "The charger is still plugged in, so idle power and the battery drain while asleep are skipped."
 MEASURING = f"Measuring idle power for {IDLE_SECONDS} s: leave the Mac alone."
 DRAIN_WARNING = (
-    "Battery drain while asleep (optional, about ten minutes): with the charger unplugged, when you answer y, "
-    f"close the lid within {sleep.CLOSE_SECONDS} s, leave it closed for ten minutes (a timer helps), then open it. "
-    "If the run doesn't carry on after the lid opens, run omarchy-m-test again: it resumes here."
+    "Battery drain while asleep (optional, about ten minutes): when you answer y, close the lid (the run waits up to "
+    f"{sleep.CLOSE_SECONDS} s for it), leave it closed for ten minutes (a timer helps), then open it; keep the charger out. "
+    "The run waits here with the lid closed and carries on once it opens. "
+    "If it doesn't carry on after the lid opens, run omarchy-m-test again: it resumes here."
 )
 DRAIN_QUESTION = "Measure the battery drain over ten minutes asleep now?"
+DRAIN_SKIPPED = "Battery drain while asleep: skipped ({why})."
 PLUG_BACK = "You can plug the charger back in."
 RECOVERED_NOTE = "The last run stopped during the sleep-drain check; its result is read from the system log and the battery."
 
@@ -142,15 +164,18 @@ def run(ctx: Context) -> list[dict]:
     if battery is None:
         for check_id in CHECK_IDS[1:]:
             results.setdefault(check_id, _result(check_id, "skip", ["skipped: this Mac has no battery"]))
+    unplugged = False
+    plugged = None  # why the charger is in, once asked to unplug it
+    if battery is not None and (IDLE_DRAW not in results or SLEEP_DRAIN not in results):
+        unplugged, plugged = unplug(ctx, battery)
     if CHARGE_LIMIT not in results or CHARGE_LIMIT_KEPT not in results:
         results[CHARGE_LIMIT], results[CHARGE_LIMIT_KEPT] = charge_limit(ctx, battery or "")
         ctx.changes.persist()
-    unplugged = False
     if IDLE_DRAW not in results:
-        results[IDLE_DRAW], unplugged = idle_draw(ctx, battery or "")
+        results[IDLE_DRAW] = idle_draw(ctx, battery or "", plugged)
         ctx.changes.persist()
     if SLEEP_DRAIN not in results:
-        results[SLEEP_DRAIN], agreed = sleep_drain(ctx, battery or "", progress)
+        results[SLEEP_DRAIN], agreed = sleep_drain(ctx, battery or "", progress, plugged)
         unplugged = unplugged or agreed
     if unplugged:
         _ui(ctx).text(PLUG_BACK)
@@ -379,25 +404,55 @@ def parse_samples(stdout: str) -> list[Sample]:
     return samples
 
 
-def idle_draw(ctx: Context, battery: str) -> tuple[dict, bool]:
-    """(the result, whether the human was asked to unplug the charger)."""
+def unplug_argv(battery_dir: str, tty: int = 0, label: str = "", seconds: int = UNPLUG_SECONDS) -> list[str]:
+    return ["sh", "-c", UNPLUG_SCRIPT, "sh", battery_dir, str(seconds), str(tty), label]
+
+
+def unplug(ctx: Context, battery: str) -> tuple[bool, str | None]:
+    """At the start of the section: on AC power, ask for the charger out and wait for it.
+
+    (whether the human was asked, why the Mac is still on AC power: None when it runs on battery).
+    """
     directory = f"{POWER_SUPPLY}/{battery}"
     status = _read(ctx, f"{directory}/status") or "unreadable"
-    asked = False
+    if status == "Discharging":
+        return False, None
+    blocked = presence.of(ctx.host, ctx.cache).blocks()
+    if blocked:
+        return False, (f"the Mac is on AC power (battery {status}), where the battery doesn't show what it draws, "
+                       f"and nobody may be at the Mac to unplug the charger ({blocked})")
+    ui = _ui(ctx)
+    ui.text(UNPLUG)
+    return True, wait_for_unplug(ctx, directory)
+
+
+def wait_for_unplug(ctx: Context, directory: str) -> str | None:
+    """Wait for the battery to discharge: None once it does, else why not (and the human is told)."""
+    terminal = ctx.host.terminal()
+    if terminal is not None:
+        answer = ctx.host.run_tty(unplug_argv(directory, tty=terminal.width, label=getattr(_ui(ctx), "pad", "") + "Power")).stdout
+    else:
+        answer = ctx.host.run(unplug_argv(directory)).stdout
+    word, _, status = answer.strip().rpartition("\n")[-1].partition(" ")
+    if word == "unplugged":
+        _ui(ctx).text("On battery.")
+        return None
+    status = status.strip() or "unreadable"
+    _ui(ctx).text(STILL_PLUGGED)
+    if word == "skipped":
+        return f"you chose not to unplug the charger (battery {status})"
+    return f"the charger stayed plugged in for {UNPLUG_SECONDS} s (battery {status})"
+
+
+def idle_draw(ctx: Context, battery: str, plugged: str | None = None) -> dict:
+    directory = f"{POWER_SUPPLY}/{battery}"
+    if plugged is not None:
+        return _result(IDLE_DRAW, "skip", [f"skipped: {plugged}"])
+    status = _read(ctx, f"{directory}/status") or "unreadable"
     if status != "Discharging":
-        blocked = presence.of(ctx.host, ctx.cache).blocks()
-        if blocked:
-            return _result(IDLE_DRAW, "skip", [
-                f"skipped: the Mac is on AC power (battery {status}), where the battery doesn't show what it draws, "
-                f"and nobody may be at the Mac to unplug the charger ({blocked})",
-            ]), False
-        ui = _ui(ctx)
-        ui.text(UNPLUG)
-        asked = True
-        if not ui.confirm(UNPLUG_QUESTION, default=False):
-            return _result(IDLE_DRAW, "skip", ["skipped: the charger stayed plugged in"]), asked
+        return _result(IDLE_DRAW, "skip", [f"skipped: the Mac is on AC power (battery {status}), where the battery doesn't show what it draws"])
     _ui(ctx).text(MEASURING)
-    return judge_idle(parse_samples(ctx.host.run(idle_argv(directory)).stdout)), asked
+    return judge_idle(parse_samples(ctx.host.run(idle_argv(directory)).stdout))
 
 
 def judge_idle(samples: list[Sample]) -> dict:
@@ -463,28 +518,37 @@ def _reading(ctx: Context, battery: str) -> Reading:
     return parse_reading(ctx.host.run(reading_argv(f"{POWER_SUPPLY}/{battery}")).stdout)
 
 
-def sleep_drain(ctx: Context, battery: str, progress: dict) -> tuple[dict, bool]:
-    """(the result, whether the human agreed to unplug the charger and close the lid)."""
+def sleep_drain(ctx: Context, battery: str, progress: dict, plugged: str | None = None) -> tuple[dict, bool]:
+    """(the result, whether the human agreed to close the lid off the charger)."""
     blocked = presence.of(ctx.host, ctx.cache).blocks()
     if blocked:
         return _result(SLEEP_DRAIN, "skip", [f"skipped: {blocked}"]), False
     if human.absent(ctx, sleep.CLAMSHELL):
         return _result(SLEEP_DRAIN, "skip", ["skipped: this Mac has no lid"]), False
+    if plugged is not None:
+        return _result(SLEEP_DRAIN, "skip", [f"skipped: {plugged}"]), False
     ui = _ui(ctx)
     ui.text(DRAIN_WARNING)
     if not ui.confirm(DRAIN_QUESTION, default=False):
         return _result(SLEEP_DRAIN, "skip", ["skipped: you chose not to (it takes about ten minutes)"]), False
     before = _reading(ctx, battery)
-    if before.status != "Discharging":
-        return _result(SLEEP_DRAIN, "skip", [f"skipped: the charger was plugged in (battery {before.status or 'unreadable'}); unplug it for this check"]), True
+    if before.status != "Discharging":  # plugged back in since: ask again, and wait
+        ui.text(f"The charger is plugged in again (battery {before.status or 'unreadable'}): unplug it to go on.")
+        why = wait_for_unplug(ctx, f"{POWER_SUPPLY}/{battery}")
+        if why is not None:
+            ui.text(DRAIN_SKIPPED.format(why=why))
+            return _result(SLEEP_DRAIN, "skip", [f"skipped: {why}"]), True
+        before = _reading(ctx, battery)
     since = (before.time or 1) - 1
     progress["drain"] = {"since": since, "boot": sleep.boot_id(ctx), "battery": battery, "before": before.to_json()}
     ctx.changes.persist()
-    lid = sleep.parse_lid(ctx.host.run(drain_watch_argv()).stdout)
+    lid = sleep.watch_lid(ctx, "Battery drain", closed=DRAIN_CLOSED_SECONDS)
     after = _reading(ctx, battery)
     result = judge_drain(lid, sleep.read_journal(ctx, since), before, after)
     progress.pop("drain", None)
     ctx.changes.persist()
+    if result["status"] == "skip":  # said here, not only in the report: the human just spent the time
+        ui.text(DRAIN_SKIPPED.format(why=result["evidence"][-1].removeprefix("skipped: ")))
     return result, True
 
 
@@ -527,8 +591,7 @@ def judge_drain(lid: sleep.Lid, journal: sleep.Journal | None, before: Reading, 
         return _result(SLEEP_DRAIN, "skip", ["skipped: logind can't say whether the lid is open or closed"])
     found = sleep.asleep(lid, journal)
     if found.closed is None:
-        why = "the run stopped before the lid was closed" if stopped else f"the lid wasn't closed within {sleep.CLOSE_SECONDS} s"
-        return _result(SLEEP_DRAIN, "skip", [f"skipped: {why}"])
+        return _result(SLEEP_DRAIN, "skip", [f"skipped: {sleep.not_closed(lid, stopped)}"])
     if found.entry is None:
         if found.failed is not None:
             return _result(SLEEP_DRAIN, "fail", ["lid closed: the Mac tried to go to sleep and failed (the system log says a device failed to suspend)"])

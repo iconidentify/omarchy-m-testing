@@ -183,7 +183,7 @@ class Context:
 @dataclass(frozen=True)
 class Section:
     id: str
-    title: str                 # drawn in the logo's font: short, letters and spaces
+    title: str                 # the section's heading: short, letters and spaces
     description: str
     check_ids: tuple[str, ...]  # reported as skipped when the section is
     run: Callable[[Context], list[dict]]

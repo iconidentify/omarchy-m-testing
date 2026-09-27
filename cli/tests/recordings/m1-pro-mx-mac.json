@@ -187,6 +187,29 @@
     },
     {
       "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "brightnessctl",
         "--list",
         "--machine-readable"
@@ -414,6 +437,7 @@
     },
     "/var/lib/omarchy/image/target": null,
     "/var/lib/omarchy/image/target.booted": null,
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": null,
     "/sys/module/hid_apple/parameters/fnmode": null,
     "/sys/class/power_supply/macsmc-battery/type": {
       "text": "Battery\n"

@@ -17,7 +17,7 @@ from omarchy_m_test.recording import ENDED, EOF, INTERRUPT, RecordedHost
 from omarchy_m_test.session import Section
 from tests.corpus import MACHINES, forbidden, raw_recording
 from tests.desktop import (
-    BENCHMARK_OFFER, CHECKPOINT, HUMAN_QUESTIONS, LISTEN, MUTE, SECTIONS, UNANSWERED, UNMUTE, VOLUME_BACK, VOLUME_DOWN,
+    BENCHMARK_OFFER, CHECKPOINT, HUMAN_QUESTIONS, LISTEN, MUTE, OPENGL_OFFERED, SECTIONS, UNANSWERED, UNMUTE, VOLUME_BACK, VOLUME_DOWN,
     host, recording, with_home, with_section_commands,
 )
 
@@ -243,7 +243,7 @@ class CheckpointPrivacyTest(unittest.TestCase):
         for machine in MACHINES:
             with self.subTest(machine=machine):
                 # The real, unscrubbed evidence, interrupted in the Tone section after every other section ran.
-                mac = _tone_mac(raw_recording(machine), [ENTER, *[EOF] * HUMAN_QUESTIONS[machine], *BENCHMARK_OFFER, INTERRUPT])
+                mac = _tone_mac(raw_recording(machine), [ENTER, *[EOF] * (OPENGL_OFFERED[machine] + HUMAN_QUESTIONS[machine]), *BENCHMARK_OFFER, INTERRUPT])
 
                 self.assertEqual(main(["--dry-run"], mac, sections=SECTIONS), 130)
 

@@ -120,6 +120,17 @@
     },
     {
       "argv": [
+        "journalctl",
+        "--unit=omarchy-mac-first-boot.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-27T00:24:52+10:00 <hostname> systemd[1]: Starting Omarchy first boot: finish this Mac's image, then owner setup...\n2026-09-27T00:24:52+10:00 <hostname> omarchy-mac-first-boot[5969]: Creating this Mac's package keyring...\n2026-09-27T00:25:06+10:00 <hostname> omarchy-mac-first-boot[5969]: Ready for account setup.\n2026-09-27T00:25:06+10:00 <hostname> systemd[1]: omarchy-mac-first-boot.service: Deactivated successfully.\n2026-09-27T00:25:06+10:00 <hostname> systemd[1]: Finished Omarchy first boot: finish this Mac's image, then owner setup.\n2026-09-27T00:25:06+10:00 <hostname> systemd[1]: omarchy-mac-first-boot.service: Consumed 12.000s CPU time over 14.380s wall clock time, 365.4M memory peak.\n-- Boot <hex> --\n2026-09-27T00:33:28+10:00 <hostname> systemd[1]: Omarchy first boot: finish this Mac's image, then owner setup skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/mac-first-boot/pending\n-- Boot <hex> --\n2026-09-27T10:40:12+10:00 <hostname> systemd[1]: Omarchy first boot: finish this Mac's image, then owner setup skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/mac-first-boot/pending\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "grep",
         "-r",
         "-a",
@@ -184,6 +195,29 @@
       "returncode": 127,
       "stdout": "",
       "stderr": "eglinfo: command not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": ""
     },
     {
       "argv": [
@@ -572,6 +606,11 @@
       "text": "format=1\nplatform=apple-silicon\n"
     },
     "/var/lib/omarchy/factory-sealed": null,
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": {
+      "text": "# Deferred hardware setup waits for first boot, which creates the package\n# keyring its steps need and runs the queue itself, and never starts while\n# first boot is still pending. What first boot left queued is usually a step\n# that needs the network (one that installs a package the image does not\n# carry). network-online.target waits for nothing on\n# Omarchy (NetworkManager-wait-online.service is masked), so the retry waits\n# for NetworkManager to bring up its saved connections itself; with nothing to\n# connect it goes on at once.\n[Unit]\nAfter=omarchy-mac-first-boot.service NetworkManager.service\nConditionPathExists=!/var/lib/omarchy/mac-first-boot/pending\n\n[Service]\nExecStartPre=-/usr/bin/nm-online -q -s -t 30\n"
+    },
+    "/var/lib/omarchy/image/deferred-steps": null,
+    "/var/lib/omarchy/mac-first-boot/pending": null,
     "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
     "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
       "text": "31\n"

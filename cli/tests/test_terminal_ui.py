@@ -1,7 +1,7 @@
 """Seam A: the terminal UI, the section list and skipping.
 
 A run at a terminal (the recorded host is given one) looks like Omarchy: the
-installed logo in the theme's green, section titles in the logo's font, gum
+installed logo in the theme's green, plain bold section titles over a rule, gum
 prompts, the live feed. Off a terminal it is plain text.
 """
 
@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
 from omarchy_m_test.recording import ENDED, INTERRUPT
+from omarchy_m_test.ui import BOLD, RESET, RULE
 from tests.desktop import (
-    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, UNANSWERED_AT_A_TERMINAL, GREEN_RGB, GREY_RGB, LOGO, SYSTEM_ART, TERMINAL, TOKYO_GREEN_RGB,
+    ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, UNANSWERED_AT_A_TERMINAL, GREEN_RGB, GREY_RGB, LOGO, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
 )
 from tests.schema_validator import errors
@@ -58,20 +60,44 @@ class OmarchyLookTest(unittest.TestCase):
         left = (TERMINAL.width - max(len(line) for line in LOGO.splitlines())) // 2
         self.assertIn(" " * left + LOGO.splitlines()[1], logo_event)
 
-    def test_section_titles_are_drawn_in_the_logo_font_in_the_themes_accent(self):
+    def test_section_titles_are_plain_bold_text_in_the_themes_accent_over_a_rule(self):
         status, mac = self.run_omarchy()
 
-        title = next(e[1] for e in mac.transcript if e[0] == "show" and SYSTEM_ART.splitlines()[1] in e[1])
-        self.assertIn(ACCENT_RGB, title)
-        self.assertIn(["omarchy-ascii", "Boot"], mac.commands_run)
+        left = " " * ((TERMINAL.width - max(len(line) for line in LOGO.splitlines())) // 2)
+        shows = [e[1] for e in mac.transcript if e[0] == "show"]
+        title = next(i for i, text in enumerate(shows) if text.endswith("Boot" + RESET))
+        self.assertEqual(shows[title], "\n" + left + BOLD + "\033[" + ACCENT_RGB + "mBoot" + RESET)
+        self.assertEqual(shows[title + 1], left + "\033[" + ACCENT_RGB + "m" + RULE * 40 + RESET)
+        # No FIGlet font: omarchy-ascii is never run, so nothing but the terminal's own font draws a title.
+        self.assertFalse(any(argv[:1] == ["omarchy-ascii"] for argv in mac.commands_run))
+
+    def test_long_lines_wrap_inside_the_text_column_under_their_own_start(self):
+        status, mac = self.run_omarchy()
+
+        left = (TERMINAL.width - max(len(line) for line in LOGO.splitlines())) // 2
+        text = [e[1] for e in mac.transcript if e[0] == "show" and "Checks that need root" in e[1]][0]
+        lines = re.sub(r"\033\[[0-9;]*m", "", text).split("\n")
+        self.assertGreater(len(lines), 1)
+        for line in lines:
+            self.assertTrue(line.startswith(" " * left) and not line[left].isspace(), repr(line))
+            self.assertLess(len(line), TERMINAL.width)
+        # The section list: a wrapped description carries on under its section's name, past the number and mark.
+        listed = [re.sub(r"\033\[[0-9;]*m", "", e[1]) for e in mac.transcript if e[0] == "show" and "(hardware):" in e[1]][0]
+        first, *rest = listed.split("\n")
+        self.assertTrue(rest, listed)
+        hang = first.index("Hardware (hardware)")
+        for line in rest:
+            self.assertEqual(len(line) - len(line.lstrip()), hang, repr(line))
+            self.assertLess(len(line), TERMINAL.width)
 
     def test_prompts_are_gum_with_omarchys_installer_styling(self):
         status, mac = self.run_omarchy()
 
         prompts = [argv for argv, _ in ttys(mac)]
         choose, confirm = prompts[0], prompts[-1]
-        # The human checks, the charge limit's sudo prompt, then the benchmarks' package offer.
-        self.assertEqual([argv[:3] for argv in prompts[1:-3]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 2))
+        # The OpenGL check's package offer, the human checks, the charge limit's sudo prompt, then the benchmarks' offer.
+        self.assertEqual(prompts[1][:3], ["gum", "confirm", "Install 1 package(s) now?"])
+        self.assertEqual([argv[:3] for argv in prompts[2:-3]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 3))
         self.assertEqual(prompts[-3], ["sudo", "-v"])
         self.assertEqual(prompts[-2][:3], ["gum", "confirm", "Install 2 package(s) now?"])
         self.assertEqual(choose[:2], ["gum", "choose"])
@@ -124,7 +150,6 @@ class FallbackLookTest(unittest.TestCase):
 
         self.assertEqual(status, 0)
         self.assertIn(TOKYO_GREEN_RGB, mac.output)
-        self.assertNotIn(["omarchy-ascii", "Boot"], mac.commands_run)
         self.assertNotIn(LOGO.splitlines()[1], mac.output)
         # No gum: the section picker and upload question are plain prompts.
         prompts = [e[1] for e in mac.transcript if e[0] == "prompt"]
@@ -166,7 +191,6 @@ class FallbackLookTest(unittest.TestCase):
 class LiveFeedTest(unittest.TestCase):
     def run_feed(self, rec=None):
         rec = rec or omarchy_desktop(recording())
-        rec["commands"].append(command(["omarchy-ascii", "Kernel"], SYSTEM_ART + "\n"))
         mac = host(rec, answers=[ENTER, CommandResult(0, TITLES + "Kernel\n", ""), *GUM_UNANSWERED, UPLOAD_NO], terminal=TERMINAL)
         status = main([], mac, sections=FEED_SECTIONS)
         return status, mac
@@ -178,9 +202,12 @@ class LiveFeedTest(unittest.TestCase):
         frames = [e[1] for e in mac.transcript if e[0] == "show" and "  → " in e[1]]
         self.assertTrue(frames)
         self.assertTrue(any("  → $ uname -r" in f for f in frames))
-        last = frames[-1]
-        self.assertIn("  → $ journalctl --unit=omarchy-provision-hardware.service", last)
+        last = next(f for f in reversed(frames) if "  → $ journalctl --unit=omarchy-provision-hardware.service" in f)
         self.assertIn("omarchy-provision-hardware", last.split("$ journalctl")[1])  # the command's own output
+        # Long lines wrap inside the feed under a two-space hang, never past the terminal's edge.
+        rows = [re.sub(r"\033\[[0-9;]*[A-Za-z]|\r", "", row) for row in frames[-1].split("\n")]
+        self.assertTrue(any(row.lstrip().startswith("→   ") for row in rows), rows)
+        self.assertTrue(all(len(row) < TERMINAL.width for row in rows), rows)
         self.assertIn(GREY_RGB, last)
         # Redrawn in place: each frame moves back up over the previous one.
         self.assertTrue(all(f.startswith("\033[") and "A\r" in f[:8] for f in frames))

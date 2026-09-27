@@ -16,7 +16,8 @@ from omarchy_m_test import power, sleep
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import ENDED
 from omarchy_m_test.safety import refusal
-from tests.desktop import CHECKPOINT, recording
+from omarchy_m_test.host import CommandResult
+from tests.desktop import CHECKPOINT, TERMINAL, omarchy_desktop, recording
 from tests.live_mac import (
     AFTER_DRAIN, BEFORE_DRAIN, DRAIN_AT, GOOD_DRAIN_JOURNAL, GOOD_DRAIN_WATCH, LiveMac, MacState, journal, live_recording,
     reading, samples,
@@ -25,7 +26,7 @@ from tests.test_audio_display import SECTIONS, run
 from tests.test_interactive import ARGS, ENTER, check, prompts
 
 SAVED_80 = f"{power.SAVED_KEY}=80\n"
-UNPLUG_PROMPT = power.UNPLUG_QUESTION + " [y/N] "
+UNPLUG = power.unplug_argv(power.SMC_BATTERY)
 DRAIN_PROMPT = power.DRAIN_QUESTION + " [y/N] "
 WATCH = power.drain_watch_argv()
 
@@ -180,7 +181,8 @@ class IdleDrawTest(unittest.TestCase):
             "idle on battery for 30 s: 6.2 W average (lowest 5.8 W, highest 7.2 W), from power_now",
         ])
         self.assertIn(power.idle_argv(power.SMC_BATTERY), host.commands_run)
-        self.assertNotIn(UNPLUG_PROMPT, prompts(host))
+        self.assertNotIn(UNPLUG, host.commands_run)
+        self.assertNotIn(power.UNPLUG, host.output)
         self.assertLess(host.output.index(power.MEASURING), len(host.output))
 
     def test_without_power_now_current_times_voltage_is_used(self):
@@ -203,21 +205,43 @@ class IdleDrawTest(unittest.TestCase):
         result = check(host, power.IDLE_DRAW)
         self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
 
-    def test_on_ac_power_at_the_mac_the_charger_is_unplugged_first(self):
-        host = power_run(["y"], state=MacState(battery_status="Full"))
+    def test_on_ac_power_at_the_mac_the_charger_is_asked_for_first_thing_and_waited_for(self):
+        host = power_run(state=MacState(battery_status="Full", unplug="Discharging"))
 
-        self.assertIn(UNPLUG_PROMPT, prompts(host))
+        # Said up front, before the section changes anything, and waited for rather than asked about.
+        commands = host.commands_run
+        self.assertLess(commands.index(UNPLUG), commands.index(power.set_argv(80)))
+        self.assertEqual(host.output.count(power.UNPLUG), 1)
         self.assertEqual(check(host, power.IDLE_DRAW)["status"], "pass")
+        self.assertIn(DRAIN_PROMPT, prompts(host))
         self.assertIn(power.PLUG_BACK, host.output)
 
-    def test_declining_to_unplug_skips_it(self):
-        host = power_run(["n"], state=MacState(battery_status="Charging"))
+    def test_a_charger_left_in_skips_both_and_says_so_without_offering_the_drain(self):
+        """The M2 Max, 2026-09-27: on the charger, the drain said about ten minutes and the report came at once."""
+        host = power_run(state=MacState(battery_status="Charging"))
 
-        self.assertEqual(check(host, power.IDLE_DRAW)["evidence"], ["skipped: the charger stayed plugged in"])
+        why = f"skipped: the charger stayed plugged in for {power.UNPLUG_SECONDS} s (battery Charging)"
+        self.assertEqual(check(host, power.IDLE_DRAW)["evidence"], [why])
+        self.assertEqual(check(host, power.SLEEP_DRAIN)["evidence"], [why])
         self.assertFalse(any(argv[:3] == ["sh", "-c", power.IDLE_SCRIPT] for argv in host.commands_run))
+        self.assertNotIn(DRAIN_PROMPT, prompts(host))
+        self.assertNotIn(power.DRAIN_WARNING, host.output)
+        self.assertIn(power.STILL_PLUGGED, host.output)
+        self.assertEqual(host.commands_run.count(UNPLUG), 1)
+
+    def test_at_the_terminal_the_wait_counts_down_and_a_key_skips_it(self):
+        host = LiveMac(omarchy_desktop(live_recording()), state=MacState(battery_status="Full", key_pressed=True),
+                       answers=[ENTER, CommandResult(0, "Power\n", ""), ENDED], terminal_size=TERMINAL)
+        self.assertEqual(main(ARGS, host, sections=(SECTIONS["power"],)), 0)
+
+        waits = [argv for kind, argv, _ in (e for e in host.transcript if e[0] == "tty") if argv[:3] == UNPLUG[:3]]
+        self.assertEqual(len(waits), 1)
+        self.assertEqual(waits[0][6], str(TERMINAL.width))  # the countdown (cut to the width) and the key, on the terminal
+        self.assertTrue(waits[0][7].endswith("Power"))
+        self.assertEqual(check(host, power.IDLE_DRAW)["evidence"], ["skipped: you chose not to unplug the charger (battery Full)"])
 
     def test_the_charger_plugged_back_in_during_the_measurement_skips_it(self):
-        host = power_run(["y"], state=MacState(battery_status="Full", idle=samples(*[6.0] * 30, status="Charging")))
+        host = power_run(state=MacState(battery_status="Full", unplug="Discharging", idle=samples(*[6.0] * 30, status="Charging")))
 
         self.assertEqual(check(host, power.IDLE_DRAW)["evidence"], ["skipped: the Mac wasn't on battery for the measurement (battery Charging)"])
 
@@ -227,7 +251,8 @@ class IdleDrawTest(unittest.TestCase):
         result = check(host, power.IDLE_DRAW)
         self.assertEqual(result["status"], "skip")
         self.assertIn("the Mac is on AC power (battery Full)", result["evidence"][0])
-        self.assertNotIn(UNPLUG_PROMPT, prompts(host))
+        self.assertNotIn(UNPLUG, host.commands_run)
+        self.assertNotIn(power.UNPLUG, host.output)
         self.assertNotIn(DRAIN_PROMPT, prompts(host))
         self.assertEqual(check(host, power.SLEEP_DRAIN)["evidence"], ["skipped: running over SSH, where it could cut the connection"])
 
@@ -247,7 +272,7 @@ class SleepDrainTest(unittest.TestCase):
             "drain: 1.6% per hour asleep, 1.53 W on average (a full battery would last about 62 h asleep)",
         ])
         # Warned first; the battery read and the step checkpointed before the lid watch; read again after it.
-        self.assertLess(host.output.index("close the lid within 15 s"), host.output.index(DRAIN_PROMPT))
+        self.assertLess(host.output.index(f"close the lid (the run waits up to {sleep.CLOSE_SECONDS} s for it)"), host.output.index(DRAIN_PROMPT))
         commands = host.commands_run
         reads = [i for i, argv in enumerate(commands) if argv == power.reading_argv(power.SMC_BATTERY)]
         self.assertEqual(len(reads), 2)
@@ -286,13 +311,29 @@ class SleepDrainTest(unittest.TestCase):
             "skipped: the Mac didn't go to sleep with the lid closed (sleep.lid-suspend checks why)",
         ])
 
-    def test_on_ac_power_it_asks_to_unplug_and_skips_when_the_charger_stays_in(self):
-        host = power_run(["n", "y"], state=MacState(battery_status="Full", readings=[reading(DRAIN_AT, 77_200_000, status="Full")]))
+    def test_a_charger_plugged_back_in_is_waited_for_again(self):
+        readings = [reading(DRAIN_AT - 5, 77_300_000, status="Charging"), BEFORE_DRAIN, AFTER_DRAIN]
+        host = power_run(["y"], state=drain(readings=readings, unplug="Discharging"))
 
-        self.assertEqual(check(host, power.SLEEP_DRAIN)["evidence"], [
-            "skipped: the charger was plugged in (battery Full); unplug it for this check",
-        ])
+        self.assertEqual(check(host, power.SLEEP_DRAIN)["status"], "pass")
+        self.assertIn("The charger is plugged in again (battery Charging)", host.output)
+        self.assertLess(host.commands_run.index(UNPLUG), host.commands_run.index(WATCH))
+
+    def test_a_charger_that_stays_in_after_yes_skips_it_and_says_so_at_once(self):
+        host = power_run(["y"], state=on_battery(readings=[reading(DRAIN_AT, 77_200_000, status="Full")], unplug="Full"))
+
+        why = f"the charger stayed plugged in for {power.UNPLUG_SECONDS} s (battery Full)"
+        self.assertEqual(check(host, power.SLEEP_DRAIN)["evidence"], [f"skipped: {why}"])
+        self.assertIn(power.DRAIN_SKIPPED.format(why=why), host.output)
         self.assertNotIn(WATCH, host.commands_run)
+
+    def test_a_drain_skipped_after_the_lid_says_why_before_the_report(self):
+        at = DRAIN_AT
+        state = drain(journal=journal(("lid-closed", at + 3.6), ("suspend-entry", at + 4.3, "s2idle"), ("suspend-exit", at + 64.3)))
+        host = power_run(["y"], state=state)
+
+        self.assertIn("Battery drain while asleep: skipped (too short to measure", host.output)
+        self.assertLess(host.output.index("Battery drain while asleep: skipped"), host.output.index("Report written"))
 
     def test_declined_the_lid_is_never_watched(self):
         host = power_run(["n"], state=on_battery())

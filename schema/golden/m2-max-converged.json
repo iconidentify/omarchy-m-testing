@@ -826,12 +826,16 @@
     {
       "id": "setup.first-boot-hardware",
       "kind": "automatic",
-      "status": "skip",
+      "status": "pass",
       "evidence": [
-        "omarchy-provision-hardware.service never ran: this install has no deferred first-boot hardware setup"
+        "omarchy-provision-hardware.service is disabled on this image by design: omarchy-mac-first-boot runs the deferred hardware setup (20-mac-first-boot.conf)",
+        "2026-09-27T00:24:52+10:00 <hostname> omarchy-mac-first-boot[5969]: Creating this Mac's package keyring...",
+        "2026-09-27T00:25:06+10:00 <hostname> omarchy-mac-first-boot[5969]: Ready for account setup.",
+        "2026-09-27T00:25:06+10:00 <hostname> systemd[1]: Finished Omarchy first boot: finish this Mac's image, then owner setup.",
+        "nothing left queued (/var/lib/omarchy/image/deferred-steps is gone)"
       ],
       "classification": {
-        "outcome": "not-tested",
+        "outcome": "works",
         "feature": "first-boot-hardware-setup",
         "layer": "omarchy",
         "expected": {
@@ -927,18 +931,19 @@
     {
       "id": "hardware.probe-errors",
       "kind": "automatic",
-      "status": "fail",
+      "status": "pass",
       "evidence": [
-        "platform 315c00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@315c00000/typec-routes/route@0: failed to get display crossbar",
-        "platform 48dc00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@48dc00000/typec-routes/route@0: failed to get display crossbar",
-        "platform 50dc00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@50dc00000/typec-routes/route@0: failed to get display crossbar",
-        "platform 289c00000.dcp: deferred probe pending: (reason unknown)",
-        "i2c 0-0038: deferred probe pending: (reason unknown)",
-        "i2c 0-003f: deferred probe pending: (reason unknown)",
-        "i2c 0-003b: deferred probe pending: (reason unknown)"
+        "7 deferred probe(s) pending early in this boot, bound to their drivers since (waiting for a module the initramfs didn't carry):",
+        "since bound: platform 315c00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@315c00000/typec-routes/route@0: failed to get display crossbar",
+        "since bound: platform 48dc00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@48dc00000/typec-routes/route@0: failed to get display crossbar",
+        "since bound: platform 50dc00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@50dc00000/typec-routes/route@0: failed to get display crossbar",
+        "since bound: platform 289c00000.dcp: deferred probe pending: (reason unknown)",
+        "since bound: i2c 0-0038: deferred probe pending: (reason unknown)",
+        "since bound: i2c 0-003f: deferred probe pending: (reason unknown)",
+        "since bound: i2c 0-003b: deferred probe pending: (reason unknown)"
       ],
       "classification": {
-        "outcome": "not-in-aurora",
+        "outcome": "works",
         "feature": "hardware-drivers",
         "layer": "aurora",
         "expected": {
@@ -1025,7 +1030,8 @@
       "kind": "automatic",
       "status": "skip",
       "evidence": [
-        "eglinfo (mesa-utils) isn't installed"
+        "eglinfo (mesa-utils) isn't installed",
+        "skipped: you chose not to install mesa-utils"
       ],
       "classification": {
         "outcome": "not-tested",

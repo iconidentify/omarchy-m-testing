@@ -18,7 +18,7 @@ from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import EOF, INTERRUPT
 from omarchy_m_test.session import Context, Section
 from tests.desktop import CHECKPOINT, TERMINAL, at_the_seat, bare_desktop, omarchy_desktop, recording
-from tests.live_mac import CATALOGUE_PATH, NODE, UNLOAD, LiveMac, MacState, ascii_titles, live_recording
+from tests.live_mac import CATALOGUE_PATH, NODE, UNLOAD, LiveMac, MacState, live_recording
 from tests.schema_validator import errors
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -170,7 +170,7 @@ class HumanCheckTest(unittest.TestCase):
         self.assertEqual(check(host, "test.tone-heard")["status"], "skip")
 
     def test_at_an_omarchy_terminal_the_answer_and_note_are_gum_prompts(self):
-        rec = ascii_titles(omarchy_desktop(live_recording()), ["Speaker"], "art")
+        rec = omarchy_desktop(live_recording())
         host = LiveMac(rec, answers=[
             ENTER, CommandResult(0, "Speaker\n", ""),         # disclaimer, sections picker
             CommandResult(0, "No\n", ""), CommandResult(0, "left channel silent\n", ""),  # gum choose, gum input
@@ -187,7 +187,7 @@ class HumanCheckTest(unittest.TestCase):
         self.assertIn("note: left channel silent", result["evidence"])
 
     def test_esc_in_gum_is_no_answer(self):
-        rec = ascii_titles(omarchy_desktop(live_recording()), ["Speaker"], "art")
+        rec = omarchy_desktop(live_recording())
         host = LiveMac(rec, answers=[ENTER, CommandResult(0, "Speaker\n", ""), CommandResult(1, "", "")], terminal_size=TERMINAL)
 
         self.assertEqual(main(ARGS, host, sections=(SPEAKER,)), 0)

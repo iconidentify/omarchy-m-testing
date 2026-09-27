@@ -827,7 +827,8 @@
       "evidence": [
         "2026-09-26T08:37:37+10:00 <hostname> omarchy-provision-hardware[12013]: Error: Deferred hardware step failed: install/hardware/vulkan.sh (see /var/log/omarchy-install.log); the next run resumes here",
         "2026-09-26T08:37:37+10:00 <hostname> systemd[1]: omarchy-provision-hardware.service: Failed with result 'exit-code'.",
-        "a later run completed: 2026-09-26T08:46:45+10:00 <hostname> omarchy-provision-hardware[50707]: Deferred hardware setup is complete"
+        "a later run completed:",
+        "2026-09-26T08:46:45+10:00 <hostname> omarchy-provision-hardware[50707]: Deferred hardware setup is complete"
       ],
       "classification": {
         "outcome": "fails",
@@ -1021,7 +1022,8 @@
       "kind": "automatic",
       "status": "skip",
       "evidence": [
-        "eglinfo (mesa-utils) isn't installed"
+        "eglinfo (mesa-utils) isn't installed",
+        "skipped: you chose not to install mesa-utils"
       ],
       "classification": {
         "outcome": "not-tested",
