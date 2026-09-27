@@ -3,9 +3,16 @@
 Ui.for_host picks one. Off a terminal (a pipe, a test) the run prints plain
 lines and prompts with host.prompt, nothing else. At a terminal it looks like
 Omarchy's installer: the screen cleared, the installed logo centred in the
-theme's green, section titles in the logo's font, gum prompts, and during
-automatic checks a live feed: the last lines of what the checks run and read,
-redrawn in place in grey, each prefixed "  → " (install/helpers/logging.sh).
+theme's green, section titles in plain bold text in the theme's accent over a
+thin rule (the terminal's own monospace font, never a FIGlet one), gum
+prompts, and during automatic checks a live feed: the last lines of what the
+checks run and read, redrawn in place in grey, each prefixed "  → "
+(install/helpers/logging.sh).
+
+Everything at a terminal is wrapped to one text column, the logo's width
+(at least 80), lined up under the logo's left edge: a wrapped line carries
+on under the start of its own text (a hanging indent after a list number, a
+"- " or a result's PASS/FAIL/SKIP), never back at the terminal's left edge.
 
 Human checks (human.py) ask with Ui.human: yes, no or skip, plus an optional
 note. Off a terminal, or without gum, that is one line ("n the left speaker
@@ -16,6 +23,7 @@ prompt goes through the section's feed, which it lifts while asking.
 from __future__ import annotations
 
 import re
+import textwrap
 from collections import deque
 from typing import Sequence
 
@@ -34,6 +42,10 @@ SHOW_CURSOR = ESC + "?25h"
 FEED_PREFIX = "  → "
 FEED_MAX_ROWS = 20
 FEED_MIN_ROWS = 3
+FEED_ROWS_PER_LINE = 3  # a long command or output line wraps to at most this many rows
+RULE = "─"
+# What a wrapped line hangs under: a list number, a dash or arrow, or a result's status word.
+_HANG = re.compile(r"^(\s*(?:\d+\.\s+(?:skip\s+|\s{4}\s)?|[-*→]\s+|(?:PASS|FAIL|SKIP|INFO)\s+)?)")
 
 # The site's colour code, per classification outcome.
 OUTCOME_COLOURS = {
@@ -64,6 +76,39 @@ class Interrupted(KeyboardInterrupt):
 def _rgb(hex_colour: str) -> str:
     r, g, b = (int(hex_colour[i:i + 2], 16) for i in (1, 3, 5))
     return f"{ESC}38;2;{r};{g};{b}m"
+
+
+def wrap(text: str, width: int) -> list[str]:
+    """`text` as lines at most `width` wide; a wrapped line hangs under its own text (see the module docstring)."""
+    lines: list[str] = []
+    for line in _reflowed(text.split("\n")):
+        if len(line) <= width or not line.strip():
+            lines.append(line)
+            continue
+        hang = _HANG.match(line).group(1)
+        if len(hang) > width // 2:
+            hang = re.match(r"\s*", line).group(0)[: width // 2]
+        lines += textwrap.wrap(
+            line[len(hang):], width, initial_indent=hang, subsequent_indent=" " * len(hang),
+            break_long_words=False, break_on_hyphens=False,
+        ) or [line]
+    return lines
+
+
+def _reflowed(lines: list[str]) -> list[str]:
+    """Lines already wrapped under a hanging indent joined back to their item, to wrap again at this width."""
+    joined: list[str] = []
+    hang = ""
+    for line in lines:
+        marker = _HANG.match(line).group(1)
+        continues = joined and hang.strip() == "" and len(hang) > 0 and line.startswith(hang) and line.strip() \
+            and not line[len(hang)].isspace() and marker.strip() == ""
+        if continues:
+            joined[-1] += " " + line.strip()
+            continue
+        joined.append(line)
+        hang = " " * len(marker) if marker.strip() else ""
+    return joined
 
 
 def printable(text: str) -> str:
@@ -117,10 +162,14 @@ class Ui:
             self.text(HUMAN_HINT)
         return self._human_by_prompt(question)
 
-    def _human_by_prompt(self, question: str, pad: str = "") -> tuple[str | None, str]:
+    def _prompt_text(self, text: str) -> str:
+        """A prompt as it's shown (the styled UI wraps it into the text column)."""
+        return text
+
+    def _human_by_prompt(self, question: str) -> tuple[str | None, str]:
         for _ in range(HUMAN_TRIES):
             try:
-                typed = self._io().prompt(f"{pad}{question} [y/n/s] ").strip()
+                typed = self._io().prompt(self._prompt_text(f"{question} [y/n/s]") + " ").strip()
             except EOFError:
                 return None, ""
             word, _, note = typed.partition(" ")
@@ -134,9 +183,9 @@ class Ui:
         return self.host
 
     def confirm(self, question: str, default: bool = False) -> bool:
-        suffix = " [Y/n] " if default else " [y/N] "
+        suffix = " [Y/n]" if default else " [y/N]"
         try:
-            answer = self._io().prompt(question + suffix).strip().lower()
+            answer = self._io().prompt(self._prompt_text(question + suffix) + " ").strip().lower()
         except EOFError:
             return default
         if not answer:
@@ -159,6 +208,9 @@ class StyledUi(Ui):
         width = theme.logo_width if theme.logo and theme.logo_width <= terminal.width else 80
         self.left = max(0, (terminal.width - width) // 2)
         self.pad = " " * self.left
+        # The text column: from the logo's left edge, the logo's width (at least 80), inside the terminal
+        # with one column spare so a full line never makes the terminal wrap by itself.
+        self.column = max(20, min(max(width, 80), terminal.width - self.left - 1))
         self.feed: Feed | None = None
         self._gum: bool | None = None
 
@@ -168,7 +220,12 @@ class StyledUi(Ui):
         return f"{_rgb(self.theme.colour(name))}{text}{RESET}"
 
     def _padded(self, text: str) -> str:
-        return "\n".join(self.pad + line if line else line for line in text.split("\n"))
+        """`text` wrapped to the text column and lined up under the logo."""
+        return "\n".join(self.pad + line if line else line for line in wrap(text, self.column))
+
+    def _wrapped(self, text: str, less: int = 0) -> str:
+        """`text` wrapped for gum, which pads it by itself: `less` narrower for gum's own prefix."""
+        return "\n".join(wrap(text, max(20, self.column - less)))
 
     def _centred(self, block: str) -> str:
         lines = block.split("\n")
@@ -191,17 +248,14 @@ class StyledUi(Ui):
         self._io().show(self.paint("foreground", self._padded(text)))
 
     def ask(self, message: str) -> str:
-        return self._io().prompt(self.pad + message)
+        return self._io().prompt(self._prompt_text(message.rstrip(" ")) + (" " if message.endswith(" ") else ""))
 
     def _io(self) -> Host:
         return self.feed if self.feed else self.host
 
     def section(self, title: str, description: str) -> "Host":
-        art = self._ascii(title)
-        if art:
-            self.host.show("\n" + self.paint("accent", self._padded(art)))
-        else:
-            self.host.show("\n" + self.pad + BOLD + self.paint("accent", title))
+        self.host.show("\n" + self.pad + BOLD + self.paint("accent", title))
+        self.host.show(self.pad + self.paint("accent", RULE * min(self.column, max(len(title), 40))))
         self.host.show(self.paint("dark_foreground", self._padded(description)) + "\n")
         rows = max(FEED_MIN_ROWS, min(FEED_MAX_ROWS, self.terminal.height - 16))
         self.feed = Feed(self.host, self, rows)
@@ -214,17 +268,6 @@ class StyledUi(Ui):
 
     def result(self, text: str, outcome: str) -> None:
         self.host.show(self.paint(OUTCOME_COLOURS.get(outcome, "dark_foreground"), self._padded(text)))
-
-    def _ascii(self, title: str) -> str | None:
-        if not self.theme.has_ascii:
-            return None
-        drawn = self.host.run(["omarchy-ascii", title])
-        art = drawn.stdout.rstrip("\n")
-        if drawn.returncode != 0 or not art.strip():
-            return None
-        if max(len(line) for line in art.split("\n")) + self.left > self.terminal.width:
-            return None
-        return art
 
     # -- gum --------------------------------------------------------------
 
@@ -242,7 +285,7 @@ class StyledUi(Ui):
     def choose(self, header: str, options: Sequence[str], selected: Sequence[str]) -> list[str]:
         if not self._has_gum():
             return self._choose_by_prompt(options, selected)
-        argv = ["gum", "choose", "--no-limit", "--header", header]
+        argv = ["gum", "choose", "--no-limit", "--header", self._wrapped(header)]
         if selected:
             argv += ["--selected", ",".join(selected) if len(selected) < len(options) else "*"]
         result = self._gum_run(argv + list(options))
@@ -253,7 +296,7 @@ class StyledUi(Ui):
 
     def _choose_by_prompt(self, options: Sequence[str], selected: Sequence[str]) -> list[str]:
         try:
-            answer = self._io().prompt(self.pad + "Sections to skip (numbers, e.g. 2 5; Enter runs them all): ")
+            answer = self._io().prompt(self._prompt_text("Sections to skip (numbers, e.g. 2 5; Enter runs them all):") + " ")
         except EOFError:
             return list(selected)
         skip = {int(n) - 1 for n in re.findall(r"\d+", answer)}
@@ -262,25 +305,36 @@ class StyledUi(Ui):
     def human(self, question: str) -> tuple[str | None, str]:
         if not self._has_gum():
             return super().human(question)
-        chosen = self._gum_run(["gum", "choose", "--header", question, *HUMAN_CHOICES])
+        chosen = self._gum_run(["gum", "choose", "--header", self._wrapped(question), *HUMAN_CHOICES])
         answer = chosen.stdout.strip().lower() if chosen.returncode == 0 else ""
         if answer not in HUMAN_WORDS:
             return None, ""  # Esc: no answer, which counts as skipped
         noted = self._gum_run(["gum", "input", "--prompt", NOTE_PROMPT, "--placeholder", "what you saw or heard"])
         return HUMAN_WORDS[answer], noted.stdout.strip() if noted.returncode == 0 else ""
 
-    def _human_by_prompt(self, question: str, pad: str = "") -> tuple[str | None, str]:
-        return super()._human_by_prompt(question, pad or self.pad)
+    def _prompt_text(self, text: str) -> str:
+        return self._padded(text)
 
     def confirm(self, question: str, default: bool = False) -> bool:
         if not self._has_gum():
-            return super().confirm(self.pad + question, default)
-        argv = ["gum", "confirm", question] + ([] if default else ["--default=false"])
+            return super().confirm(question, default)
+        argv = ["gum", "confirm", self._wrapped(question)] + ([] if default else ["--default=false"])
         return self._gum_run(argv).returncode == 0
 
     def close(self) -> None:
         self.end_section()
         self.host.show(SHOW_CURSOR + RESET)
+
+
+def unlogged(host: Host) -> Host:
+    """The host under a section's feed: what runs through it isn't shown (a poll repeated every second)."""
+    return host.inner if isinstance(host, Feed) else host
+
+
+def note(host: Host, text: str) -> None:
+    """A line of the section's feed that no command printed (nothing off a terminal)."""
+    if isinstance(host, Feed):
+        host.note(text)
 
 
 class Feed:
@@ -324,6 +378,9 @@ class Feed:
         self._add([f"list {path}"])
         return self.inner.list_dir(path)
 
+    def note(self, text: str) -> None:
+        self._add([text])
+
     # -- the human, with the feed lifted -----------------------------------
 
     def show(self, text: str) -> None:
@@ -355,7 +412,12 @@ class Feed:
         for line in lines:
             line = printable(line)
             if line.strip():
-                self.lines.append(line if len(line) <= self.width else line[: self.width - 3] + "...")
+                # Wrapped under a two-space hang, at most a few rows: the rest of a long line is left out.
+                rows = textwrap.wrap(line, self.width, subsequent_indent="  ", break_on_hyphens=False) or [line[: self.width]]
+                if len(rows) > FEED_ROWS_PER_LINE:
+                    rows = rows[:FEED_ROWS_PER_LINE]
+                    rows[-1] = rows[-1][: self.width - 3] + "..."
+                self.lines.extend(rows)
                 added = True
         if added and self.drawn:
             self._draw(up=True)

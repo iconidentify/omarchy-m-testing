@@ -11,13 +11,15 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import unittest
 
 from omarchy_m_test import sleep
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import ENDED, EOF
 from omarchy_m_test.safety import refusal
-from tests.desktop import CHECKPOINT
+from omarchy_m_test.host import CommandResult
+from tests.desktop import CHECKPOINT, TERMINAL, omarchy_desktop
 from tests.live_mac import (
     AWAKE_AGAIN, BEFORE_CLAMSHELL, BEFORE_FAILED_CLAMSHELL, BEFORE_SUSPEND, CATALOGUE_PATH, CLAMSHELL_AT, FAILED_AFTER,
     FAILED_CLAMSHELL_JOURNAL, FAILED_CLAMSHELL_WATCH, GOOD_CLAMSHELL_JOURNAL, GOOD_CLAMSHELL_WATCH, GOOD_SUSPEND_JOURNAL,
@@ -139,7 +141,7 @@ class SuspendTest(unittest.TestCase):
     def test_a_lid_that_isnt_closed_or_a_log_that_cant_be_read_is_skipped(self):
         not_closed = watch(SUSPEND_AT + 0.5, (0, "monitors eDP-1=on"), end="timeout")
         for state, why in (
-            (suspend_only(lid_watches=[not_closed], journal=journal()), "skipped: the lid wasn't closed within 15 s"),
+            (suspend_only(lid_watches=[not_closed], journal=journal()), f"skipped: the lid wasn't closed within {sleep.CLOSE_SECONDS} s"),
             (suspend_only(journal="lines 0\n"), "skipped: the system log couldn't be read, so suspend and resume can't be seen"),
             (suspend_only(lid_watches=["start 1\nnolid 0\n"]), "skipped: logind can't say whether the lid is open or closed"),
         ):
@@ -296,6 +298,89 @@ class ClamshellTest(unittest.TestCase):
         self.assertNotIn(CONNECT_PROMPT, prompts(host))
         self.assertEqual(check(host, sleep.CLAMSHELL)["status"], "skip")
         self.assertEqual(check(host, sleep.LID_SUSPEND)["status"], "pass")
+
+
+# -- at the terminal: the lid wait's countdown, and the wait after waking up ---------------------
+
+def at_the_terminal(answers, state: MacState) -> LiveMac:
+    """The Sleep section at an Omarchy terminal: gum confirms (0 yes, 1 no) after the disclaimer and the picker."""
+    host = LiveMac(omarchy_desktop(live_recording()), state=state, terminal_size=TERMINAL,
+                   answers=[ENTER, CommandResult(0, "Sleep\n", ""), *(CommandResult(code, "", "") for code in answers), ENDED])
+    main(ARGS, host, sections=(SECTIONS["sleep"],))
+    return host
+
+
+# The M2 Max at its desk, 2026-09-27: Wi-Fi back 2.6 s after waking up, Thunderbolt networking never.
+M2_BEFORE = links(SUSPEND_AT, tbnet=True, tbdevices=1)
+M2_AFTER = [links(SUSPEND_AT + 17.0 + i, wifi=0 if i < 2 else 1, tbnet=False, tbdevices=1) for i in range(40)]
+
+
+class TerminalTest(unittest.TestCase):
+    def test_after_waking_up_the_wait_is_said_and_the_feed_isnt_the_same_poll_over_and_over(self):
+        """The M2 Max, 2026-09-27: the feed redrew the same poll every second for 30 s, which looked like a loop."""
+        host = at_the_terminal([0, 1], suspend_only(links=[M2_BEFORE, *M2_AFTER]))
+
+        self.assertEqual(check(host, sleep.THUNDERBOLT_AFTER)["status"], "fail")
+        self.assertEqual(check(host, sleep.WIFI_AFTER)["status"], "pass")
+        # Said once, before the wait: how long, and what it waits for.
+        said = sleep.RECOVERY_WAIT.format(what="wlan0 with an address, thunderbolt0 (Thunderbolt networking), 1 Thunderbolt/USB4 device(s)")
+        text = " ".join(re.sub(r"\033\[[0-9;?]*[A-Za-z]", "", host.output).split())  # wrapped at the terminal
+        self.assertIn(said, text)
+        self.assertEqual(text.count("The Mac woke up. Waiting up to"), 1)
+        # Bounded: polled until RECOVERY_SECONDS after the wake-up, and no more.
+        polls = host.commands_run.count(sleep.LINKS) - 1
+        self.assertEqual(polls, sleep.RECOVERY_SECONDS + 1)
+        # The feed shows no poll at all, only what changed: first nothing back, then Wi-Fi.
+        frames = [e[1] for e in host.transcript if e[0] == "show" and "  → " in e[1]]
+        feed = "".join(frames)
+        self.assertNotIn("$ sleep 1", feed)
+        self.assertLessEqual(frames[-1].count("$ sh -c echo \"time"), 1)  # at most the links read before the lid closed
+        said = " ".join(re.sub(r"\033\[[0-9;?]*[A-Za-z]", "", frames[-1]).replace("→", " ").split())
+        self.assertIn("1 s after waking up: wlan0 no address, thunderbolt0 down, 1 of 1 Thunderbolt/USB4 device(s)", said)
+        self.assertIn("3 s after waking up: wlan0 connected, thunderbolt0 down", said)
+
+    def test_the_lid_wait_runs_on_the_terminal_with_a_countdown_and_is_generous(self):
+        late = watch(SUSPEND_AT + 0.5, (0, "monitors eDP-1=on"), (40.0, "closed"), (53.0, "open"))
+        journal_late = journal(("lid-closed", SUSPEND_AT + 40.6), ("suspend-entry", SUSPEND_AT + 41.3, "s2idle"),
+                               ("suspend-exit", SUSPEND_AT + 53.4), ("lid-opened", SUSPEND_AT + 53.5))
+        host = at_the_terminal([0, 1], suspend_only(lid_watches=[late], journal=journal_late))
+
+        self.assertGreaterEqual(sleep.CLOSE_SECONDS, 60)
+        self.assertEqual(check(host, sleep.LID_SUSPEND)["status"], "pass")  # closed after 40 s: still in time
+        watches_ = [argv for kind, argv, _ in (e for e in host.transcript if e[0] == "tty") if argv[:3] == WATCH[:3]]
+        self.assertEqual(len(watches_), 1)
+        self.assertEqual(watches_[0][4:8], [str(sleep.CLOSE_SECONDS), str(sleep.CLOSED_SECONDS), str(sleep.AFTER_OPEN_SECONDS), "1"])
+        self.assertEqual(watches_[0][8].strip(), "Sleep")
+
+    def test_a_key_while_the_lid_is_awaited_skips_the_step(self):
+        skipped = watch(SUSPEND_AT + 0.5, (0, "monitors eDP-1=on"), end="skipped")
+        host = at_the_terminal([0, 1], suspend_only(lid_watches=[skipped], journal=journal()))
+
+        self.assertEqual(check(host, sleep.LID_SUSPEND)["evidence"], ["before: eDP-1 on", f"skipped: {sleep.LID_SKIPPED}"])
+        self.assertEqual(check(host, sleep.WIFI_AFTER)["status"], "skip")
+
+    def test_the_watch_script_counts_down_on_stderr_and_ends_on_a_key(self):
+        """The countdown and the key, in the watch's own shell (bash, as on Arch), with logind and Hyprland stubbed."""
+        import os, shutil, subprocess, tempfile
+        def fractional(bash):
+            return bash and subprocess.run([bash, "-c", "read -t 0.1 x"], input="", capture_output=True, text=True).stderr == ""
+        bash = next((b for b in (shutil.which("bash"), "/opt/homebrew/bin/bash", "/usr/bin/bash") if b and os.path.exists(b) and fractional(b)), None)
+        if bash is None:
+            self.skipTest("needs a bash whose read takes fractional timeouts (bash 4+, as on Arch)")
+        with tempfile.TemporaryDirectory() as stubs:
+            for name, body in (("busctl", "echo 'b false'"), ("hyprctl", "true"), ("sleep", "true")):
+                with open(os.path.join(stubs, name), "w") as f:
+                    f.write(f"#!/bin/sh\n{body}\n")
+                os.chmod(os.path.join(stubs, name), 0o755)
+            env = {**os.environ, "PATH": stubs + os.pathsep + os.environ["PATH"]}
+            argv = sleep.lid_watch_argv(close=2, tty=True, label="  Sleep")
+            keyed = subprocess.run([bash, "--posix", *argv[1:]], input="x", capture_output=True, text=True, env=env, timeout=20)
+            waited = subprocess.run([bash, "--posix", *argv[1:]], input="", capture_output=True, text=True, env=env, timeout=20)
+        self.assertIn("skipped", keyed.stdout.split()[-2:])
+        self.assertIn("  Sleep: close the lid now, 2 s left (any key skips)", keyed.stderr)
+        self.assertEqual(waited.stdout.split()[-2], "timeout")
+        self.assertIn("1 s left", waited.stderr)
+        self.assertTrue(waited.stderr.endswith("\033[2K"))  # the countdown's line is cleared at the end
 
 
 # -- Wi-Fi and Thunderbolt after the resume --------------------------------------------------

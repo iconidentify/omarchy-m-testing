@@ -31,7 +31,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-from omarchy_m_test import changes, network, power, sleep
+from omarchy_m_test import changes, network, power, sleep, system
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.recording import RecordedHost
 from tests.desktop import command, recording, with_home
@@ -203,6 +203,7 @@ class MacState:
     repository: dict[str, list[str]] = field(default_factory=lambda: {
         "glmark2": ["libpng12", "glmark2"],
         "vkmark": ["vkmark"],
+        "mesa-utils": ["mesa-utils"],
         "mesa": ["mesa"],
         "bootpull": ["linux-firmware", "bootpull"],
     })
@@ -230,6 +231,8 @@ class MacState:
     # (/etc/udev/macsmc-battery.conf's text, None: no file), whether a write sticks, whether asahi-scripts' path
     # unit saves every change (80 saved, 100 removes the file); the idle samples; the battery readings, in turn.
     battery_status: str = "Full"
+    unplug: str | None = None  # the status the battery takes when asked to unplug (None: the charger stays in)
+    key_pressed: bool = False  # at the terminal, a key while a watch waits
     charge_limit: int = 100
     saved_limit: str | None = None
     limit_sticks: bool = True
@@ -332,6 +335,12 @@ class LiveMac(RecordedHost):
             return CommandResult(0, f"Charge limit: {s.charge_limit}% (restart charging at {power.RESTARTS_AT.get(s.charge_limit)}%)\n", "")
         if argv[:3] == ["sh", "-c", power.IDLE_SCRIPT]:
             return CommandResult(0, s.idle, "")
+        if argv[:3] == ["sh", "-c", power.UNPLUG_SCRIPT]:
+            if s.unplug is not None:
+                s.battery_status = s.unplug
+            if s.battery_status == "Discharging":
+                return CommandResult(0, "unplugged\n", "")
+            return CommandResult(0, f"{'skipped' if s.key_pressed and argv[6] == '1' else 'timeout'} {s.battery_status}\n", "")
         if argv[:3] == ["sh", "-c", power.READING_SCRIPT]:
             return CommandResult(0, _take(s.readings), "")
         if argv == ["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"]:
@@ -357,8 +366,7 @@ class LiveMac(RecordedHost):
             return CommandResult(0, f"bluetooth unblocked unblocked\nwlan {soft} unblocked\n", "")
         if argv == ["sudo", "-n", "true"]:
             return ok if s.sudo_cached else CommandResult(1, "", "sudo: a password is required\n")
-        recorded = any(entry["argv"] == argv for entry in self.recording.get("commands", []))
-        if argv[1:2] in (["-Q"], ["-Qq"]) and argv[0] == "pacman" and len(argv) > 2 and not recorded:  # the stack query stays as recorded
+        if argv[1:2] in (["-Q"], ["-Qq"]) and argv[0] == "pacman" and len(argv) > 2 and argv != system.PACKAGE_QUERY:  # the stack query stays as recorded
             names = argv[2:]
             found = "".join(f"{n}\n" if argv[1] == "-Qq" else f"{n} 1.0-1\n" for n in names if n in s.installed)
             missing = "".join(f"error: package '{n}' was not found\n" for n in names if n not in s.installed)
@@ -434,6 +442,9 @@ class LiveMac(RecordedHost):
         return None
 
     def run_tty(self, argv, env=None):
+        if list(argv[:3]) in (["sh", "-c", sleep.LID_WATCH_SCRIPT], ["sh", "-c", power.UNPLUG_SCRIPT]):
+            self.transcript.append(("tty", list(argv), None))  # the watches' countdown, on the terminal
+            return self.run(argv)
         result = super().run_tty(argv, env)
         if list(argv) == ["sudo", "-v"] and result.returncode == 0:
             self.state.sudo_cached = True
@@ -444,8 +455,3 @@ def _take(outputs: list[str]) -> str:
     """The next of `outputs`; the last one stays."""
     return outputs.pop(0) if len(outputs) > 1 else (outputs[0] if outputs else "")
 
-
-def ascii_titles(rec: dict[str, Any], titles: list[str], art: str) -> dict[str, Any]:
-    """omarchy-ascii answers for the test sections' titles (a run at an Omarchy terminal draws them)."""
-    rec["commands"] += [command(["omarchy-ascii", title], art + "\n") for title in titles]
-    return rec

@@ -1021,7 +1021,8 @@
       "kind": "automatic",
       "status": "skip",
       "evidence": [
-        "eglinfo (mesa-utils) isn't installed"
+        "eglinfo (mesa-utils) isn't installed",
+        "skipped: you chose not to install mesa-utils"
       ],
       "classification": {
         "outcome": "not-tested",

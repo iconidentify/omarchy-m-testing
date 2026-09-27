@@ -36,15 +36,19 @@ TERMINAL = Terminal(120, 40)
 # Benchmarks section's offer to install vkmark, unanswered and so declined: at a plain
 # prompt (end of input) and at gum (Esc). A run that needs no answer after them ends
 # its answers with ENDED instead.
+# Before them all, the Graphics section offers mesa-utils for eglinfo (the OpenGL check), unanswered and so declined.
+OPENGL_OFFER = [EOF]
 SUDO_PROMPT = [EOF]
 BENCHMARK_OFFER = [EOF]
-UNANSWERED = [EOF] * 11 + BENCHMARK_OFFER
-UNANSWERED_AT_A_TERMINAL = [EOF] * 11 + SUDO_PROMPT + BENCHMARK_OFFER
+UNANSWERED = OPENGL_OFFER + [EOF] * 11 + BENCHMARK_OFFER
+UNANSWERED_AT_A_TERMINAL = OPENGL_OFFER + [EOF] * 11 + SUDO_PROMPT + BENCHMARK_OFFER
 # How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
 # the converged M1 and M2 ran over SSH, where brightness can't be set, so that one isn't asked; the M1s have
 # nothing plugged into their USB-C ports, so the two ports questions aren't asked).
 HUMAN_QUESTIONS = {"m2-max-image2": 11, "m1-pro-mx-mac": 6, "m1-pro-converged": 8, "m2-max-converged": 10}
-GUM_UNANSWERED = [CommandResult(1, "", "")] * 13  # the sudo prompt (sudo -v) exits 1 like gum
+GUM_UNANSWERED = [CommandResult(1, "", "")] * 14  # the sudo prompt (sudo -v) exits 1 like gum
+# Which corpus machines have no eglinfo, so the Graphics section offers mesa-utils first.
+OPENGL_OFFERED = {"m2-max-image2": 1, "m1-pro-mx-mac": 1, "m1-pro-converged": 0, "m2-max-converged": 1}
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
 BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6}
 # What only a run at a local seat asks besides: the Ports section's "plug in what you have" (after the reload).
@@ -54,9 +58,9 @@ AT_THE_SEAT_ONLY = 1
 # The Sleep section (after the reload question) asks whether to close the lid for the suspend step, then
 # whether an external display is showing, then (only after a yes) whether to close the lid with it on.
 SLEEP_DECLINED = (EOF, EOF)
-# The Power section at the Mac (on AC power, as recorded) asks to unplug the charger for the idle measurement,
-# then whether to measure the drain over ten minutes asleep: both unanswered, and so declined.
-POWER_DECLINED = (EOF, EOF)
+# The Power section at the Mac (on AC power, as recorded) asks for the charger out and waits for it (no prompt);
+# left in, neither the idle measurement nor the drain asleep is offered.
+POWER_DECLINED = ()
 
 
 def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_DECLINED, power: tuple = POWER_DECLINED) -> list:
@@ -64,10 +68,9 @@ def at_the_seat(machine: str, reload: str | object = EOF, sleep: tuple = SLEEP_D
     driver-reload question, `sleep` at the Sleep section's, `power` at the Power section's, and the benchmarks'
     package offer unanswered."""
     before = BEFORE_RELOAD[machine]
-    return [*[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before + AT_THE_SEAT_ONLY), *power, *BENCHMARK_OFFER]
+    return [*[EOF] * OPENGL_OFFERED[machine], *[EOF] * before, reload, *sleep, *[EOF] * (HUMAN_QUESTIONS[machine] - before + AT_THE_SEAT_ONLY), *power, *BENCHMARK_OFFER]
 
 LOGO = " ▄█████▄    ▄███████████▄\n███   ███  ███   ███   ███\n ▀█████▀    ▀█   ███   █▀"
-SYSTEM_ART = "   ▄████████\n  ███    ███\n  ███    █▀ "
 # A Catppuccin-like palette, so its colours can't be mistaken for Tokyo Night's.
 COLORS_TOML = 'accent = "#89b4fa"\nforeground = "#cdd6f4"\ngreen = "#a6e3a1"\nred = "#f38ba8"\n'
 RESOLVED = "accent\t#89b4fa\ndark_foreground\t#6c7086\nforeground\t#cdd6f4\ngreen\t#a6e3a1\nmode\tdark\nred\t#f38ba8\n"
@@ -95,7 +98,7 @@ def with_home(rec: dict[str, Any], env: dict[str, str] | None = None, checkpoint
 
 
 def omarchy_desktop(rec: dict[str, Any], env: dict[str, str] | None = None) -> dict[str, Any]:
-    """An Omarchy install: logo, current theme, omarchy-theme-color, omarchy-ascii and gum."""
+    """An Omarchy install: logo, current theme, omarchy-theme-color and gum."""
     rec = with_home(rec, env)
     rec["files"].update({
         LOGO_PATHS[0]: {"text": LOGO + "\n"},
@@ -103,8 +106,6 @@ def omarchy_desktop(rec: dict[str, Any], env: dict[str, str] | None = None) -> d
     })
     rec["commands"] += [
         command(["omarchy-theme-color", "--file", f"{THEME}/colors.toml", "--all"], RESOLVED),
-        command(["omarchy-ascii", "--help"], "Usage: omarchy-ascii [text...]\n"),
-        *(command(["omarchy-ascii", section.title], SYSTEM_ART + "\n") for section in APPLE),
         command(["gum", "--version"], "gum version 0.16.0\n"),
     ]
     return rec
@@ -122,7 +123,6 @@ def bare_desktop(rec: dict[str, Any], gum: bool = False, old_theme: str | None =
         rec["files"][f"{OLD_THEME}/colors.toml"] = {"text": old_theme}
         rec["commands"].append(command(["omarchy-theme-color", "--file", f"{OLD_THEME}/colors.toml", "--all"], "", 127, "not found\n"))
     rec["commands"] += [
-        command(["omarchy-ascii", "--help"], "", 127, "omarchy-ascii: command not found\n"),
         command(["gum", "--version"], "gum version 0.16.0\n" if gum else "", 0 if gum else 127),
     ]
     return rec

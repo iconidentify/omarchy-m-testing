@@ -2,8 +2,8 @@
 
 Each section names the check ids it reports, in report order, so a skipped
 section still reports every one of its checks (as skipped). Together they
-are checks.ORDER. Titles are drawn in the logo's font, which has letters and
-spaces only; keep them short.
+are checks.ORDER. Titles are the sections' headings (and the picker's
+choices): letters and spaces, short.
 """
 
 from __future__ import annotations

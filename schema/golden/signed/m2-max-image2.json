@@ -1021,7 +1021,8 @@
       "kind": "automatic",
       "status": "skip",
       "evidence": [
-        "eglinfo (mesa-utils) isn't installed"
+        "eglinfo (mesa-utils) isn't installed",
+        "skipped: you chose not to install mesa-utils"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1943,6 +1944,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQImYqlpYNO95mgdoQY3YKaRKd8RTT51iV0EQ992O7f\nfi2yB/JIhzmJsoYd6nwofWIpQb/acvok7pB1gS2WjSMAM=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQBXDS6vJOC0WkMZFTBp4JTbj7A0UMjE69Zg/XYc7ud\n0PtWe0UhD6HSNcDw26ArbkgxfjByik+Rj9Hka2mJGiLQ8=\n-----END SSH SIGNATURE-----"
   }
 }

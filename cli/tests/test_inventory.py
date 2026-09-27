@@ -15,6 +15,7 @@ import json
 import os
 import unittest
 
+from omarchy_m_test import inventory
 from omarchy_m_test.app import main
 from omarchy_m_test.inventory import DEVICES, KERNEL_CONFIG, KERNEL_LOG, NODE_PROPERTIES
 from omarchy_m_test.recording import ENDED, INTERRUPT, RecordedHost
@@ -156,11 +157,30 @@ class GoldenInventoryTest(unittest.TestCase):
         self.assertEqual(report["inventory"]["unclaimed"], [])
         found = hardware(report)
         self.assertEqual({k: v["status"] for k, v in found.items()}, {
-            "hardware.drivers": "pass", "hardware.firmware": "pass", "hardware.probe-errors": "fail", "hardware.kernel-config": "pass",
+            "hardware.drivers": "pass", "hardware.firmware": "pass", "hardware.probe-errors": "pass", "hardware.kernel-config": "pass",
         })
-        # The display coprocessors' Type-C routes wait for a display crossbar Aurora doesn't have yet.
-        self.assertIn("platform 315c00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@315c00000/typec-routes/route@0: "
-                      "failed to get display crossbar", found["hardware.probe-errors"]["evidence"])
+        # The display coprocessors' Type-C routes waited in the initramfs for the display crossbar's module
+        # (mux_apple_display_crossbar, on the root filesystem); every one of them is bound now, so it's said, not failed.
+        evidence = found["hardware.probe-errors"]["evidence"]
+        self.assertEqual(evidence[0], "7 deferred probe(s) pending early in this boot, bound to their drivers since "
+                                      "(waiting for a module the initramfs didn't carry):")
+        self.assertIn("since bound: platform 315c00000.dcp: deferred probe pending: apple-dcp: /soc/dcp@315c00000/typec-routes/route@0: "
+                      "failed to get display crossbar", evidence)
+
+    def test_a_deferred_probe_whose_device_is_still_unbound_fails(self):
+        rec = json.loads(open(os.path.join(HERE, "recordings", "m2-max-converged.json"), encoding="utf-8").read())
+        rec["files"][f"{rec['env']['HOME']}/.local/state/omarchy-m-test/checkpoint.json"] = None
+        for entry in rec["commands"]:
+            if entry["argv"] == inventory.DEVICES:
+                entry["stdout"] = entry["stdout"].replace("/sys/devices/platform/soc/315c00000.dcp/uevent:DRIVER=apple-dcp\n", "")
+        status, mac, report = run(rec)
+
+        found = hardware(report)["hardware.probe-errors"]
+        self.assertEqual(found["status"], "fail")
+        self.assertEqual(found["evidence"][0], "platform 315c00000.dcp: deferred probe pending: apple-dcp: "
+                                               "/soc/dcp@315c00000/typec-routes/route@0: failed to get display crossbar")
+        self.assertEqual(found["evidence"][1], "6 deferred probe(s) pending early in this boot, bound to their drivers since "
+                                               "(waiting for a module the initramfs didn't carry):")
 
 
 class PrivacyTest(unittest.TestCase):

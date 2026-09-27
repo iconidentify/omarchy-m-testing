@@ -8,7 +8,12 @@ Four reads, all read-only and none needing root:
   devices       which node each device came from and whether a driver is
                 bound to it (the OF_FULLNAME and DRIVER lines of every uevent
                 under /sys/devices)
-  kernel log    this boot's firmware-load failures and driver probe errors
+  kernel log    this boot's firmware-load failures and driver probe errors;
+                a "deferred probe pending" for a device a driver has bound
+                since is only said, not failed: the kernel prints it when it
+                stops waiting in the initramfs, and a device that waited for a
+                module on the root filesystem (the M2 Max's display crossbar,
+                mux_apple_display_crossbar, for its DCPs) binds once that loads
   kernel config the running kernel's build options (/proc/config.gz),
                 compared with Asahi's pinned reference configuration
                 (catalogue/asahi-kernel/)
@@ -75,6 +80,7 @@ _FIRMWARE_FAILURE = re.compile(
     r"|firmware(?: file)? \S+ (?:not found|load failed)|request_firmware\S* failed)"
 )
 _PROBE_ERROR = re.compile(r"(probe with driver \S+ failed with error -?\d+|probe of \S+ failed with error -?\d+|deferred probe pending)")
+_DEFERRED = re.compile(r"^(?:\S+ )?(\S+): deferred probe pending")
 _CONFIG_SET = re.compile(r"^(CONFIG_[A-Za-z0-9_]{1,100})=(.*)$")
 _CONFIG_UNSET = re.compile(r"^# (CONFIG_[A-Za-z0-9_]{1,100}) is not set$")
 # Options the build toolchain decides rather than the kernel's packager.
@@ -114,6 +120,7 @@ class Inventory:
     config_missing: str = ""
     reference: tuple[str, dict[str, str]] | None = None  # (label, options) of Asahi's config
     unclaimed: list[dict] = field(default_factory=list)  # filled by classify()
+    bound_devices: set[str] = field(default_factory=set)  # device names (48dc00000.dcp, 0-003b) a driver is bound to now
 
     # -- the report's inventory block ------------------------------------------
 
@@ -164,7 +171,7 @@ class Inventory:
 
     def results(self, catalogue: Catalogue) -> list[dict]:
         return [self._drivers(catalogue), self._log_check("hardware.firmware", _FIRMWARE_FAILURE, "firmware-load failures"),
-                self._log_check("hardware.probe-errors", _PROBE_ERROR, "driver probe errors"), self._kernel_config()]
+                self._probe_errors(), self._kernel_config()]
 
     def _drivers(self, catalogue: Catalogue) -> dict:
         if self.nodes is None:
@@ -196,6 +203,31 @@ class Inventory:
             evidence.append(f"[{len(found) - LOG_LINES_PER_CHECK} more {what}]")
         return _result(check_id, "fail", evidence)
 
+    def _probe_errors(self) -> dict:
+        result = self._log_check("hardware.probe-errors", _PROBE_ERROR, "driver probe errors")
+        if result["status"] != "fail":
+            return result
+        found = list(dict.fromkeys(line for line in self.log or [] if _PROBE_ERROR.search(line)))
+        since = [line for line in found if self._bound_since(line)]
+        errors = [line for line in found if line not in since]
+        evidence = errors[:LOG_LINES_PER_CHECK]
+        if len(errors) > LOG_LINES_PER_CHECK:
+            evidence.append(f"[{len(errors) - LOG_LINES_PER_CHECK} more driver probe errors]")
+        if since:
+            evidence.append(
+                f"{len(since)} deferred probe(s) pending early in this boot, bound to their drivers since "
+                "(waiting for a module the initramfs didn't carry):"
+            )
+            evidence += [f"since bound: {line}" for line in since[:LOG_LINES_PER_CHECK]]
+            if len(since) > LOG_LINES_PER_CHECK:
+                evidence.append(f"[{len(since) - LOG_LINES_PER_CHECK} more since bound]")
+        return _result("hardware.probe-errors", "fail" if errors else "pass", evidence)
+
+    def _bound_since(self, line: str) -> bool:
+        """A "deferred probe pending" line for a device a driver is bound to now."""
+        match = _DEFERRED.search(line)
+        return bool(match) and match[1] in self.bound_devices
+
     def _kernel_config(self) -> dict:
         differences = self.differences()
         if differences is None:
@@ -222,7 +254,7 @@ def _result(check_id: str, status: str, evidence: list[str]) -> dict:
 def take(host: Host, catalogue: Catalogue, machine: Machine) -> Inventory:
     """Map this Mac's hardware."""
     found = Inventory()
-    found.nodes, found.missing = _nodes(host)
+    found.nodes, found.missing, found.bound_devices = _nodes(host)
     found.classify(catalogue, machine)
     found.log = _kernel_log(host)
     found.config, found.config_missing = _kernel_config(host)
@@ -236,7 +268,7 @@ def take(host: Host, catalogue: Catalogue, machine: Machine) -> Inventory:
 # -- reading -------------------------------------------------------------------
 
 
-def _nodes(host: Host) -> tuple[list[Node] | None, str]:
+def _nodes(host: Host) -> tuple[list[Node] | None, str, set[str]]:
     properties = host.run(NODE_PROPERTIES)
     compatible: dict[str, tuple[str, ...]] = {}
     status: dict[str, str] = {}
@@ -250,7 +282,7 @@ def _nodes(host: Host) -> tuple[list[Node] | None, str]:
         else:
             status[path] = _status(values)
     if not compatible:
-        return None, f"couldn't read the device tree ({DT_BASE})"
+        return None, f"couldn't read the device tree ({DT_BASE})", set()
 
     devices = host.run(DEVICES)
     node_of: dict[str, str] = {}
@@ -261,8 +293,9 @@ def _nodes(host: Host) -> tuple[list[Node] | None, str]:
             node_of[match[1]] = match[3].strip()
         elif match:
             bound.add(match[1])
+    names = {device.rsplit("/", 1)[-1] for device in bound}
     if not node_of:
-        return None, "couldn't read which drivers are bound to the Mac's devices (/sys/devices)"
+        return None, "couldn't read which drivers are bound to the Mac's devices (/sys/devices)", names
     claimed: dict[str, bool] = {}
     for device, node in node_of.items():
         claimed[node] = claimed.get(node, False) or device in bound
@@ -273,7 +306,7 @@ def _nodes(host: Host) -> tuple[list[Node] | None, str]:
             continue
         driver = "none" if path not in claimed else ("bound" if claimed[path] else "unbound")
         nodes.append(Node(compatibles, status.get(path, "okay"), driver))
-    return nodes, ""
+    return nodes, "", names
 
 
 def _status(values: list[str]) -> str:

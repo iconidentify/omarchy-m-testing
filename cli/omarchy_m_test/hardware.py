@@ -11,10 +11,20 @@ from .host import Host
 from .system import HARDWARE_PACKAGES, System
 
 FIRST_BOOT_JOURNAL = ["journalctl", "--unit=omarchy-provision-hardware.service", "--output=short-iso", "--no-pager"]
+# Converged images: omarchy-provision-hardware.service is disabled by design and omarchy-mac-first-boot runs
+# the deferred hardware setup itself; this drop-in (omarchy-mac) orders the unit after it.
+MAC_FIRST_BOOT_DROPIN = "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf"
+MAC_FIRST_BOOT_JOURNAL = ["journalctl", "--unit=omarchy-mac-first-boot.service", "--output=short-iso", "--no-pager"]
+MAC_FIRST_BOOT_PENDING = "/var/lib/omarchy/mac-first-boot/pending"
+MAC_FIRST_BOOT_QUEUE = "/var/lib/omarchy/mac-first-boot/deferred-steps"
+_MAC_FIRST_BOOT_LINE = re.compile(r"(systemd\[1\]: .*(Omarchy first boot|omarchy-mac-first-boot)|omarchy-mac-first-boot\[\d+\]: )")
+MAC_FIRST_BOOT_DONE = ("Finished Omarchy first boot", "omarchy-mac-first-boot.service: Deactivated successfully")
 ASAHI_GPU_DRIVER = "/sys/bus/platform/drivers/asahi"
 VULKAN_ICDS = "/usr/share/vulkan/icd.d"
 VULKANINFO = ["vulkaninfo", "--summary"]
 EGLINFO = ["eglinfo", "-B"]
+EGLINFO_PACKAGE = "mesa-utils"
+NO_EGLINFO = "eglinfo (mesa-utils) isn't installed"
 POWER_SUPPLY = "/sys/class/power_supply"
 CPUFREQ = "/sys/devices/system/cpu/cpufreq"
 
@@ -60,6 +70,9 @@ def first_boot_setup(host: Host) -> dict:
     if not lines:
         if any(hint in journal.stdout + journal.stderr for hint in JOURNAL_DENIED):
             return _result("setup.first-boot-hardware", "skip", ["can't read the system journal as this user"])
+        converged = _mac_first_boot(host)
+        if converged is not None:
+            return converged
         return _result("setup.first-boot-hardware", "skip", ["omarchy-provision-hardware.service never ran: this install has no deferred first-boot hardware setup"])
     failed = [i for i, line in enumerate(lines) if any(mark in line for mark in FIRST_BOOT_FAILED)]
     done = [i for i, line in enumerate(lines) if FIRST_BOOT_DONE in line]
@@ -71,6 +84,39 @@ def first_boot_setup(host: Host) -> dict:
     if done:
         return _result("setup.first-boot-hardware", "pass", [lines[done[-1]]])
     return _result("setup.first-boot-hardware", "skip", ["the first-boot hardware setup hasn't finished yet"] + lines[-3:])
+
+
+def _exists(host: Host, path: str) -> bool:
+    try:
+        host.read_file(path)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+def _mac_first_boot(host: Host) -> dict | None:
+    """A converged image's first boot (omarchy-mac-first-boot), which runs the deferred hardware setup; None if not one."""
+    if not _exists(host, MAC_FIRST_BOOT_DROPIN):
+        return None
+    check = "setup.first-boot-hardware"
+    lines = [line for line in host.run(MAC_FIRST_BOOT_JOURNAL).stdout.splitlines() if _MAC_FIRST_BOOT_LINE.search(line)]
+    evidence = ["omarchy-provision-hardware.service is disabled on this image by design: "
+                "omarchy-mac-first-boot runs the deferred hardware setup (20-mac-first-boot.conf)"]
+    queued = [step.strip() for step in (_read(host, MAC_FIRST_BOOT_QUEUE) or "").splitlines() if step.strip()]
+    failed = [line for line in lines if any(mark in line for mark in FIRST_BOOT_FAILED) or "Failed to start Omarchy first boot" in line]
+    done = [line for line in lines if any(mark in line for mark in MAC_FIRST_BOOT_DONE)]
+    if failed:
+        later = [line for line in done if lines.index(line) > lines.index(failed[-1])]
+        return _result(check, "fail", [*evidence, *failed[:6], f"a later run completed: {later[-1]}" if later else "no later run completed"])
+    if _exists(host, MAC_FIRST_BOOT_PENDING):
+        return _result(check, "skip", [*evidence, f"first boot hasn't finished yet ({MAC_FIRST_BOOT_PENDING} is still there)", *lines[-3:]])
+    if not done:
+        return _result(check, "skip", [*evidence, "first boot is done, but its journal no longer shows how it went"])
+    said = [line for line in lines if "omarchy-mac-first-boot[" in line][-2:]
+    listed = [f"listed in {MAC_FIRST_BOOT_QUEUE}: {', '.join(queued)}"] if queued else []
+    return _result(check, "pass", [*evidence, *said, done[-1], *listed])
 
 
 def hardware_packages(system: System) -> dict:
@@ -134,7 +180,7 @@ def gpu_vulkan(host: Host, system: System) -> dict:
 def gpu_opengl(host: Host) -> dict:
     info = host.run(EGLINFO)
     if info.returncode == 127:
-        return _result("gpu.opengl", "skip", ["eglinfo (mesa-utils) isn't installed"])
+        return _result("gpu.opengl", "skip", [NO_EGLINFO])
     fields: dict[str, list[str]] = {}
     for line in info.stdout.splitlines():
         key, sep, value = line.strip().partition(": ")

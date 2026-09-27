@@ -614,6 +614,43 @@
       "stdout": "",
       "stderr": "sudo: a password is required\n",
       "note": "stand-in: the corpus run is over SSH, where sudo has no cached credentials, so the charge limit isn't changed"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n",
+      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": "",
+      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-mac-first-boot.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-27T00:24:52+10:00 omarchy systemd[1]: Starting Omarchy first boot: finish this Mac's image, then owner setup...\n2026-09-27T00:24:52+10:00 omarchy omarchy-mac-first-boot[5969]: Creating this Mac's package keyring...\n2026-09-27T00:25:06+10:00 omarchy omarchy-mac-first-boot[5969]: Ready for account setup.\n2026-09-27T00:25:06+10:00 omarchy systemd[1]: omarchy-mac-first-boot.service: Deactivated successfully.\n2026-09-27T00:25:06+10:00 omarchy systemd[1]: Finished Omarchy first boot: finish this Mac's image, then owner setup.\n2026-09-27T00:25:06+10:00 omarchy systemd[1]: omarchy-mac-first-boot.service: Consumed 12.000s CPU time over 14.380s wall clock time, 365.4M memory peak.\n-- Boot ed684b424f994567b99f2636756a876f --\n2026-09-27T00:33:28+10:00 omarchy-m2-max systemd[1]: Omarchy first boot: finish this Mac's image, then owner setup skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/mac-first-boot/pending\n-- Boot 0d302c25b7fe4d7f9cf41d00638d1a89 --\n2026-09-27T10:40:12+10:00 omarchy-m2-max systemd[1]: Omarchy first boot: finish this Mac's image, then owner setup skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/mac-first-boot/pending\n",
+      "stderr": "",
+      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
     }
   ],
   "files": {
@@ -711,6 +748,15 @@
     "/usr/lib/omarchy-mac/battery-charge-limit-restore": {
       "text": "#!/bin/bash\n# udev runs this as the SMC battery appears, so a saved charge limit survives\n# reboots. It never fails the event: anything unexpected leaves the SMC alone.\nset -euo pipefail\n\nsaved_file=\"/etc/udev/macsmc-battery.conf\"\nend_file=\"/sys/class/power_supply/macsmc-battery/charge_control_end_threshold\"\n\n[[ $(omarchy-hw-platform 2>/dev/null) == \"apple-silicon\" ]] || exit 0\n[[ -r $saved_file && -w $end_file ]] || exit 0\n\nlimit=\"\"\nwhile IFS= read -r line || [[ -n $line ]]; do\n  if [[ $line == CHARGE_CONTROL_END_THRESHOLD=* ]]; then\n    limit=${line#*=}\n  fi\ndone <\"$saved_file\"\n\nif [[ $limit == \"80\" || $limit == \"100\" ]]; then\n  printf '%s\\n' \"$limit\" >\"$end_file\" || true\nfi\n",
       "note": "stand-in reconstructed from the M2's image 2 (62-battery-before.txt (omarchy-mac 62, image 2, 2026-09-26)): omarchy-mac's helper, as installed. The next dogfood run records it"
+    },
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": {
+      "text": "# Deferred hardware setup waits for first boot, which creates the package\n# keyring its steps need and runs the queue itself, and never starts while\n# first boot is still pending. What first boot left queued is usually a step\n# that needs the network (one that installs a package the image does not\n# carry). network-online.target waits for nothing on\n# Omarchy (NetworkManager-wait-online.service is masked), so the retry waits\n# for NetworkManager to bring up its saved connections itself; with nothing to\n# connect it goes on at once.\n[Unit]\nAfter=omarchy-mac-first-boot.service NetworkManager.service\nConditionPathExists=!/var/lib/omarchy/mac-first-boot/pending\n\n[Service]\nExecStartPre=-/usr/bin/nm-online -q -s -t 30\n",
+      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
+    },
+    "/var/lib/omarchy/mac-first-boot/pending": null,
+    "/var/lib/omarchy/mac-first-boot/deferred-steps": {
+      "text": "install/hardware/apple/limine-boot.sh\n",
+      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
     }
   },
   "dirs": {

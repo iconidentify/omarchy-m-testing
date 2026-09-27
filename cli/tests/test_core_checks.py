@@ -16,11 +16,17 @@ import unittest
 from omarchy_m_test.app import main
 from omarchy_m_test.consent import ACCEPT_PROMPT
 from omarchy_m_test.recording import ENDED, RecordedHost
+from omarchy_m_test.host import CommandResult
+from omarchy_m_test.packages import install_command
+from omarchy_m_test.sections import APPLE
+from tests.desktop import recording
+from tests.live_mac import LiveMac, MacState, live_recording
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, RECORDINGS, REPORT_FILE, SCHEMA, golden, read
 
 M2_MAX = json.loads(read(os.path.join(RECORDINGS, "m2-max-image2.json")))
 M1_PRO = json.loads(read(os.path.join(RECORDINGS, "m1-pro-mx-mac.json")))
+SECTIONS_BY_ID = {section.id: section for section in APPLE}
 
 MAC_CHECK = ["bundled:mac-check"]
 PACKAGES = next(c["argv"] for c in M2_MAX["commands"] if c["argv"][:2] == ["pacman", "-Q"])
@@ -191,9 +197,10 @@ class RootChecksTest(unittest.TestCase):
         # Nothing ran as root: sudo was only asked whether it has cached credentials (the charge limit's probe).
         self.assertEqual([argv for argv in mac.commands_run if argv[0] == "sudo"], [["sudo", "-n", "true"]])
         asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
-        # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions and the
-        # benchmarks' package offer (declined).
-        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")], [ACCEPT_PROMPT, "Install 2 package(s) now? [y/N] "])
+        # Never asks for a password: the disclaimer, then only the OpenGL check's and the benchmarks' package
+        # offers (declined) and the human checks' yes/no/skip questions.
+        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")],
+                         [ACCEPT_PROMPT, "Install 1 package(s) now? [y/N] ", "Install 2 package(s) now? [y/N] "])
         self.assertIn("passwordless sudo", mac.output)
 
     def test_when_mac_check_cant_run_its_checks_are_skipped_with_the_reason(self):
@@ -376,6 +383,87 @@ class GpuTest(unittest.TestCase):
         _, _, report = run(rec)
 
         self.assertEqual(results(report)["gpu.driver"]["evidence"], ["the asahi GPU driver isn't loaded"])
+
+
+class OpenGlToolTest(unittest.TestCase):
+    """No eglinfo (the M2 Max at its desk, 2026-09-27): mesa-utils is offered as a temporary test package."""
+
+    class Installs(LiveMac):
+        def run(self, argv):
+            if list(argv) == ["eglinfo", "-B"] and "mesa-utils" in self.state.installed:
+                self.commands_run.append(list(argv))
+                return CommandResult(0, EGLINFO_SOFTWARE.replace("llvmpipe (LLVM 21.1.0, 128 bits)", "Apple M2 Max (G14C B1)"), "")
+            return super().run(argv)
+
+    def graphics(self, answers, state=None) -> LiveMac:
+        host = self.Installs(live_recording(base=recording("m2-max-converged")), state=state, answers=[ENTER, *answers, ENDED])
+        self.assertEqual(main(["--dry-run"], host, sections=(SECTIONS_BY_ID["graphics"],)), 0)
+        return host
+
+    def test_accepted_mesa_utils_is_installed_for_the_check_and_removed_after(self):
+        host = self.graphics(["y"])
+
+        found = results(json.loads(host.written[REPORT_FILE]))["gpu.opengl"]
+        self.assertEqual(found["status"], "pass")
+        self.assertEqual(found["evidence"], [
+            "renderer: Apple M2 Max (G14C B1)", "OpenGL core profile version: 4.5 (Core Profile) Mesa 26.2.3",
+            "installed for this run, removed at its end: mesa-utils",
+        ])
+        commands = host.commands_run
+        self.assertLess(commands.index(install_command(["mesa-utils"])), commands.index(["sudo", "-n", "pacman", "-R", "--noconfirm", "mesa-utils"]))
+        self.assertNotIn("mesa-utils", host.state.installed)
+
+    def test_declined_it_is_skipped_with_why(self):
+        host = self.graphics(["n"])
+
+        found = results(json.loads(host.written[REPORT_FILE]))["gpu.opengl"]
+        self.assertEqual((found["status"], found["evidence"]), ("skip", ["eglinfo (mesa-utils) isn't installed", "skipped: you chose not to install mesa-utils"]))
+        self.assertFalse(any(argv[:4] == ["sudo", "-n", "pacman", "-S"] for argv in host.commands_run))
+
+    def test_nothing_is_installed_when_it_would_upgrade_an_installed_package(self):
+        state = MacState(repository={"mesa-utils": ["libdrm", "mesa-utils"]}, installed={"libdrm"}, outdated={"libdrm"})
+        host = self.graphics([], state=state)
+
+        found = results(json.loads(host.written[REPORT_FILE]))["gpu.opengl"]
+        self.assertEqual(found["status"], "skip")
+        self.assertIn("would upgrade installed packages (libdrm)", found["evidence"][-1])
+        self.assertFalse(any(argv[:4] == ["sudo", "-n", "pacman", "-S"] for argv in host.commands_run))
+
+
+def converged_m2() -> dict:
+    rec = json.loads(read(os.path.join(RECORDINGS, "m2-max-converged.json")))
+    rec["files"][f"{rec['env']['HOME']}/.local/state/omarchy-m-test/checkpoint.json"] = None
+    return rec
+
+
+class ConvergedFirstBootTest(unittest.TestCase):
+    """The converged image runs the deferred hardware setup from omarchy-mac-first-boot, not its own unit."""
+
+    def test_the_converged_m2s_first_boot_passes(self):
+        _, _, report = run(converged_m2())
+
+        setup = results(report)["setup.first-boot-hardware"]
+        self.assertEqual(setup["status"], "pass")
+        self.assertIn("omarchy-mac-first-boot runs the deferred hardware setup", setup["evidence"][0])
+        self.assertIn("Finished Omarchy first boot", setup["evidence"][-2])
+        self.assertEqual(setup["evidence"][-1], "listed in /var/lib/omarchy/mac-first-boot/deferred-steps: install/hardware/apple/limine-boot.sh")
+
+    def test_a_first_boot_still_pending_or_failed_says_so(self):
+        base = converged_m2()
+        pending = copy.deepcopy(base)
+        pending["files"]["/var/lib/omarchy/mac-first-boot/pending"] = {"text": ""}
+        failed = copy.deepcopy(base)
+        edit_lines(failed, ["journalctl", "--unit=omarchy-mac-first-boot.service", "--output=short-iso", "--no-pager"], lambda lines: [
+            line.replace("Deactivated successfully.", "Failed with result 'exit-code'.") for line in lines if "Finished" not in line])
+        for rec, status, said in ((pending, "skip", "first boot hasn't finished yet"), (failed, "fail", "Failed with result")):
+            with self.subTest(status=status):
+                setup = results(run(rec)[2])["setup.first-boot-hardware"]
+                self.assertEqual(setup["status"], status)
+                self.assertTrue(any(said in line for line in setup["evidence"]), setup["evidence"])
+
+    def test_an_install_without_either_never_ran_it(self):
+        setup = results(run(M1_PRO)[2])["setup.first-boot-hardware"]
+        self.assertEqual(setup["evidence"], ["omarchy-provision-hardware.service never ran: this install has no deferred first-boot hardware setup"])
 
 
 class PowerAndCpuTest(unittest.TestCase):

@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import audio as live_audio, display as live_display, hardware, inputs, inventory, network as live_network, scripts
+from . import audio as live_audio, display as live_display, hardware, inputs, inventory, network as live_network, packages, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -103,7 +103,19 @@ def hardware_inventory(ctx: Context) -> list[dict]:
 
 def graphics(ctx: Context) -> list[dict]:
     system = _system(ctx)
-    return [hardware.gpu_driver(ctx.host), hardware.gpu_vulkan(ctx.host, system), hardware.gpu_opengl(ctx.host)]
+    return [hardware.gpu_driver(ctx.host), hardware.gpu_vulkan(ctx.host, system), opengl(ctx)]
+
+
+def opengl(ctx: Context) -> dict:
+    """gpu.opengl, with eglinfo (mesa-utils) installed for the section with consent when it isn't there (packages.py)."""
+    found = hardware.gpu_opengl(ctx.host)
+    if found["evidence"] != [hardware.NO_EGLINFO]:
+        return found
+    ready = packages.temporary(ctx, [hardware.EGLINFO_PACKAGE], "The OpenGL check")
+    if not ready.ready:
+        return {**found, "evidence": [hardware.NO_EGLINFO, f"skipped: {ready.skipped}"]}
+    again = hardware.gpu_opengl(ctx.host)
+    return {**again, "evidence": [*again["evidence"], *ready.evidence()]}
 
 
 def display(ctx: Context) -> list[dict]:

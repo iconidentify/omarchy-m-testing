@@ -547,6 +547,7 @@
     },
     "/var/lib/omarchy/image/target": null,
     "/var/lib/omarchy/image/target.booted": null,
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": null,
     "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
     "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
       "text": "20\n"
