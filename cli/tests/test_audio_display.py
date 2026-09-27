@@ -14,7 +14,7 @@ import json
 import os
 import unittest
 
-from omarchy_m_test import audio, display, inputs, network, ports
+from omarchy_m_test import audio, display, human, inputs, network, ports
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult
 from omarchy_m_test.inventory import KERNEL_LOG
@@ -44,7 +44,7 @@ BRIGHTNESS_PROMPT = display.BRIGHTNESS_QUESTION + " [Y/n/s] "
 CURSOR_PROMPT = display.CURSOR_QUESTION + " [Y/n/s] "
 KEYBOARD_PROMPT = display.KEYBOARD_QUESTION + " [Y/n/s] "
 # The Input section's function-key and trackpad questions, after the keyboard light's.
-KEYS_AND_TRACKPAD = ["s", "s"]
+KEYS_AND_TRACKPAD = ["s", "s", "s", "s"]  # the function keys, then the three gestures Omarchy leaves on
 
 
 def answer(rec: dict, argv: list[str], returncode: int = 0, stdout: str = "", stderr: str = "") -> dict:
@@ -177,6 +177,7 @@ class MicrophoneTest(unittest.TestCase):
         result = check(run("audio", ["s", "s"], rec=rec), "audio.microphone-signal")
 
         self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
+        self.assertFalse(any(line.startswith(human.NOT_BACKED) for line in result["evidence"]))
         self.assertIn("silence: the peak stayed under 8", result["evidence"])
 
     def test_nothing_captured_is_skipped_not_failed(self):
@@ -205,7 +206,9 @@ class HeadphoneTest(unittest.TestCase):
         result = check(host, "audio.headphone-detection")
         self.assertEqual((result["kind"], result["status"], result["classification"]["feature"]), ("human", "pass", "headphone-jack"))
         self.assertIn("note: plugged in, sound moved", result["evidence"])
-        self.assertEqual(result["evidence"][-1], f"default output after: {SINK} (the speakers' DSP sink)")
+        self.assertEqual(result["evidence"][-2], f"default output after: {SINK} (the speakers' DSP sink)")
+        # The sound stayed on the speakers: the yes stands, noted as not backed by what the Mac reads.
+        self.assertEqual(result["evidence"][-1], f"{human.NOT_BACKED} (the default output afterwards isn't the headphone jack)")
         self.assertIn("You can unplug the headphones.", host.output)
 
     def test_no_answer_is_skipped_never_failed(self):
@@ -361,6 +364,19 @@ class KeyboardLightTest(unittest.TestCase):
         self.assertEqual(result["evidence"][0], "before: ambient light 733 lux, keyboard light 0/255")
         self.assertEqual(result["evidence"][-1], "while covered: ambient light 2 lux, keyboard light 128/255")
 
+    def test_a_yes_the_readings_dont_back_is_noted_and_still_passes(self):
+        result = check(run("input", ["y", *KEYS_AND_TRACKPAD]), "input.keyboard-light-follows-room")
+
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["evidence"][-1], f"{human.NOT_BACKED} (the keyboard light didn't come on or get brighter: "
+                                                  "ambient light 733 to 733 lux, keyboard light 0/255 to 0/255)")
+
+    def test_a_no_while_the_keys_lit_up_is_noted_and_still_fails(self):
+        result = check(run("input", ["n", *KEYS_AND_TRACKPAD], cls=Covered), "input.keyboard-light-follows-room")
+
+        self.assertEqual(result["status"], "fail")
+        self.assertTrue(result["evidence"][-1].startswith(f"{human.NOT_BACKED} (the keyboard light got brighter"))
+
     def test_a_keyboard_light_that_stays_off_is_a_failure_the_human_reports(self):
         result = check(run("input", ["n stayed dark", *KEYS_AND_TRACKPAD]), "input.keyboard-light-follows-room")
 
@@ -388,7 +404,8 @@ class WholeRunTest(unittest.TestCase):
 
         self.assertEqual([p for p in prompts(host) if p.endswith("[Y/n/s] ")], [
             NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, network.PAIRING_QUESTION + " [Y/n/s] ", KEYBOARD_PROMPT,
-            *(question + " [Y/n/s] " for question in (inputs.FUNCTION_KEYS_QUESTION, inputs.GESTURES_QUESTION,
+            *(question + " [Y/n/s] " for question in (inputs.FUNCTION_KEYS_QUESTION,
+                                                      *(inputs.GESTURE_QUESTIONS[name] for name in (inputs.CLICK, inputs.TWO_FINGER_CLICK, inputs.SCROLL)),
                                                       ports.DEVICES_QUESTION, ports.PICTURE_QUESTION)),
         ])
         self.assertEqual(host.state.volume, "0.45")

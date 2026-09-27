@@ -444,6 +444,17 @@
     },
     {
       "argv": [
+        "sh",
+        "-c",
+        "tap=$(hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | sed -n 's/^int: *//p')\necho \"tap-global ${tap:-unavailable}\"\nswipe=$(hyprctl getoption gestures:workspace_swipe 2>/dev/null | sed -n 's/^int: *//p')\n[ -n \"$swipe\" ] && echo \"workspace-swipe $swipe\"\nn=0\nfor f in \"$HOME\"/.local/share/omarchy/default/hypr/*.lua \"$HOME\"/.local/share/omarchy/default/hypr/*.conf \\\n         \"$HOME\"/.config/hypr/*.lua \"$HOME\"/.config/hypr/*.conf; do\n  [ -r \"$f\" ] || continue\n  n=$((n + 1))\n  sed -e 's/--.*$//' -e 's/#.*$//' \"$f\" | tr -d ' \\t' | sed -nE \\\n    -e 's/.*name=\"?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)\"?,.*tap[_-]to[_-]click=(true|false|1|0).*/tap-device \\1 \\3/p' \\\n    -e '/hl\\.gesture\\(/{/fingers=3/{/action=\"workspace\"/s/.*/gesture 3 workspace/p;};}' \\\n    -e 's/^gesture=3,[^,]*,workspace.*/gesture 3 workspace/p' \\\n    -e 's/^workspace_swipe=(true|1|yes|on)$/workspace-swipe 1/p'\ndone\necho \"files $n\"\n"
+      ],
+      "returncode": 0,
+      "stdout": "tap-global unavailable\ntap-device apple-mtp-multi-touch false\ntap-device apple-spi-trackpad false\nfiles 2\n",
+      "stderr": "",
+      "note": "stand-in: Omarchy's default hypr/input.lua and the user's untouched config/hypr/input.lua (tap-to-click off on the built-in Apple trackpads, the three-finger workspace swipe commented out), as the script prints them; hyprctl can't reach Hyprland over SSH"
+    },
+    {
+      "argv": [
         "omarchy-battery-charge-limit"
       ],
       "returncode": 127,

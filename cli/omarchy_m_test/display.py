@@ -197,9 +197,13 @@ def read_lux(ctx: Context, path: str) -> str:
         return "unreadable"
 
 
-def keyboard_now(ctx: Context) -> str:
+def keyboard_light_now(ctx: Context) -> Light | None:
     result = ctx.host.run(["brightnessctl", "--machine-readable", f"--device={KEYBOARD}", "info"])
-    light = next((light for light in map(parse_light, result.stdout.splitlines()) if light), None) if result.returncode == 0 else None
+    return next((light for light in map(parse_light, result.stdout.splitlines()) if light), None) if result.returncode == 0 else None
+
+
+def keyboard_now(ctx: Context) -> str:
+    light = keyboard_light_now(ctx)
     return light.describe() if light else "unreadable"
 
 
@@ -216,11 +220,19 @@ def keyboard_light(ctx: Context) -> dict:
         return human.skip(check_id, known)
     if KEYBOARD not in known:
         return human.skip(check_id, "no keyboard light (brightnessctl lists no kbd_backlight)")
-    before = f"before: ambient light {read_lux(ctx, sensor)} lux, keyboard light {keyboard_now(ctx)}"
+    lux_before, light_before = read_lux(ctx, sensor), keyboard_light_now(ctx)
+    before = f"before: ambient light {lux_before} lux, keyboard light {light_before.describe() if light_before else 'unreadable'}"
     _say(ctx, "Cover the camera and notch at the top of the screen with your hand, where the light sensor is, and keep it covered.")
     result = human.check(ctx, check_id, KEYBOARD_QUESTION, [before])
-    result["evidence"].append(f"while covered: ambient light {read_lux(ctx, sensor)} lux, keyboard light {keyboard_now(ctx)}")
+    lux_after, light_after = read_lux(ctx, sensor), keyboard_light_now(ctx)
+    result["evidence"].append(f"while covered: ambient light {lux_after} lux, keyboard light {light_after.describe() if light_after else 'unreadable'}")
     _say(ctx, "You can uncover it now.")
+    if light_before and light_after:
+        readings = f"ambient light {lux_before} to {lux_after} lux, keyboard light {light_before.describe()} to {light_after.describe()}"
+        if result["status"] == "pass" and light_after.value <= light_before.value:
+            human.not_backed(result, f"the keyboard light didn't come on or get brighter: {readings}")
+        elif result["status"] == "fail" and light_after.value > light_before.value:
+            human.not_backed(result, f"the keyboard light got brighter: {readings}")
     return result
 
 

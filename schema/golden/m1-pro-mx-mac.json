@@ -1497,8 +1497,15 @@
       "status": "skip",
       "evidence": [
         "built-in trackpad (Hyprland): apple-spi-trackpad",
-        "asked: On the built-in trackpad, try a click, a tap, a two-finger click (right-click), two-finger scrolling both ways and a three-finger swipe between workspaces: did each work smoothly?",
-        "answer: none (counted as skipped)"
+        "Hyprland config: tap-to-click off, three-finger workspace swipe off",
+        "click: asked: On the built-in trackpad, press down to click: did it click?",
+        "click: answer: none (counted as skipped)",
+        "tap-to-click: skipped: off in your config",
+        "two-finger click: asked: Click with two fingers: did it right-click (a menu, where there is one)?",
+        "two-finger click: answer: none (counted as skipped)",
+        "two-finger scroll: asked: Scroll with two fingers, up and down: did it scroll smoothly both ways?",
+        "two-finger scroll: answer: none (counted as skipped)",
+        "three-finger swipe: skipped: off in your config"
       ],
       "classification": {
         "outcome": "not-tested",

@@ -141,7 +141,7 @@ class OmarchyLookTest(unittest.TestCase):
         # without a question); the human checks are one-line [Y/n/s] prompts, never gum.
         self.assertEqual(prompts[1:-1], [["sudo", "-v"]] * 3)
         human = [e[1] for e in mac.transcript if e[0] == "prompt" and e[1].endswith(" [Y/n/s] ")]
-        self.assertEqual(len(human), 11)
+        self.assertEqual(len(human), 13)
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")

@@ -30,7 +30,9 @@ TERMINAL = Terminal(120, 40)
 
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
 # tone, headphone jack, Bluetooth pairing, keyboard light, function keys,
-# trackpad, USB-C devices, USB-C display), left unanswered as in its golden
+# the trackpad's click, two-finger click and two-finger scroll (tap-to-click and
+# the three-finger swipe are off in Omarchy's config, so not asked), USB-C devices,
+# USB-C display): 13 questions, left unanswered as in its golden
 # report, then the Power section's sudo password prompt for the charge limit (the recorded
 # runs have no cached sudo; only at a terminal), unanswered and so skipped. Temporary test
 # packages (mesa-utils for the OpenGL check, vkmark for the benchmarks) are installed without
@@ -40,15 +42,15 @@ TERMINAL = Terminal(120, 40)
 OPENGL_OFFER: list = []
 SUDO_PROMPT = [EOF]
 BENCHMARK_OFFER: list = []
-UNANSWERED = [EOF] * 11
-UNANSWERED_AT_A_TERMINAL = SUDO_PROMPT + [EOF] * 11 + SUDO_PROMPT + SUDO_PROMPT
+UNANSWERED = [EOF] * 13
+UNANSWERED_AT_A_TERMINAL = SUDO_PROMPT + [EOF] * 13 + SUDO_PROMPT + SUDO_PROMPT
 # How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
 # the converged M1 and M2 ran over SSH, where brightness can't be set, so that one isn't asked; the M1s have
 # nothing plugged into their USB-C ports, so the two ports questions aren't asked).
-HUMAN_QUESTIONS = {"m2-max-image2": 11, "m1-pro-mx-mac": 6, "m1-pro-converged": 8, "m2-max-converged": 10, "m1-pro-converged-fresh": 8}
+HUMAN_QUESTIONS = {"m2-max-image2": 13, "m1-pro-mx-mac": 8, "m1-pro-converged": 10, "m2-max-converged": 12, "m1-pro-converged-fresh": 10}
 # With gum: sudo -v for the OpenGL check's package (exits 1, unanswered), the human checks (one-line prompts, so
 # a bare Enter can be told from a typed y), then sudo -v for the charge limit and for the benchmarks' package.
-GUM_UNANSWERED = [CommandResult(1, "", ""), *[EOF] * 11, CommandResult(1, "", ""), CommandResult(1, "", "")]
+GUM_UNANSWERED = [CommandResult(1, "", ""), *[EOF] * 13, CommandResult(1, "", ""), CommandResult(1, "", "")]
 # Which corpus machines have no eglinfo, so the Graphics section installs mesa-utils first (no question now).
 OPENGL_OFFERED = {"m2-max-image2": 0, "m1-pro-mx-mac": 0, "m1-pro-converged": 0, "m2-max-converged": 0, "m1-pro-converged-fresh": 0}
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).

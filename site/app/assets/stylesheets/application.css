@@ -325,6 +325,7 @@ a.badge-regression { text-decoration: none; }
 .badge-not-applicable, .badge-not-tested { color: var(--comment); }
 .badge-community { color: var(--cyan); }
 .badge-tester { color: var(--green); font-weight: 700; }
+.badge-unconfirmed { border-style: dashed; color: var(--comment); }
 
 /* a cell coloured by tester runs */
 .cell-tester { box-shadow: inset 0 0 0 2px var(--night); }
