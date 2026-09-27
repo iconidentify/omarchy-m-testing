@@ -4,6 +4,10 @@ Each section names the check ids it reports, in report order, so a skipped
 section still reports every one of its checks (as skipped). Together they
 are checks.ORDER. Titles are the sections' headings (and the picker's
 choices): letters and spaces, short.
+
+A command that runs out of time (host.TimedOut) ends its section: the checks
+that section's scripts already reported keep their results, every other one
+is skipped as timed out. A timeout never fails a check or the run.
 """
 
 from __future__ import annotations
@@ -11,12 +15,30 @@ from __future__ import annotations
 from typing import Callable
 
 from . import benchmarks, camera, checks, ports, power, sleep, video
+from .host import TimedOut
 from .session import Context, Section
 
 
 def _section(id: str, title: str, description: str, check_ids: tuple[str, ...], run: Callable[[Context], list[dict]],
              human_checks: tuple[str, ...] = (), disruptive: bool = False) -> Section:
-    return Section(id, title, description, check_ids, lambda ctx: checks.only(check_ids, run(ctx), ctx), human_checks, disruptive)
+    def bounded(ctx: Context) -> list[dict]:
+        try:
+            results = run(ctx)
+        except TimedOut as stopped:
+            results = timed_out(check_ids, human_checks, stopped, ctx)
+        return checks.only(check_ids, results, ctx)
+
+    return Section(id, title, description, check_ids, bounded, human_checks, disruptive)
+
+
+def timed_out(check_ids: tuple[str, ...], human_checks: tuple[str, ...], stopped: TimedOut, ctx: Context) -> list[dict]:
+    """A section a command timed out in: what its scripts reported (mac-check's, cached), the rest skipped."""
+    known = {result["id"]: result for key in (checks.MAC_CHECK_RESULTS, checks.DISPLAY_CHECK_RESULTS, checks.AUDIO_CHECK_RESULTS) for result in ctx.cache.get(key, [])}
+    why = f"skip: timed out after {stopped.seconds}s ({' '.join(stopped.argv)[:200]}); the rest of this section wasn't run"
+    return [
+        known.get(check_id) or {"id": check_id, "kind": "human" if check_id in human_checks else "automatic", "status": "skip", "evidence": [why]}
+        for check_id in check_ids
+    ]
 
 
 APPLE: tuple[Section, ...] = (

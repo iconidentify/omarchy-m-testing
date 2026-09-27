@@ -165,6 +165,8 @@ def _config_hwdec(text: str) -> str | None:
 def _play(ctx: Context, directory: str, codec: str, label: str, check_id: str, request: Request, evidence: list[str]) -> dict:
     played = ctx.host.run_bundled(SCRIPT, [directory, codec, *request.args])
     lines = [*evidence, request.evidence]
+    if played.timed_out:
+        return _skip(check_id, f"the {label} test card timed out after {played.timed_out}s", lines)
     if played.returncode == NOT_INSTALLED:
         return _skip(check_id, "the tool's video-card script isn't installed next to it", lines)
     if played.returncode == CARD_FAILED:
