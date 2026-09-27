@@ -87,7 +87,8 @@ _INVENTORY = {
     "kernel_config": {"reference": True, "differences": [{"option": True, "asahi": True, "kernel": True}], "omitted": True},
 }
 _SCORE = {"value": True, "unit": True, "tool": True, "suite": True}
-_CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION, "score": _SCORE}
+_CHECK = {"id": True, "kind": True, "status": True, "evidence": True, "classification": _CLASSIFICATION, "score": _SCORE,
+          "answered_by_default": True}
 REPORT_ALLOWLIST: dict[str, Any] = {
     "schema_version": True,
     "tool": {"name": True, "version": True},

@@ -4,7 +4,7 @@
     "name": "omarchy-m-test",
     "version": "0.1.7"
   },
-  "consent_version": 4,
+  "consent_version": 5,
   "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",

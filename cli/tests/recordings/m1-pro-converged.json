@@ -553,9 +553,6 @@
       "text": "20\n"
     },
     "/sys/module/hid_apple/parameters/fnmode": null,
-    "/sys/class/power_supply/macsmc-ac/type": {
-      "text": "Mains\n"
-    },
     "/sys/class/power_supply/macsmc-battery/type": {
       "text": "Battery\n"
     },

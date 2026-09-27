@@ -27,7 +27,7 @@ from tests.test_interactive import ARGS, ENTER, check, prompts
 
 SAVED_80 = f"{power.SAVED_KEY}=80\n"
 UNPLUG = power.unplug_argv(power.SMC_BATTERY)
-DRAIN_PROMPT = power.DRAIN_QUESTION + " [y/N] "
+DRAIN_PROMPT = power.DRAIN_QUESTION + " [Y/n] "
 WATCH = power.drain_watch_argv()
 
 
@@ -167,6 +167,48 @@ class ChargeLimitTest(unittest.TestCase):
             self.assertIsNone(refusal(argv), argv)
         self.assertIn(f"> {power.END}", power.RESTORE_SCRIPT)
         self.assertIn(f"> {power.SAVED}", power.RESTORE_SCRIPT)
+
+
+# -- which battery -----------------------------------------------------------------------------
+
+HIDPP = "hidpp_battery_0"
+
+
+def with_mouse_battery(smc: bool = True) -> dict:
+    """The recorded M2 with a Logitech receiver's mouse battery (scope Device), which sorts before macsmc-battery."""
+    rec = live_recording()
+    base = f"{power.POWER_SUPPLY}/{HIDPP}"
+    rec["dirs"][power.POWER_SUPPLY] = [HIDPP, *([power.SMC_BATTERY_NAME] if smc else [])]
+    rec["files"].update({
+        f"{base}/type": {"text": "Battery\n"}, f"{base}/scope": {"text": "Device\n"},
+        f"{base}/status": {"text": "Discharging\n"}, f"{base}/capacity": {"text": "55\n"},
+        f"{power.SMC_BATTERY}/scope": {"text": "System\n"},
+    })
+    if not smc:
+        for name in list(rec["files"]):
+            if name.startswith(power.SMC_BATTERY + "/"):
+                del rec["files"][name]
+    return rec
+
+
+class BatteryChoiceTest(unittest.TestCase):
+    def test_a_mouse_battery_is_never_taken_for_the_macs(self):
+        host = power_run(rec=with_mouse_battery(), state=on_battery())
+
+        self.assertTrue(check(host, power.BATTERY)["evidence"][0].startswith(f"{power.SMC_BATTERY_NAME}: "))
+        self.assertEqual(check(host, power.CHARGE_LIMIT)["status"], "pass")
+        self.assertEqual(check(host, power.IDLE_DRAW)["status"], "pass")
+        self.assertIn(power.idle_argv(power.SMC_BATTERY), host.commands_run)
+        self.assertFalse([argv for argv in host.commands_run if any(HIDPP in arg for arg in argv)])
+
+    def test_only_a_device_battery_means_the_mac_has_none(self):
+        host = power_run(rec=with_mouse_battery(smc=False))
+
+        self.assertEqual(check(host, power.BATTERY)["status"], "fail")
+        self.assertIn("scope Device", check(host, power.BATTERY)["evidence"][0])
+        for check_id in (power.CHARGE_LIMIT, power.IDLE_DRAW, power.SLEEP_DRAIN):
+            self.assertEqual(check(host, check_id)["evidence"], ["skipped: this Mac has no battery"])
+        self.assertFalse([argv for argv in host.commands_run if any(HIDPP in arg for arg in argv)])
 
 
 # -- idle power ---------------------------------------------------------------------------------

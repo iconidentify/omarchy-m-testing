@@ -196,13 +196,12 @@ class RootChecksTest(unittest.TestCase):
             self.assertEqual(found[check_id]["status"], "skip", check_id)
             self.assertEqual(found[check_id]["classification"]["outcome"], "not-tested")
             self.assertIn("passwordless sudo", found[check_id]["evidence"][0])
-        # Nothing ran as root: sudo was only asked whether it has cached credentials (the charge limit's probe).
-        self.assertEqual([argv for argv in mac.commands_run if argv[0] == "sudo"], [["sudo", "-n", "true"]])
+        # Nothing ran as root: sudo was only asked whether it has cached credentials (the OpenGL check's and the
+        # benchmarks' temporary packages, then the charge limit's probe).
+        self.assertEqual([argv for argv in mac.commands_run if argv[0] == "sudo"], [["sudo", "-n", "true"]] * 3)
         asked = [e[1] for e in mac.transcript if e[0] == "prompt"]
-        # Never asks for a password: the disclaimer, then only the OpenGL check's and the benchmarks' package
-        # offers (declined) and the human checks' yes/no/skip questions.
-        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [y/n/s] ")],
-                         [ACCEPT_PROMPT, "Install 1 package(s) now? [y/N] ", "Install 2 package(s) now? [y/N] "])
+        # Never asks for a password: the disclaimer, then only the human checks' yes/no/skip questions.
+        self.assertEqual([prompt for prompt in asked if not prompt.endswith(" [Y/n/s] ")], [ACCEPT_PROMPT])
         self.assertIn("passwordless sudo", mac.output)
 
     def test_when_mac_check_cant_run_its_checks_are_skipped_with_the_reason(self):
@@ -402,8 +401,11 @@ class OpenGlToolTest(unittest.TestCase):
         self.assertEqual(main(["--dry-run"], host, sections=(SECTIONS_BY_ID["graphics"],)), 0)
         return host
 
-    def test_accepted_mesa_utils_is_installed_for_the_check_and_removed_after(self):
-        host = self.graphics(["y"])
+    def test_mesa_utils_is_installed_for_the_check_without_a_question_and_removed_after(self):
+        host = self.graphics([])
+
+        self.assertEqual([e[1] for e in host.transcript if e[0] == "prompt"][1:], [])
+        self.assertIn("Installing 1 temporary test package(s)", host.output)
 
         found = results(json.loads(host.written[REPORT_FILE]))["gpu.opengl"]
         self.assertEqual(found["status"], "pass")
@@ -415,11 +417,12 @@ class OpenGlToolTest(unittest.TestCase):
         self.assertLess(commands.index(install_command(["mesa-utils"])), commands.index(["sudo", "-n", "pacman", "-R", "--noconfirm", "mesa-utils"]))
         self.assertNotIn("mesa-utils", host.state.installed)
 
-    def test_declined_it_is_skipped_with_why(self):
-        host = self.graphics(["n"])
+    def test_without_sudo_it_is_skipped_with_why(self):
+        host = self.graphics([], state=MacState(sudo_cached=False))
 
         found = results(json.loads(host.written[REPORT_FILE]))["gpu.opengl"]
-        self.assertEqual((found["status"], found["evidence"]), ("skip", ["eglinfo (mesa-utils) isn't installed", "skipped: you chose not to install mesa-utils"]))
+        self.assertEqual((found["status"], found["evidence"]),
+                         ("skip", ["eglinfo (mesa-utils) isn't installed", "skipped: installing test packages needs sudo, and it wasn't given"]))
         self.assertFalse(any(argv[:4] == ["sudo", "-n", "pacman", "-S"] for argv in host.commands_run))
 
     def test_nothing_is_installed_when_it_would_upgrade_an_installed_package(self):

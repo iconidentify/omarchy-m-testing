@@ -210,6 +210,16 @@
     },
     {
       "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
         "bundled:apple-display-check",
         "--read-only"
       ],
@@ -488,16 +498,6 @@
       "returncode": 0,
       "stdout": "Charge limit: 100% (restart charging at 100%)\n",
       "stderr": ""
-    },
-    {
-      "argv": [
-        "sudo",
-        "-n",
-        "true"
-      ],
-      "returncode": 1,
-      "stdout": "",
-      "stderr": "sudo: a password is required\n"
     },
     {
       "argv": [

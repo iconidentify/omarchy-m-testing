@@ -13,6 +13,7 @@ import os
 import unittest
 
 from omarchy_m_test.app import main
+from omarchy_m_test.consent import CONSENT_VERSION
 from omarchy_m_test.host import HttpResponse, NetworkError
 from omarchy_m_test.recording import ENDED, EOF, RecordedHost, RecordingMiss
 from tests.desktop import UNANSWERED
@@ -81,7 +82,8 @@ class FullRunTest(unittest.TestCase):
 
         main(["--dry-run"], mac)
 
-        self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], 4)
+        self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], CONSENT_VERSION)
+        self.assertEqual(CONSENT_VERSION, 5)  # the disclaimer covers temporary test packages without asking again
 
     def test_output_option_chooses_where_the_report_is_written(self):
         mac = host("m2-max-image2", answers=[ENTER, ENDED])
@@ -106,7 +108,7 @@ class DryRunTest(unittest.TestCase):
 
 class UploadDeclinedOrFailedTest(unittest.TestCase):
     def test_answering_no_keeps_the_report_local(self):
-        for answer in ("n", "", "nope", EOF):
+        for answer in ("n", "nope", EOF):
             with self.subTest(answer=answer):
                 mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, answer])
 
@@ -115,6 +117,13 @@ class UploadDeclinedOrFailedTest(unittest.TestCase):
                 self.assertEqual(status, 0)
                 self.assertEqual(mac.posts, [])
                 self.assertIn(REPORT_FILE, mac.written)
+
+    def test_enter_at_the_upload_question_uploads(self):
+        mac = host("m2-max-image2", answers=[ENTER, *UNANSWERED, ENTER], responses=[created()])
+
+        self.assertEqual(main(["--site", SITE], mac), 0)
+        self.assertIn(f"Upload this report to {SITE}? [Y/n] ", [e[1] for e in mac.transcript if e[0] == "prompt"])
+        self.assertEqual(len(mac.posts), 1)
 
     def test_a_rejected_upload_shows_the_sites_reason(self):
         rejected = HttpResponse(422, json.dumps({"error": "Report does not match schema v1.", "details": ["checks is missing"]}))
@@ -141,8 +150,14 @@ class UploadDeclinedOrFailedTest(unittest.TestCase):
 
 
 class DisclaimerTest(unittest.TestCase):
-    def test_enter_accepts_anything_else_cancels_without_running(self):
-        for answer in ("n", "q", " ", "yes", EOF):
+    def test_enter_or_y_accepts_anything_else_cancels_without_running(self):
+        for answer in ("y", "Yes", " "):
+            with self.subTest(answer=answer):
+                mac = host("m2-max-image2", answers=[answer, ENDED])
+
+                self.assertEqual(main(["--dry-run"], mac), 0)
+                self.assertNotIn("Cancelled", mac.output)
+        for answer in ("n", "q", "no", "yes please", EOF):
             with self.subTest(answer=answer):
                 mac = host("m2-max-image2", answers=[answer])
 

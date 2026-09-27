@@ -122,12 +122,12 @@ PLUG_IN = (
     "Plug in what you'd like checked on the USB-C ports: a USB stick or hub, a Thunderbolt or USB4 dock or device, "
     "a display over USB-C (or a USB-C to DisplayPort or HDMI adapter)."
 )
-READY = "Press Enter once they're in (or now, with nothing to plug in): "
+READY = "Ready: they're in, or there's nothing to plug in? [Y/n] "
 PLUG_USB = (
     "No USB device is attached, and on Apple Silicon the USB controller only comes up while one is. "
     "Plug a USB device (a stick, keyboard, mouse or hub) into a USB-C port to check it."
 )
-PLUG_READY = "Press Enter once it's in, or type s to skip: "
+PLUG_READY = "Is it plugged in (n skips this check)?"
 NOTHING_ATTACHED = "no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)"
 PLUG_THUNDERBOLT = (
     "No Thunderbolt or USB4 device is attached, and the Thunderbolt/USB4 host only comes up while one is. "
@@ -195,11 +195,7 @@ def _plug_in(ctx: Context, what: str) -> bool:
     """Ask the human at the Mac to plug a device in; False when they skip."""
     ui = ctx.ui or Ui(ctx.host)
     ui.text(what)
-    try:
-        answer = ui.ask(PLUG_READY)
-    except EOFError:
-        return False
-    return answer.strip().lower() not in ("s", "skip")
+    return ui.confirm(PLUG_READY)
 
 
 def _usb_evidence(usb: Usb) -> list[str]:

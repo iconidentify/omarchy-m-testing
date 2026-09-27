@@ -25,8 +25,8 @@ from tests.live_mac import (
 from tests.test_audio_display import SECTIONS, answer, run
 from tests.test_interactive import ARGS, ENTER, check, prompts, report
 
-RELOAD_PROMPT = network.RELOAD_QUESTION + " [y/N] "
-PAIRING_PROMPT = network.PAIRING_QUESTION + " [y/n/s] "
+RELOAD_PROMPT = network.RELOAD_QUESTION + " [Y/n] "
+PAIRING_PROMPT = network.PAIRING_QUESTION + " [Y/n/s] "
 FIRST_JOIN = network.FIRST_JOIN
 
 
@@ -181,11 +181,18 @@ class FirstJoinTest(unittest.TestCase):
         self.assertIn("before: associated on 2.4 GHz (2437 MHz)", result["evidence"][0])
 
     def test_declining_the_reload_skips_it(self):
-        for reply in ("n", "", EOF):
+        for reply in ("n", EOF):
             with self.subTest(reply=reply):
                 host, result = first_join(answers=["s", reply])
 
                 self.assert_not_reloaded(host, result, "you chose not to reload the Wi-Fi driver", asked=True)
+
+    def test_enter_at_the_reload_question_goes_ahead(self):
+        host, result = first_join(answers=["s", ""])
+
+        self.assertIn(RELOAD_PROMPT, prompts(host))
+        self.assertIn(UNLOAD, host.commands_run)
+        self.assertEqual(result["status"], "pass")
 
     def test_without_sudo_off_a_terminal_nothing_is_reloaded(self):
         host, result = first_join(state=MacState(sudo_cached=False))

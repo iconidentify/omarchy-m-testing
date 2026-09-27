@@ -77,7 +77,7 @@ SLEEP_DRAIN = "power.sleep-drain"
 CHECK_IDS = (BATTERY, CHARGE_LIMIT, CHARGE_LIMIT_KEPT, IDLE_DRAW, SLEEP_DRAIN)
 
 POWER_SUPPLY = "/sys/class/power_supply"
-SMC_BATTERY_NAME = "macsmc-battery"
+SMC_BATTERY_NAME = hardware.SMC_BATTERY_NAME
 SMC_BATTERY = f"{POWER_SUPPLY}/{SMC_BATTERY_NAME}"
 END = f"{SMC_BATTERY}/charge_control_end_threshold"
 START = f"{SMC_BATTERY}/charge_control_start_threshold"
@@ -187,12 +187,8 @@ def _ui(ctx: Context) -> Ui:
 
 
 def _battery(ctx: Context) -> str | None:
-    """The first power supply of type Battery (macsmc-battery on these Macs)."""
-    try:
-        supplies = ctx.host.list_dir(POWER_SUPPLY)
-    except OSError:
-        return None
-    return next((name for name in supplies if _read(ctx, f"{POWER_SUPPLY}/{name}/type") == "Battery"), None)
+    """The Mac's own battery (macsmc-battery on these Macs), never a mouse's or keyboard's (hardware.system_battery)."""
+    return hardware.system_battery(ctx.host)
 
 
 def _read(ctx: Context, path: str) -> str | None:
@@ -529,7 +525,7 @@ def sleep_drain(ctx: Context, battery: str, progress: dict, plugged: str | None 
         return _result(SLEEP_DRAIN, "skip", [f"skipped: {plugged}"]), False
     ui = _ui(ctx)
     ui.text(DRAIN_WARNING)
-    if not ui.confirm(DRAIN_QUESTION, default=False):
+    if not ui.confirm(DRAIN_QUESTION):
         return _result(SLEEP_DRAIN, "skip", ["skipped: you chose not to (it takes about ten minutes)"]), False
     before = _reading(ctx, battery)
     if before.status != "Discharging":  # plugged back in since: ask again, and wait

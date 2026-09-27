@@ -335,7 +335,7 @@ class WhereItRunsTest(unittest.TestCase):
         self.assertFalse(any(RUNTIME in line for check in checks.values() for line in check["evidence"]))
 
     def test_without_a_wayland_session_only_opengl_is_skipped_and_glmark2_isnt_offered(self):
-        host = bench_mac(env={"WAYLAND_DISPLAY": None, "SSH_CONNECTION": "10.0.0.2 51000 10.0.0.9 22"}, installed={"ffmpeg"}, answers=["y"])
+        host = bench_mac(env={"WAYLAND_DISPLAY": None, "SSH_CONNECTION": "10.0.0.2 51000 10.0.0.9 22"}, installed={"ffmpeg"}, )
 
         _, checks = run(host)
 
@@ -347,8 +347,8 @@ class WhereItRunsTest(unittest.TestCase):
 
 
 class TemporaryPackagesTest(unittest.TestCase):
-    def test_missing_tools_are_installed_with_consent_and_removed_afterwards(self):
-        host = bench_mac(installed=set(), answers=["y"])
+    def test_missing_tools_are_installed_without_a_question_and_removed_afterwards(self):
+        host = bench_mac(installed=set())
 
         _, checks = run(host)
 
@@ -363,15 +363,15 @@ class TemporaryPackagesTest(unittest.TestCase):
         removal = next(i for i, argv in enumerate(host.commands_run) if argv[:4] == ["sudo", "-n", "pacman", "-R"])
         self.assertGreater(removal, max(host.commands_run.index(argv) for argv in ran(host, "ffmpeg")))
 
-    def test_declining_the_install_skips_every_benchmark_and_changes_nothing(self):
-        host = bench_mac(installed={"ffmpeg"}, answers=["n"])
+    def test_without_sudo_every_benchmark_is_skipped_and_nothing_changes(self):
+        host = bench_mac(installed={"ffmpeg"}, state=MacState(installed={"mesa", "pipewire", "ffmpeg"}, sudo_cached=False))
 
         _, checks = run(host)
 
         for check_id in benchmarks.CHECK_IDS:
             self.assertEqual(checks[check_id]["status"], "skip")
-            self.assertIn("skipped: you chose not to install glmark2 vkmark", checks[check_id]["evidence"][-1])
-        self.assertFalse(any(argv[:2] == ["sudo", "-n"] for argv in host.commands_run))
+            self.assertIn("installing test packages needs sudo", checks[check_id]["evidence"][-1])
+        self.assertFalse(any(argv[:2] == ["sudo", "-n"] and argv != ["sudo", "-n", "true"] for argv in host.commands_run))
         self.assertEqual(ran(host, "vkmark"), [])
 
     def test_a_tool_that_needs_a_system_upgrade_first_is_skipped_without_installing_or_asking(self):

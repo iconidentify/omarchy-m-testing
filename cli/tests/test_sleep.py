@@ -29,9 +29,9 @@ from tests.live_mac import (
 from tests.test_audio_display import SECTIONS, run
 from tests.test_interactive import ARGS, ENTER, check, prompts, report
 
-SUSPEND_PROMPT = sleep.SUSPEND_QUESTION + " [y/N] "
-CONNECT_PROMPT = sleep.CLAMSHELL_CONNECT + " [y/N] "
-CLAMSHELL_PROMPT = sleep.CLAMSHELL_QUESTION + " [y/N] "
+SUSPEND_PROMPT = sleep.SUSPEND_QUESTION + " [Y/n] "
+CONNECT_PROMPT = sleep.CLAMSHELL_CONNECT + " [Y/n] "
+CLAMSHELL_PROMPT = sleep.CLAMSHELL_QUESTION + " [Y/n] "
 WATCH = sleep.lid_watch_argv()
 
 
@@ -102,7 +102,7 @@ class SuspendTest(unittest.TestCase):
         self.assertIsNone(refusal(["busctl", "get-property", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "CanSuspend"]))
 
     def test_nothing_is_watched_or_read_until_the_human_says_yes(self):
-        for reply in ("n", "", EOF):
+        for reply in ("n", EOF):
             with self.subTest(reply=reply):
                 host = sleep_run([reply, "n"], suspend_only())
 

@@ -4,7 +4,7 @@
     "name": "omarchy-m-test",
     "version": "0.1.7"
   },
-  "consent_version": 4,
+  "consent_version": 5,
   "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
@@ -1855,7 +1855,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1873,7 +1873,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1891,7 +1891,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1909,7 +1909,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",

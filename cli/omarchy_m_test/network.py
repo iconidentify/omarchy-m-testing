@@ -153,7 +153,7 @@ def first_join(ctx: Context) -> dict:
 
     ui = ctx.ui or Ui(ctx.host)
     ui.text(RELOAD_WARNING)
-    if not ui.confirm(RELOAD_QUESTION, default=False):
+    if not ui.confirm(RELOAD_QUESTION):
         return _automatic(FIRST_JOIN, "skip", [*evidence, "skipped: you chose not to reload the Wi-Fi driver"])
 
     why, broke = changes.reload_wifi_driver(ctx, link)

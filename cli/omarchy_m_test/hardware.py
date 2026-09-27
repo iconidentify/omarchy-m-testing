@@ -207,11 +207,30 @@ def gpu_opengl(host: Host) -> dict:
 # -- battery and CPU ----------------------------------------------------------
 
 
-def battery(host: Host) -> dict:
+SMC_BATTERY_NAME = "macsmc-battery"
+
+
+def system_battery(host: Host) -> str | None:
+    """The Mac's own battery: a power supply of type Battery whose scope isn't Device.
+
+    A wireless mouse or keyboard's battery (hidpp_battery_0 for a Logitech
+    receiver, scope Device) is a power supply of type Battery too, and sorts
+    before macsmc-battery. The Apple SMC's battery is preferred, then one with
+    scope System, then one without a scope file (older drivers leave it out).
+    """
     supplies = _list(host, POWER_SUPPLY) or []
-    name = next((n for n in supplies if _read(host, f"{POWER_SUPPLY}/{n}/type") == "Battery"), None)
+    if SMC_BATTERY_NAME in supplies and _read(host, f"{POWER_SUPPLY}/{SMC_BATTERY_NAME}/type") == "Battery":
+        return SMC_BATTERY_NAME  # the SMC's is always the system's (scope System)
+    batteries = [n for n in supplies if _read(host, f"{POWER_SUPPLY}/{n}/type") == "Battery"]
+    scopes = {n: _read(host, f"{POWER_SUPPLY}/{n}/scope") for n in batteries}
+    system = [n for n in batteries if scopes[n] != "Device"]
+    return next((n for n in system if scopes[n] == "System"), system[0] if system else None)
+
+
+def battery(host: Host) -> dict:
+    name = system_battery(host)
     if name is None:
-        return _result("power.battery", "fail", ["no battery in /sys/class/power_supply"])
+        return _result("power.battery", "fail", ["no system battery in /sys/class/power_supply (a device's own battery, scope Device, doesn't count)"])
     base = f"{POWER_SUPPLY}/{name}"
     status, capacity = _read(host, f"{base}/status"), _read(host, f"{base}/capacity")
     if not status or not capacity or not capacity.isdigit() or int(capacity) > 100:

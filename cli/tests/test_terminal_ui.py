@@ -137,16 +137,17 @@ class OmarchyLookTest(unittest.TestCase):
 
         prompts = [argv for argv, _ in ttys(mac)]
         choose, confirm = prompts[0], prompts[-1]
-        # The OpenGL check's package offer, the human checks, the charge limit's sudo prompt, then the benchmarks' offer.
-        self.assertEqual(prompts[1][:3], ["gum", "confirm", "Install 1 package(s) now?"])
-        self.assertEqual([argv[:3] for argv in prompts[2:-3]], [["gum", "choose", "--header"]] * (len(GUM_UNANSWERED) - 3))
-        self.assertEqual(prompts[-3], ["sudo", "-v"])
-        self.assertEqual(prompts[-2][:3], ["gum", "confirm", "Install 2 package(s) now?"])
+        # sudo for the OpenGL check's temporary package, the charge limit and the benchmarks' package (installed
+        # without a question); the human checks are one-line [Y/n/s] prompts, never gum.
+        self.assertEqual(prompts[1:-1], [["sudo", "-v"]] * 3)
+        human = [e[1] for e in mac.transcript if e[0] == "prompt" and e[1].endswith(" [Y/n/s] ")]
+        self.assertEqual(len(human), 11)
         self.assertEqual(choose[:2], ["gum", "choose"])
         self.assertIn("--no-limit", choose)
         self.assertEqual(choose[choose.index("--selected") + 1], "*")
         self.assertEqual(choose[-len(OFFERED_OVER_SSH):], OFFERED_OVER_SSH)
-        self.assertEqual(confirm[:3], ["gum", "confirm", "Upload this report to https://omarchy-m-testing.org?"])
+        self.assertEqual(confirm[:3], ["gum", "confirm", "Upload this report to https://omarchy-m-testing.org? [Y/n]"])
+        self.assertNotIn("--default=false", confirm)
         self.assertIn("Not uploaded", mac.output)
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
 
@@ -196,8 +197,9 @@ class FallbackLookTest(unittest.TestCase):
         # No gum: the section picker and upload question are plain prompts.
         prompts = [e[1] for e in mac.transcript if e[0] == "prompt"]
         self.assertTrue(any("Sections to skip" in p for p in prompts), prompts)
-        # The only interactive command is sudo asking for its password (for the charge limit).
-        self.assertEqual([argv for argv, _ in ttys(mac)], [["sudo", "-v"]])
+        # The only interactive command is sudo asking for its password (the OpenGL check's temporary package, the
+        # charge limit, the benchmarks' package: unanswered here, so asked each time; typed once, sudo caches it).
+        self.assertEqual([argv for argv, _ in ttys(mac)], [["sudo", "-v"]] * 3)
 
     def test_gum_off_omarchy_is_styled_in_tokyo_night(self):
         seen = {}

@@ -20,10 +20,15 @@ it reports (done, this one, still to come). At a terminal the same line stays
 under the live feed while the section runs; off one it's plain ASCII
 ("Section 4/13 - Audio [###===---] 31%").
 
-Human checks (human.py) ask with Ui.human: yes, no or skip, plus an optional
-note. Off a terminal, or without gum, that is one line ("n the left speaker
-crackles"); with gum, a choice then a note. In the middle of a section every
-prompt goes through the section's feed, which it lifts while asking.
+Every question defaults to yes: it shows [Y/n] (a human check [Y/n/s]) and
+a bare Enter answers yes. Ui.confirm asks before an action (reload the Wi-Fi
+driver, close the lid, upload): Enter goes ahead, n doesn't, end of input
+never does. Human checks (human.py) ask with Ui.human, one line in every UI
+("n the left speaker crackles"): yes, no or skip, plus an optional note. A
+bare Enter there is a yes too, but one nobody typed: Ui.human says so, and
+the report marks the result answered_by_default, which the site shows as
+unconfirmed and never counts. In the middle of a section every prompt goes
+through the section's feed, which it lifts while asking.
 """
 
 from __future__ import annotations
@@ -66,14 +71,13 @@ OUTCOME_COLOURS = {
     "not-in-asahi": "blue",
     "unknown-hardware": "magenta",
 }
-HUMAN_CHOICES = ("Yes", "No", "Skip")
 HUMAN_WORDS = {"y": "yes", "yes": "yes", "n": "no", "no": "no", "s": "skip", "skip": "skip"}
 HUMAN_HINT = (
-    "Answer y (yes), n (no) or s (skip). A note can follow the letter, "
-    'e.g. "n the left speaker crackles". Skipping is never counted as a failure.'
+    "Answer y (yes), n (no) or s (skip); Enter alone is yes. A note can follow the letter, "
+    'e.g. "n the left speaker crackles". Type y when you checked: an Enter-only yes is '
+    "recorded as unconfirmed. Skipping is never counted as a failure."
 )
 HUMAN_TRIES = 3
-NOTE_PROMPT = "Note (optional, Enter to go on): "
 _CONTROL = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|[\x00-\x08\x0b-\x1f\x7f]")
 
 
@@ -206,8 +210,9 @@ class Ui:
         """Which options the human keeps. Off a terminal, the ones given (--skip decides)."""
         return list(selected)
 
-    def human(self, question: str) -> tuple[str | None, str]:
-        """A human check's answer, "yes", "no" or "skip" (None: no answer at all), and the note."""
+    def human(self, question: str) -> tuple[str | None, str, bool]:
+        """A human check's answer, "yes", "no" or "skip" (None: no answer at all), the note, and whether
+        the answer was the default (a bare Enter: yes, but nobody typed it)."""
         if not self._hinted:
             self._hinted = True
             self.text(HUMAN_HINT)
@@ -217,31 +222,31 @@ class Ui:
         """A prompt as it's shown (the styled UI wraps it into the text column)."""
         return text
 
-    def _human_by_prompt(self, question: str) -> tuple[str | None, str]:
+    def _human_by_prompt(self, question: str) -> tuple[str | None, str, bool]:
         for _ in range(HUMAN_TRIES):
             try:
-                typed = self._io().prompt(self._prompt_text(f"{question} [y/n/s]") + " ").strip()
+                typed = self._io().prompt(self._prompt_text(f"{question} [Y/n/s]") + " ").strip()
             except EOFError:
-                return None, ""
+                return None, "", False
+            if not typed:
+                return "yes", "", True
             word, _, note = typed.partition(" ")
             if word.lower() in HUMAN_WORDS:
-                return HUMAN_WORDS[word.lower()], note.strip()
-            self.text("Please answer y, n or s.")
-        return None, ""
+                return HUMAN_WORDS[word.lower()], note.strip(), False
+            self.text("Please answer y, n or s (Enter alone is yes).")
+        return None, "", False
 
     def _io(self) -> Host:
         """Where prompts go: the section's feed while one runs (it lifts itself), else the host."""
         return self.host
 
-    def confirm(self, question: str, default: bool = False) -> bool:
-        suffix = " [Y/n]" if default else " [y/N]"
+    def confirm(self, question: str, on_eof: bool = False) -> bool:
+        """Go ahead with an action? Enter (or y) is yes, anything else no; end of input is `on_eof`."""
         try:
-            answer = self._io().prompt(self._prompt_text(question + suffix) + " ").strip().lower()
+            answer = self._io().prompt(self._prompt_text(question + " [Y/n]") + " ").strip().lower()
         except EOFError:
-            return default
-        if not answer:
-            return default
-        return answer in ("y", "yes")
+            return on_eof
+        return answer in ("", "y", "yes")
 
     def close(self) -> None:
         pass
@@ -366,24 +371,14 @@ class StyledUi(Ui):
         skip = {int(n) - 1 for n in re.findall(r"\d+", answer)}
         return [option for i, option in enumerate(options) if option in selected and i not in skip]
 
-    def human(self, question: str) -> tuple[str | None, str]:
-        if not self._has_gum():
-            return super().human(question)
-        chosen = self._gum_run(["gum", "choose", "--header", self._wrapped(question), *HUMAN_CHOICES])
-        answer = chosen.stdout.strip().lower() if chosen.returncode == 0 else ""
-        if answer not in HUMAN_WORDS:
-            return None, ""  # Esc: no answer, which counts as skipped
-        noted = self._gum_run(["gum", "input", "--prompt", NOTE_PROMPT, "--placeholder", "what you saw or heard"])
-        return HUMAN_WORDS[answer], noted.stdout.strip() if noted.returncode == 0 else ""
-
     def _prompt_text(self, text: str) -> str:
         return self._padded(text)
 
-    def confirm(self, question: str, default: bool = False) -> bool:
+    def confirm(self, question: str, on_eof: bool = False) -> bool:
         if not self._has_gum():
-            return super().confirm(question, default)
-        argv = ["gum", "confirm", self._wrapped(question)] + ([] if default else ["--default=false"])
-        return self._gum_run(argv).returncode == 0
+            return super().confirm(question, on_eof)
+        # gum confirm: Yes is selected, so Enter goes ahead; y and n answer too, Esc is no.
+        return self._gum_run(["gum", "confirm", self._wrapped(question + " [Y/n]")]).returncode == 0
 
     def close(self) -> None:
         self.end_section()

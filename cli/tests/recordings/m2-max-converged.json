@@ -221,6 +221,16 @@
     },
     {
       "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
         "bundled:apple-display-check",
         "--read-only"
       ],
@@ -479,16 +489,6 @@
     },
     {
       "argv": [
-        "sudo",
-        "-n",
-        "true"
-      ],
-      "returncode": 1,
-      "stdout": "",
-      "stderr": "sudo: a password is required\n"
-    },
-    {
-      "argv": [
         "pacman",
         "-Q",
         "vkmark",
@@ -616,9 +616,6 @@
       "text": "31\n"
     },
     "/sys/module/hid_apple/parameters/fnmode": null,
-    "/sys/class/power_supply/macsmc-ac/type": {
-      "text": "Mains\n"
-    },
     "/sys/class/power_supply/macsmc-battery/type": {
       "text": "Battery\n"
     },

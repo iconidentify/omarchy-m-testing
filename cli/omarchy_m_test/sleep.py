@@ -426,7 +426,7 @@ def _ui(ctx: Context) -> Ui:
 def _suspend(ctx: Context, progress: dict, results: dict) -> None:
     ui = _ui(ctx)
     ui.text(SUSPEND_WARNING)
-    if not ui.confirm(SUSPEND_QUESTION, default=False):
+    if not ui.confirm(SUSPEND_QUESTION):
         results[LID_SUSPEND] = _result(LID_SUSPEND, "skip", ["skipped: you chose not to close the lid"])
         return
     step = _begin(ctx, progress, "suspend", {"logind": _logind(ctx)})
@@ -443,7 +443,7 @@ def _clamshell(ctx: Context, progress: dict, results: dict) -> None:
         results[CLAMSHELL] = _result(CLAMSHELL, "skip", [f"skipped: reference run on {system.distro}: Omarchy integration isn't checked"])
         return
     ui = _ui(ctx)
-    if not ui.confirm(CLAMSHELL_CONNECT, default=False):
+    if not ui.confirm(CLAMSHELL_CONNECT):
         results[CLAMSHELL] = _result(CLAMSHELL, "skip", ["skipped: no external display was connected"])
         return
     displays = _monitors(ctx.host.run(MONITORS).stdout)
@@ -453,7 +453,7 @@ def _clamshell(ctx: Context, progress: dict, results: dict) -> None:
         ])
         return
     ui.text(CLAMSHELL_WARNING)
-    if not ui.confirm(CLAMSHELL_QUESTION, default=False):
+    if not ui.confirm(CLAMSHELL_QUESTION):
         results[CLAMSHELL] = _result(CLAMSHELL, "skip", ["skipped: you chose not to close the lid"])
         return
     step = _begin(ctx, progress, "clamshell", {"displays": displays, "logind": _logind(ctx)})

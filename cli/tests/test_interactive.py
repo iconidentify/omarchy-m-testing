@@ -27,10 +27,10 @@ REPORT_FILE = "omarchy-m-test-report.json"
 ENTER = ""
 ARGS = ["--dry-run", "--catalogue", CATALOGUE_PATH]
 TONE_QUESTION = "Did you hear the tone?"
-TONE_PROMPT = TONE_QUESTION + " [y/n/s] "
+TONE_PROMPT = TONE_QUESTION + " [Y/n/s] "
 WIFI_QUESTION = "Did the Wi-Fi icon go off and come back?"
 BENCH_QUESTION = "Did the benchmark window appear?"
-INSTALL_PROMPT_START = "Install "
+INSTALL_NOTICE = "temporary test package(s)"
 
 VOLUME_DOWN = ["wpctl", "set-volume", NODE, "0.30"]
 VOLUME_BACK = ["wpctl", "set-volume", NODE, "0.45"]
@@ -142,7 +142,23 @@ class HumanCheckTest(unittest.TestCase):
     def test_the_human_is_told_how_to_answer_before_the_first_question(self):
         host = self.run_speaker("y")
 
-        self.assertLess(host.output.index("Answer y (yes), n (no) or s (skip)"), host.output.index(TONE_PROMPT))
+        self.assertLess(host.output.index("Answer y (yes), n (no) or s (skip); Enter alone is yes."), host.output.index(TONE_PROMPT))
+
+    def test_a_typed_y_is_a_confirmed_yes(self):
+        result = check(self.run_speaker("y"), "test.tone-heard")
+
+        self.assertEqual(result["status"], "pass")
+        self.assertIn("answer: yes", result["evidence"])
+        self.assertNotIn(human.DEFAULTED, result)
+
+    def test_enter_alone_is_yes_but_recorded_as_the_default_unconfirmed(self):
+        host = self.run_speaker(ENTER)
+
+        result = check(host, "test.tone-heard")
+        self.assertEqual((result["status"], result["classification"]["outcome"]), ("pass", "works"))
+        self.assertIs(result[human.DEFAULTED], True)
+        self.assertIn(human.DEFAULT_ANSWER, result["evidence"])
+        self.assertIn("an Enter-only yes is recorded as unconfirmed", host.output)
 
     def test_no_answer_at_all_is_a_skip_never_a_failure(self):
         result = check(self.run_speaker(EOF), "test.tone-heard")
@@ -154,7 +170,7 @@ class HumanCheckTest(unittest.TestCase):
         host = self.run_speaker("maybe", "y")
 
         self.assertEqual(prompts(host).count(TONE_PROMPT), 2)
-        self.assertIn("Please answer y, n or s.", host.output)
+        self.assertIn("Please answer y, n or s (Enter alone is yes).", host.output)
         self.assertEqual(check(host, "test.tone-heard")["status"], "pass")
 
     def test_three_answers_that_arent_y_n_or_s_skip_the_check(self):
@@ -169,29 +185,30 @@ class HumanCheckTest(unittest.TestCase):
         self.assertEqual(check(host, "test.tone-heard")["kind"], "human")
         self.assertEqual(check(host, "test.tone-heard")["status"], "skip")
 
-    def test_at_an_omarchy_terminal_the_answer_and_note_are_gum_prompts(self):
+    def test_at_an_omarchy_terminal_the_answer_and_note_are_one_line_so_enter_can_be_told_apart(self):
         rec = omarchy_desktop(live_recording())
         host = LiveMac(rec, answers=[
-            ENTER, CommandResult(0, "Speaker\n", ""),         # disclaimer, sections picker
-            CommandResult(0, "No\n", ""), CommandResult(0, "left channel silent\n", ""),  # gum choose, gum input
+            ENTER, CommandResult(0, "Speaker\n", ""),  # disclaimer, sections picker
+            "n left channel silent",
         ], terminal_size=TERMINAL)
 
         self.assertEqual(main(ARGS, host, sections=(SPEAKER,)), 0)
 
         ttys = [event[1] for event in host.transcript if event[0] == "tty"]
-        self.assertEqual(ttys[1][:4], ["gum", "choose", "--header", TONE_QUESTION])
-        self.assertEqual(ttys[1][-3:], ["Yes", "No", "Skip"])
-        self.assertEqual(ttys[2][:2], ["gum", "input"])
+        self.assertFalse([argv for argv in ttys if argv[:2] == ["gum", "choose"] and TONE_QUESTION in argv])
+        self.assertTrue(any(p.strip().endswith(TONE_PROMPT.strip()) for p in prompts(host)))
         result = check(host, "test.tone-heard")
         self.assertEqual(result["status"], "fail")
         self.assertIn("note: left channel silent", result["evidence"])
 
-    def test_esc_in_gum_is_no_answer(self):
+    def test_enter_at_an_omarchy_terminal_is_the_unconfirmed_default(self):
         rec = omarchy_desktop(live_recording())
-        host = LiveMac(rec, answers=[ENTER, CommandResult(0, "Speaker\n", ""), CommandResult(1, "", "")], terminal_size=TERMINAL)
+        host = LiveMac(rec, answers=[ENTER, CommandResult(0, "Speaker\n", ""), ENTER], terminal_size=TERMINAL)
 
         self.assertEqual(main(ARGS, host, sections=(SPEAKER,)), 0)
-        self.assertEqual(check(host, "test.tone-heard")["status"], "skip")
+        result = check(host, "test.tone-heard")
+        self.assertEqual(result["status"], "pass")
+        self.assertIs(result[human.DEFAULTED], True)
 
 
 # -- SSH and the local seat --------------------------------------------------------
@@ -341,12 +358,13 @@ class TemporaryPackagesTest(unittest.TestCase):
         self.assertEqual(main(ARGS, host, sections=sections), 0)
         return host
 
-    def test_packages_are_installed_after_consent_and_exactly_those_removed_at_the_end(self):
-        host = self.run_bench(["y", "y"])
+    def test_packages_are_installed_without_a_question_shown_and_exactly_those_removed_at_the_end(self):
+        host = self.run_bench(["y"])
 
-        consent = next(p for p in prompts(host) if p.startswith(INSTALL_PROMPT_START))
-        self.assertEqual(consent, "Install 2 package(s) now? [y/N] ")
+        self.assertEqual(prompts(host), ["Accept and start? [Y/n] ", BENCH_QUESTION + " [Y/n/s] "])
         self.assertIn("a package that isn't installed: glmark2 (with libpng12)", host.output)
+        self.assertIn("Installing 2 temporary test package(s)", host.output)
+        self.assertLess(host.output.index(INSTALL_NOTICE), host.output.index(BENCH_QUESTION))
         self.assertLess(host.commands_run.index(INSTALL), host.commands_run.index(REMOVE))
         self.assertEqual(host.state.installed, MacState().installed)  # mesa was there before and stays
         self.assertFalse(any("mesa" in argv for argv in host.commands_run if argv[:4] == ["sudo", "-n", "pacman", "-R"]))
@@ -355,25 +373,10 @@ class TemporaryPackagesTest(unittest.TestCase):
         self.assertIn("installed for this run, removed at its end: libpng12 glmark2", result["evidence"])
         self.assertIn("already installed: mesa", result["evidence"])
 
-    def test_declining_installs_nothing_and_skips_the_check(self):
-        host = self.run_bench(["n"])
-
-        self.assertFalse(ran_sudo(host))
-        self.assertNotIn(BENCH_QUESTION + " [y/n/s] ", prompts(host))
-        result = check(host, "test.benchmark")
-        self.assertEqual((result["status"], result["classification"]["outcome"]), ("skip", "not-tested"))
-        self.assertIn("skipped: you chose not to install glmark2", result["evidence"])
-
-    def test_end_of_input_at_the_consent_prompt_declines(self):
-        host = self.run_bench([EOF])
-
-        self.assertFalse(ran_sudo(host))
-        self.assertEqual(check(host, "test.benchmark")["status"], "skip")
-
-    def test_packages_already_installed_need_no_consent_and_are_never_removed(self):
+    def test_packages_already_installed_are_never_installed_or_removed(self):
         host = self.run_bench(["y"], state=MacState(installed={"glmark2", "libpng12", "mesa"}))
 
-        self.assertFalse(any(p.startswith(INSTALL_PROMPT_START) for p in prompts(host)))
+        self.assertNotIn(INSTALL_NOTICE, host.output)
         self.assertFalse(ran_sudo(host))
         self.assertEqual(host.state.installed, {"glmark2", "libpng12", "mesa"})
 
@@ -388,7 +391,7 @@ class TemporaryPackagesTest(unittest.TestCase):
         state = MacState(sudo_cached=False)
         host = LiveMac(rec, state=state, answers=[
             ENTER, ENTER,                     # disclaimer, sections to skip
-            "y", CommandResult(0, "", ""),    # consent, then sudo -v at the terminal (scripted: no real password)
+            CommandResult(0, "", ""),         # sudo -v at the terminal (scripted: no real password)
             "y",
         ], terminal_size=TERMINAL)
 
@@ -408,7 +411,7 @@ class TemporaryPackagesTest(unittest.TestCase):
                     return result
                 return super().run(argv)
 
-        host = Forgets(bare_desktop(live_recording()), answers=[ENTER, ENTER, "y", "y", CommandResult(0, "", "")], terminal_size=TERMINAL)
+        host = Forgets(bare_desktop(live_recording()), answers=[ENTER, ENTER, "y", CommandResult(0, "", "")], terminal_size=TERMINAL)
 
         self.assertEqual(main(ARGS, host, sections=(BENCH,)), 0)
 
@@ -431,7 +434,7 @@ class TemporaryPackagesTest(unittest.TestCase):
                     registered.extend(r["argv"] + r.get("packages", []) for r in json.loads(self.written[CHECKPOINT])["restorers"])
                 return super().run(argv)
 
-        self.run_bench(["y", "y"], cls=Watches)
+        self.run_bench(["y"], cls=Watches)
 
         self.assertEqual(registered, [REMOVE])
 
@@ -448,7 +451,7 @@ class TemporaryPackagesTest(unittest.TestCase):
                 host = self.run_bench([], sections=(section,))
 
                 self.assertFalse(ran_sudo(host))
-                self.assertFalse(any(p.startswith(INSTALL_PROMPT_START) for p in prompts(host)))
+                self.assertNotIn(INSTALL_NOTICE, host.output)
                 self.assertIn("boot packages", check(host, "test.benchmark")["evidence"][-1])
 
     def test_a_package_the_repositories_dont_have_is_skipped(self):
@@ -464,7 +467,7 @@ class InterruptionTest(unittest.TestCase):
 
     def test_ctrl_c_mid_section_puts_everything_back_newest_first(self):
         state = MacState(muted=True)
-        host = mac([ENTER, "y", INTERRUPT], state=state)
+        host = mac([ENTER, INTERRUPT], state=state)
 
         self.assertEqual(main(ARGS, host, sections=(EVERYTHING,)), 130)
 
@@ -473,15 +476,6 @@ class InterruptionTest(unittest.TestCase):
         self.assertEqual(json.loads(host.written[CHECKPOINT])["restorers"], [])
         self.assertNotIn(REPORT_FILE, host.written)
         self.assertIn("put back", host.output)
-
-    def test_ctrl_c_at_the_consent_prompt_installs_nothing_and_puts_the_rest_back(self):
-        state = MacState()
-        host = mac([ENTER, INTERRUPT], state=state)
-
-        self.assertEqual(main(ARGS, host, sections=(EVERYTHING,)), 130)
-
-        self.assertFalse(ran_sudo(host))
-        self.assertEqual(state, MacState())
 
     def test_a_run_killed_mid_section_has_everything_put_back_by_the_next_run_first(self):
         class Killed(LiveMac):

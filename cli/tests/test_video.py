@@ -323,16 +323,16 @@ class NotRunTest(unittest.TestCase):
         self.assertIn("mpv never showed the test card (testcard: omarchy-m-test: the test card never started playing)",
                       checks["video.h264-on-screen"]["evidence"])
 
-    def test_missing_players_are_offered_and_declining_skips_the_checks(self):
-        host = at_desktop(desktop(), answers=["n"], state=MacState(installed={"mesa", "pipewire", "ffmpeg"}))
+    def test_missing_players_without_sudo_skip_the_checks(self):
+        host = at_desktop(desktop(), state=MacState(installed={"mesa", "pipewire", "ffmpeg"}, sudo_cached=False))
         host.state.repository.update({"mpv": ["libplacebo", "mpv"], "grim": ["grim"]})
 
         checks = run(host)
 
-        self.assert_skipped(checks, "you chose not to install mpv grim")
+        self.assert_skipped(checks, "installing test packages needs sudo, and it wasn't given")
         self.assertIn("mpv grim (with libplacebo)", host.output)
         self.assertEqual(played(host), [])
-        self.assertFalse(any(argv[:2] == ["sudo", "-n"] for argv in host.commands_run))
+        self.assertFalse(any(argv[:2] == ["sudo", "-n"] and argv != ["sudo", "-n", "true"] for argv in host.commands_run))
 
 
 class RecordModeTest(unittest.TestCase):

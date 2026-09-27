@@ -30,11 +30,11 @@ M1_FRESH = "m1-pro-converged-fresh"
 NO_CONTROLLER = ("typec 0 partner=no data=device power=sink\ntypec 1 partner=yes data=device power=sink\n"
                  "typec 2 partner=no data=device power=sink\n")
 STICK_IN = NO_CONTROLLER + "usb root speed=480 class=09\nusb root speed=10000 class=09\nusb device speed=5000 class=08\n"
-IMAGE_PROMPT = camera.IMAGE_QUESTION + " [y/n/s] "
-KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [y/n/s] "
-GESTURES_PROMPT = inputs.GESTURES_QUESTION + " [y/n/s] "
-DEVICES_PROMPT = ports.DEVICES_QUESTION + " [y/n/s] "
-PICTURE_PROMPT = ports.PICTURE_QUESTION + " [y/n/s] "
+IMAGE_PROMPT = camera.IMAGE_QUESTION + " [Y/n/s] "
+KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [Y/n/s] "
+GESTURES_PROMPT = inputs.GESTURES_QUESTION + " [Y/n/s] "
+DEVICES_PROMPT = ports.DEVICES_QUESTION + " [Y/n/s] "
+PICTURE_PROMPT = ports.PICTURE_QUESTION + " [Y/n/s] "
 PREVIEW = camera.preview_argv("video0")
 FRAMES = camera.frames_argv("video0")
 AT_THE_DESKTOP = {"WAYLAND_DISPLAY": "wayland-1"}
@@ -45,7 +45,7 @@ def results(host) -> dict[str, dict]:
 
 
 def questions(host) -> list[str]:
-    return [p for p in prompts(host) if p.endswith("[y/n/s] ")]
+    return [p for p in prompts(host) if p.endswith("[Y/n/s] ")]
 
 
 def section_ids(host, prefix: str) -> list[str]:
@@ -348,7 +348,7 @@ class PortsTest(unittest.TestCase):
             "skipped: no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)",
         ])
         self.assertNotIn(ports.USB_WAIT, host.commands_run)
-        self.assertNotIn(ports.PLUG_READY, [event[1] for event in host.transcript if event[0] == "prompt"])
+        self.assertNotIn(ports.PLUG_READY + " [Y/n] ", [event[1] for event in host.transcript if event[0] == "prompt"])
         # No domain either: the Thunderbolt/USB4 host only comes up with a USB4 or Thunderbolt partner attached.
         links = found["ports.thunderbolt"]
         self.assertEqual((links["status"], links["classification"]["outcome"]), ("skip", "not-tested"))
@@ -373,7 +373,7 @@ class PortsTest(unittest.TestCase):
         host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
 
         messages = [event[1] for event in host.transcript if event[0] == "prompt"]
-        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY + " [Y/n] "])
         self.assertIn(ports.PLUG_THUNDERBOLT, host.output)
         self.assertNotIn(ports.PLUG_USB, host.output)  # the M2's USB controllers are up
         links = results(host)["ports.thunderbolt"]
@@ -399,7 +399,7 @@ class PortsTest(unittest.TestCase):
         host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
 
         messages = [event[1] for event in host.transcript if event[0] == "prompt"]
-        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY + " [Y/n] "])
         self.assertLess(host.output.index(ports.PLUG_USB), host.output.index("Found:"))
         self.assertLess(host.commands_run.index(ports.USB), host.commands_run.index(ports.USB_WAIT))
         usb = results(host)["ports.usb-c"]

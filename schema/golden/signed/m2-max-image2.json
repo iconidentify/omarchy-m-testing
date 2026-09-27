@@ -4,7 +4,7 @@
     "name": "omarchy-m-test",
     "version": "0.1.7"
   },
-  "consent_version": 4,
+  "consent_version": 5,
   "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
@@ -1023,7 +1023,7 @@
       "status": "skip",
       "evidence": [
         "eglinfo (mesa-utils) isn't installed",
-        "skipped: you chose not to install mesa-utils"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1876,7 +1876,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1894,7 +1894,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1912,7 +1912,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1930,7 +1930,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install vkmark"
+        "skipped: installing test packages needs sudo, and it wasn't given"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1945,6 +1945,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQFe4T5ttN45xA8vUStVG9FrE/TBHDnwCS6yKr75I+z\n27HINF4NHKgHeWj+IoDCNWFUD2pykYeTtxo4r2qrbiogc=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQOo+NUUZ1ierAVarwkwp24vNtlB5pyczzT0ifjIAkm\niZDTMCWDXYqCGIzWnqYip4xu67kUtKBVw3OyliLntr0AM=\n-----END SSH SIGNATURE-----"
   }
 }

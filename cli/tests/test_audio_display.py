@@ -37,12 +37,12 @@ STEPS = [display.set_argv("apple-panel-bl", level) for level in (175, 112, 62)]
 LUX = "/sys/bus/iio/devices/iio:device0/in_illuminance_input"
 KEYS = ["brightnessctl", "--machine-readable", "--device=kbd_backlight", "info"]
 
-TONE_PROMPT = audio.TONE_QUESTION + " [y/n/s] "
-HEADPHONE_PROMPT = audio.HEADPHONE_QUESTION + " [y/n/s] "
-NOTCH_PROMPT = display.NOTCH_QUESTION + " [y/n/s] "
-BRIGHTNESS_PROMPT = display.BRIGHTNESS_QUESTION + " [y/n/s] "
-CURSOR_PROMPT = display.CURSOR_QUESTION + " [y/n/s] "
-KEYBOARD_PROMPT = display.KEYBOARD_QUESTION + " [y/n/s] "
+TONE_PROMPT = audio.TONE_QUESTION + " [Y/n/s] "
+HEADPHONE_PROMPT = audio.HEADPHONE_QUESTION + " [Y/n/s] "
+NOTCH_PROMPT = display.NOTCH_QUESTION + " [Y/n/s] "
+BRIGHTNESS_PROMPT = display.BRIGHTNESS_QUESTION + " [Y/n/s] "
+CURSOR_PROMPT = display.CURSOR_QUESTION + " [Y/n/s] "
+KEYBOARD_PROMPT = display.KEYBOARD_QUESTION + " [Y/n/s] "
 # The Input section's function-key and trackpad questions, after the keyboard light's.
 KEYS_AND_TRACKPAD = ["s", "s"]
 
@@ -386,9 +386,9 @@ class WholeRunTest(unittest.TestCase):
 
         self.assertEqual(main(ARGS, host), 0)
 
-        self.assertEqual([p for p in prompts(host) if p.endswith("[y/n/s] ")], [
-            NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, network.PAIRING_QUESTION + " [y/n/s] ", KEYBOARD_PROMPT,
-            *(question + " [y/n/s] " for question in (inputs.FUNCTION_KEYS_QUESTION, inputs.GESTURES_QUESTION,
+        self.assertEqual([p for p in prompts(host) if p.endswith("[Y/n/s] ")], [
+            NOTCH_PROMPT, BRIGHTNESS_PROMPT, CURSOR_PROMPT, TONE_PROMPT, HEADPHONE_PROMPT, network.PAIRING_QUESTION + " [Y/n/s] ", KEYBOARD_PROMPT,
+            *(question + " [Y/n/s] " for question in (inputs.FUNCTION_KEYS_QUESTION, inputs.GESTURES_QUESTION,
                                                       ports.DEVICES_QUESTION, ports.PICTURE_QUESTION)),
         ])
         self.assertEqual(host.state.volume, "0.45")

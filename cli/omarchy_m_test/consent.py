@@ -1,6 +1,6 @@
 """The disclaimer. Bump CONSENT_VERSION whenever its meaning changes."""
 
-CONSENT_VERSION = 4
+CONSENT_VERSION = 5
 
 DISCLAIMER = """\
 omarchy-m-test checks how well Omarchy supports this Mac's hardware.
@@ -12,8 +12,10 @@ What it does:
   - Changes a few things for a check and puts them back when the check ends,
     even if the run is interrupted: the volume (never above 30%), Wi-Fi
     (dropped and rejoined; never over SSH), the battery charge limit (set
-    to 80% and cleared, then put back as you had it), and test-only packages
-    (only if you agree, and only the ones it installed are removed).
+    to 80% and cleared, then put back as you had it), and temporary test
+    packages (installed without asking again, shown as they're installed,
+    never a kernel, firmware or boot package and never an upgrade; only
+    the ones it installed are removed when their section ends).
   - Writes a report file and shows you the exact report.
   - Uploads the report only if you say yes after seeing it (never with --dry-run).
 
@@ -25,9 +27,9 @@ What it never does:
     Wi-Fi network names, disk identifiers or anything in your home directory.
 """
 
-ACCEPT_PROMPT = "Press Enter to accept and start, or type anything else to cancel: "
+ACCEPT_PROMPT = "Accept and start? [Y/n] "
 
 
 def accepted(answer: str) -> bool:
-    """Only a bare Enter accepts."""
-    return answer == ""
+    """Enter (the default) or y accepts; anything else cancels."""
+    return answer.strip().lower() in ("", "y", "yes")

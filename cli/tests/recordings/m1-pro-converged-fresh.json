@@ -221,6 +221,31 @@
     },
     {
       "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-S",
+        "--needed",
+        "--noconfirm",
+        "--asdeps",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "resolving dependencies...\nlooking for conflicting packages...\n\nPackage (1)       New Version  Net Change  Download Size\n\nextra/mesa-utils  9.0.0-7        1.91 MiB       0.19 MiB\n\nTotal Download Size:   0.19 MiB\nTotal Installed Size:  1.91 MiB\n\n:: Proceed with installation? [Y/n] \n:: Retrieving packages...\n mesa-utils-9.0.0-7-aarch64 downloading...\nchecking keyring...\nchecking package integrity...\nloading package files...\nchecking for file conflicts...\nchecking available disk space...\n:: Running pre-transaction hooks...\n(1/2) Checking packages against this machine's platform...\n(2/2) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\ninstalling mesa-utils...\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "bundled:apple-display-check",
         "--read-only"
       ],
@@ -449,16 +474,6 @@
       "argv": [
         "sudo",
         "-n",
-        "true"
-      ],
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "sudo",
-        "-n",
         "sh",
         "-c",
         "printf '%s\\n' \"$1\" > /sys/class/power_supply/macsmc-battery/charge_control_end_threshold",
@@ -560,6 +575,22 @@
     },
     {
       "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-S",
+        "--needed",
+        "--noconfirm",
+        "--asdeps",
+        "glmark2",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "resolving dependencies...\nlooking for conflicting packages...\n\nPackage (3)    New Version  Net Change  Download Size\n\nextra/assimp   6.0.5-1       12.42 MiB       2.86 MiB\nextra/glmark2  2023.01-2     16.21 MiB       6.91 MiB\nextra/vkmark   1:2025.01-2    3.05 MiB       0.71 MiB\n\nTotal Download Size:   10.49 MiB\nTotal Installed Size:  31.68 MiB\n\n:: Proceed with installation? [Y/n] \n:: Retrieving packages...\n glmark2-2023.01-2-aarch64 downloading...\n assimp-6.0.5-1-aarch64 downloading...\n vkmark-1:2025.01-2-aarch64 downloading...\nchecking keyring...\nchecking package integrity...\nloading package files...\nchecking for file conflicts...\nchecking available disk space...\n:: Running pre-transaction hooks...\n(1/2) Checking packages against this machine's platform...\n(2/2) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\ninstalling glmark2...\ninstalling assimp...\ninstalling vkmark...\nOptional dependencies for vkmark\n    xcb-util-wm: for X11 support [installed]\n    wayland: for Wayland support [installed]\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "dtc",
         "-I",
         "fs",
@@ -653,9 +684,6 @@
     },
     "/sys/module/hid_apple/parameters/fnmode": {
       "text": "3\n"
-    },
-    "/sys/class/power_supply/macsmc-ac/type": {
-      "text": "Mains\n"
     },
     "/sys/class/power_supply/macsmc-battery/type": {
       "text": "Battery\n"

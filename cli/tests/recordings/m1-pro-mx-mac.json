@@ -210,6 +210,16 @@
     },
     {
       "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "sudo: a password is required\n"
+    },
+    {
+      "argv": [
         "brightnessctl",
         "--list",
         "--machine-readable"
@@ -347,16 +357,6 @@
       "returncode": 127,
       "stdout": "",
       "stderr": "omarchy-battery-charge-limit: command not found\n"
-    },
-    {
-      "argv": [
-        "sudo",
-        "-n",
-        "true"
-      ],
-      "returncode": 1,
-      "stdout": "",
-      "stderr": "sudo: a password is required\n"
     },
     {
       "argv": [

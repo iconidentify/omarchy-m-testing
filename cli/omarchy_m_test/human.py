@@ -4,8 +4,10 @@
                          evidence=["played a 1 kHz tone at 30% volume"])
 
 The result is a schema-v1 check of kind "human": yes passes, no fails, skip
-(or no answer at all: end of input, Esc in gum, three answers that aren't
-y/n/s) is skipped, never a failure. Its evidence holds what was asked, the
+(or no answer at all: end of input, three answers that aren't y/n/s) is
+skipped, never a failure. A bare Enter is yes, the default, and passes too,
+but nobody typed it: the result says answered_by_default, and the site shows
+it as unconfirmed and never lets it colour the matrix. Its evidence holds what was asked, the
 answer and the note, which passes the privacy scrubber like any evidence
 before it reaches the checkpoint or the report. The check id must be in the
 catalogue's checks, and in its section's human_checks so a skipped section
@@ -24,17 +26,23 @@ from .ui import Ui
 
 STATUSES = {"yes": "pass", "no": "fail", "skip": "skip"}
 NO_ANSWER = "answer: none (counted as skipped)"
+DEFAULT_ANSWER = "answer: yes, by pressing Enter (the default; unconfirmed)"
+# On a result whose yes came from a bare Enter (schema: checks[].answered_by_default).
+DEFAULTED = "answered_by_default"
 
 
 def check(ctx: Context, check_id: str, question: str, evidence: Sequence[str] = ()) -> dict:
     """Ask the human `question` and return their answer as a human check result."""
     ui = ctx.ui or Ui(ctx.host)
-    answer, note = ui.human(question)
+    answer, note, defaulted = ui.human(question)
     lines = [*evidence, f"asked: {question}"]
-    lines.append(f"answer: {answer}" if answer else NO_ANSWER)
+    lines.append((DEFAULT_ANSWER if defaulted else f"answer: {answer}") if answer else NO_ANSWER)
     if note:
         lines.append(f"note: {note}")
-    return {"id": check_id, "kind": "human", "status": STATUSES.get(answer or "skip", "skip"), "evidence": lines}
+    result = {"id": check_id, "kind": "human", "status": STATUSES.get(answer or "skip", "skip"), "evidence": lines}
+    if defaulted:
+        result[DEFAULTED] = True
+    return result
 
 
 def absent(ctx: Context, check_id: str) -> bool:
