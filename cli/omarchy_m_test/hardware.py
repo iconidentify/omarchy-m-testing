@@ -119,6 +119,8 @@ def _mac_first_boot(host: Host) -> dict | None:
         return _result(check, "skip", [*evidence, "first boot is done, but its journal no longer shows how it went"])
     said = [line for line in lines if "omarchy-mac-first-boot[" in line][-2:]
     incomplete = [line for line in lines if MAC_FIRST_BOOT_INCOMPLETE in line]
+    if not queued and _read(host, IMAGE_QUEUE) is None and _exists(host, IMAGE_QUEUE):
+        return _result(check, "skip", [*evidence, done[-1], f"{IMAGE_QUEUE} is there but can't be read, so what's still queued isn't known"])
     if queued:  # first boot finishes with steps that need the network still queued, for the unit to retry
         return _result(check, "fail", [*evidence, *incomplete[-1:], done[-1], f"still queued in {IMAGE_QUEUE}: {', '.join(queued)}"])
     return _result(check, "pass", [*evidence, *said, done[-1], f"nothing left queued ({IMAGE_QUEUE} is gone)"])
