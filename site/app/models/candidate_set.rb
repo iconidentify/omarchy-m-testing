@@ -54,7 +54,7 @@ class CandidateSet
   def partials = findings("partial")
 
   def verdict
-    if tester_reports.empty? then "waiting"
+    if tester_reports.empty? || tested_rows.empty? then "waiting"  # tester runs that counted nothing (all Enter-only) don't approve
     elsif failures.any? then "blocked"
     else "ready"
     end

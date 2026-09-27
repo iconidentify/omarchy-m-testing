@@ -1,4 +1,4 @@
-"""Temporary test packages: installed with the human's consent, removed when the section ends.
+"""Temporary test packages: installed without a question (the disclaimer covers them), removed when the section ends.
 
     ready = packages.temporary(ctx, ["glmark2", "vkmark"], "The GPU benchmarks")
     if ready.skipped:
@@ -13,8 +13,9 @@ What happens:
      they are synced now: the tool never syncs or upgrades (-Sy would be a
      partial upgrade). None of them may be a kernel, firmware or boot
      package (safety.py).
-  3. The human is shown that list and asked; no means the checks that need
-     them are skipped, never failed.
+  3. The human is shown that list and it is installed without a question:
+     accepting the disclaimer (consent.py) agreed to temporary test
+     packages. Nothing else is ever installed this way.
   4. sudo: its cached credentials, or at a terminal `sudo -v`, which asks
      for the password there (the human is at the Mac, running the tool).
      Off a terminal without cached credentials the checks are skipped.
@@ -114,11 +115,9 @@ def temporary(ctx: Context, names: Sequence[str], purpose: str) -> Temporary:
     ui.text(
         f"{purpose} needs {'a package that isn' if len(missing) == 1 else 'packages that aren'}'t installed: {' '.join(missing)}"
         + (f" (with {' '.join(extra)})" if extra else "")
-        + ". They're installed from this system's package repositories with sudo pacman for this run only, "
-        "and exactly these are removed when the section ends."
+        + f". Installing {len(plan)} temporary test package(s) from this system's package repositories with sudo pacman, "
+        "for this run only: exactly these are removed when the section ends."
     )
-    if not ui.confirm(f"Install {len(plan)} package(s) now?", default=False):
-        return Temporary(skipped=f"you chose not to install {' '.join(missing)}", already=kept)
 
     if not sudo_ready(ctx):
         return Temporary(skipped="installing test packages needs sudo, and it wasn't given", already=kept)

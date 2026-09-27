@@ -185,7 +185,13 @@ def headphones(ctx: Context) -> dict:
     if human.absent(ctx, check_id):
         return human.skip(check_id, "this Mac has no headphone jack")
     result = human.check(ctx, check_id, HEADPHONE_QUESTION)
-    result["evidence"].append(f"default output after: {describe_sink(_read_name(ctx, DEFAULT_SINK))}")
+    sink = _read_name(ctx, DEFAULT_SINK)
+    result["evidence"].append(f"default output after: {describe_sink(sink)}")
+    on_headphones = sink is not None and HEADPHONE_SINK.match(sink) is not None
+    if sink is not None and result["status"] == "pass" and not on_headphones:
+        human.not_backed(result, "the default output afterwards isn't the headphone jack")
+    elif result["status"] == "fail" and on_headphones:
+        human.not_backed(result, "the default output afterwards is the headphone jack")
     _say(ctx, "You can unplug the headphones.")
     return result
 

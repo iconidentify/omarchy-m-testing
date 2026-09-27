@@ -31,7 +31,7 @@
             <span class="status status-<%= check["status"] %>"><%= check["status"].upcase %></span>
             <span class="check-id"><%= check["id"] %></span>
             <% if (classification = check["classification"]) %>
-              <%= outcome_badge(classification["outcome"]) %>
+              <%= check_outcome_badge(check) %>
               <% if classification["outcome"] == "fails" && @report.regression?(classification["feature"]) %>
                 <% pass = @report.regressed_from(classification["feature"]) %>
                 <a class="badge badge-regression regression" href="<%= report_path(pass) %>" title="A tester's earlier run on this model and stack found it working (<%= pass.stack_words %> <%= pass.omarchy_version %>, <%= uploaded_at(pass) %>)">regression</a>

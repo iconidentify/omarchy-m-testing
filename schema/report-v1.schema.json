@@ -153,6 +153,10 @@
             "maxItems": 50,
             "items": { "type": "string", "maxLength": 500 }
           },
+          "answered_by_default": {
+            "description": "A human check answered yes by a bare Enter (the prompt's default) rather than a typed y: it passes, but the site shows it as unconfirmed and never counts it towards a feature's state. Absent when the answer was typed, and on automatic checks.",
+            "const": true
+          },
           "score": {
             "description": "A benchmark's measurement (benchmark.* checks that passed): the value in its unit (points for glmark2 and vkmark, frames per second for decode), the tool and version that measured it, and the benchmark suite: the version of omarchy-m-test's fixed scenes, clip and settings. Only scores of the same check, suite and unit are compared. Absent on every other check.",
             "type": "object",

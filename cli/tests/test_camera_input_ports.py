@@ -15,7 +15,7 @@ import copy
 import json
 import unittest
 
-from omarchy_m_test import camera, inputs, ports
+from omarchy_m_test import camera, human, inputs, ports
 from omarchy_m_test.app import main
 from omarchy_m_test.host import LONG_RUNNING, WATCH_TIMEOUT_SECONDS, timeout_for
 from omarchy_m_test.recording import EOF, RECORDED_SOURCES, RecordedHost
@@ -30,11 +30,14 @@ M1_FRESH = "m1-pro-converged-fresh"
 NO_CONTROLLER = ("typec 0 partner=no data=device power=sink\ntypec 1 partner=yes data=device power=sink\n"
                  "typec 2 partner=no data=device power=sink\n")
 STICK_IN = NO_CONTROLLER + "usb root speed=480 class=09\nusb root speed=10000 class=09\nusb device speed=5000 class=08\n"
-IMAGE_PROMPT = camera.IMAGE_QUESTION + " [y/n/s] "
-KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [y/n/s] "
-GESTURES_PROMPT = inputs.GESTURES_QUESTION + " [y/n/s] "
-DEVICES_PROMPT = ports.DEVICES_QUESTION + " [y/n/s] "
-PICTURE_PROMPT = ports.PICTURE_QUESTION + " [y/n/s] "
+IMAGE_PROMPT = camera.IMAGE_QUESTION + " [Y/n/s] "
+KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [Y/n/s] "
+# Omarchy's default config (as the recordings hold it): tap-to-click and the three-finger swipe are off, so not asked.
+ASKED_GESTURES = (inputs.CLICK, inputs.TWO_FINGER_CLICK, inputs.SCROLL)
+GESTURE_PROMPTS = [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in ASKED_GESTURES]
+ALL_ON = "tap-global 1\ntap-device apple-spi-trackpad true\ngesture 3 horizontal workspace\nfiles 2\n"
+DEVICES_PROMPT = ports.DEVICES_QUESTION + " [Y/n/s] "
+PICTURE_PROMPT = ports.PICTURE_QUESTION + " [Y/n/s] "
 PREVIEW = camera.preview_argv("video0")
 FRAMES = camera.frames_argv("video0")
 AT_THE_DESKTOP = {"WAYLAND_DISPLAY": "wayland-1"}
@@ -45,11 +48,15 @@ def results(host) -> dict[str, dict]:
 
 
 def questions(host) -> list[str]:
-    return [p for p in prompts(host) if p.endswith("[y/n/s] ")]
+    return [p for p in prompts(host) if p.endswith("[Y/n/s] ")]
 
 
 def section_ids(host, prefix: str) -> list[str]:
     return [c["id"] for c in report(host)["checks"] if c["id"].startswith(prefix)]
+
+
+TB_PARTNER = "partner 1 usb_mode= tbt=yes\n"
+DP_MONITOR = "partner 1 usb_mode= tbt=no\n"
 
 
 def with_command(rec: dict, argv: list[str], returncode: int = 0, stdout: str = "", stderr: str = "") -> dict:
@@ -163,7 +170,7 @@ class KeysAndTrackpadTest(unittest.TestCase):
         return run("input", answers, rec=rec or live_recording(base=recording(M1)))
 
     def test_the_m1s_spi_keyboard_and_trackpad_are_named_and_the_human_answers(self):
-        host = self.run_input(["y", "n two-finger scroll jumps"])
+        host = self.run_input(["y", "y", "y", "n two-finger scroll jumps"])
 
         keys, gestures = check(host, "input.function-keys"), check(host, "input.trackpad-gestures")
         self.assertEqual((keys["kind"], keys["status"], keys["classification"]["feature"]), ("human", "pass", "keyboard"))
@@ -171,14 +178,17 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertEqual((gestures["status"], gestures["classification"]["feature"], gestures["classification"]["outcome"]),
                          ("fail", "touchpad", "fails"))
         self.assertEqual(gestures["evidence"][0], "built-in trackpad (Hyprland): apple-spi-trackpad")
-        self.assertEqual(gestures["evidence"][-1], "note: two-finger scroll jumps")
-        self.assertEqual(prompts(host)[-2:], [KEYS_PROMPT, GESTURES_PROMPT])
+        self.assertEqual(gestures["evidence"][1], "Hyprland config: tap-to-click off, three-finger workspace swipe off")
+        self.assertIn("two-finger scroll: answer: no; note: two-finger scroll jumps", gestures["evidence"])
+        self.assertIn("tap-to-click: skipped: off in your config", gestures["evidence"])
+        self.assertIn("three-finger swipe: skipped: off in your config", gestures["evidence"])
+        self.assertEqual(prompts(host)[-4:], [KEYS_PROMPT, *GESTURE_PROMPTS])
         self.assertEqual(host.commands_run.count(inputs.DEVICES), 1)  # read once for both
 
     def test_the_m2s_mtp_keyboard_and_what_the_top_row_sends(self):
         rec = with_command(live_recording(), inputs.DEVICES, stdout="apple-mtp-keyboard\napple-mtp-multi-touch\n")
         rec["files"][inputs.FNMODE] = {"text": "2\n"}
-        host = run("input", [EOF, "s", "s"], rec=rec)
+        host = run("input", [EOF, "s", "s", "s", "s"], rec=rec)
 
         self.assertEqual(check(host, "input.function-keys")["evidence"][:2], [
             "built-in keyboard (Hyprland): apple-mtp-keyboard",
@@ -193,17 +203,66 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertNotIn("hyprctl devices -j", [" ".join(argv) for argv in RECORDED_SOURCES])
         rec = with_command(live_recording(base=recording(M1)), inputs.DEVICES,
                            stdout="apple-spi-keyboard\nkestrel's-magic-keyboard\napple-spi-trackpad\n")
-        host = self.run_input(["s", "s"], rec=rec)
+        host = self.run_input(["s", "s", "s", "s"], rec=rec)
 
         self.assertNotIn("magic-keyboard", json.dumps(report(host)))
         self.assertNotIn(["hyprctl", "devices", "-j"], host.commands_run)
 
     def test_over_ssh_hyprland_cant_list_the_devices_and_the_questions_are_still_asked(self):
-        host = over_ssh("input", [EOF, "s", "s"])
+        host = over_ssh("input", [EOF, "s", "s", "s", "s"])
 
         self.assertEqual(results(host)["input.function-keys"]["evidence"][0],
                          "Hyprland couldn't list the input devices (run from the desktop to see them)")
-        self.assertEqual(prompts(host)[-2:], [KEYS_PROMPT, GESTURES_PROMPT])
+        self.assertEqual(prompts(host)[-4:], [KEYS_PROMPT, *GESTURE_PROMPTS])
+
+    def test_gestures_the_config_turns_on_are_asked_one_by_one(self):
+        rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout=ALL_ON)
+        host = self.run_input(["y", "y", "n taps don't click", "y", "y", "n"], rec=rec)
+
+        gestures = check(host, "input.trackpad-gestures")
+        self.assertEqual(prompts(host)[-5:], [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in inputs.GESTURE_QUESTIONS])
+        self.assertEqual(gestures["evidence"][1], "Hyprland config: tap-to-click on, three-finger workspace swipe on")
+        self.assertIn("tap-to-click: answer: no; note: taps don't click", gestures["evidence"])
+        self.assertIn("three-finger swipe: answer: no", gestures["evidence"])
+        self.assertEqual(gestures["status"], "fail")
+
+    def test_a_gesture_off_in_the_config_is_skipped_never_failed(self):
+        host = self.run_input(["y", "y", "y", "y"])
+
+        gestures = check(host, "input.trackpad-gestures")
+        self.assertEqual(gestures["status"], "pass")
+        self.assertNotIn(human.DEFAULTED, gestures)
+        self.assertNotIn(inputs.GESTURE_QUESTIONS[inputs.TAP] + " [Y/n/s] ", prompts(host))
+
+    def test_a_config_it_cant_read_asks_every_gesture(self):
+        rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout="tap-global unavailable\nfiles 0\n")
+        host = self.run_input(["y", "y", "y", "y", "y", "y"], rec=rec)
+
+        self.assertEqual(check(host, "input.trackpad-gestures")["evidence"][1],
+                         "Hyprland config: tap-to-click unknown, three-finger workspace swipe unknown")
+        self.assertEqual(len([p for p in prompts(host) if p.removesuffix(" [Y/n/s] ") in inputs.GESTURE_QUESTIONS.values()]), 5)
+
+    def test_one_enter_among_the_gestures_leaves_the_pass_unconfirmed(self):
+        host = self.run_input(["y", "y", ENTER, "y"])
+
+        self.assertIs(check(host, "input.trackpad-gestures")[human.DEFAULTED], True)
+
+    def test_the_gesture_script_reads_only_on_off_facts_for_built_in_trackpads(self):
+        self.assertIn("case $name in apple-spi-*|apple-mtp-*|apple-internal-*) ;; *) continue;; esac", inputs.GESTURE_CONFIG_SCRIPT)
+        config = inputs.parse_gesture_config("tap-global 1\ntap-device apple-mtp-multi-touch false\ntap-device apple-spi-trackpad true\nfiles 1\n",
+                                             ["apple-mtp-multi-touch"])
+        self.assertEqual((config.tap, config.swipe), (False, False))
+
+    def test_a_later_statement_turns_a_gesture_back_off_and_a_live_option_wins(self):
+        later_off = "tap-global unavailable\ngesture 3 horizontal workspace\ngesture 3 horizontal unset\nfiles 2\n"
+        self.assertIs(inputs.parse_gesture_config(later_off).swipe, False)
+        # Hyprland's unset matches a gesture's direction: unsetting another one leaves the workspace swipe on.
+        other_unset = "gesture 3 horizontal workspace\ngesture 3 vertical other\ngesture 3 vertical unset\nfiles 1\n"
+        self.assertIs(inputs.parse_gesture_config(other_unset).swipe, True)
+        self.assertIs(inputs.parse_gesture_config("workspace-swipe 1\nworkspace-swipe 0\nfiles 1\n").swipe, False)
+        self.assertIs(inputs.parse_gesture_config("swipe-live 1\nworkspace-swipe 0\nfiles 1\n").swipe, True)
+        self.assertIs(inputs.parse_gesture_config("tap-global 0\nfiles 0\n").tap, False)
+        self.assertIsNone(inputs.parse_gesture_config("tap-global unavailable\nfiles 0\n").swipe)
 
     def test_a_mac_without_a_built_in_keyboard_or_trackpad_doesnt_ask(self):
         host = over_ssh("input", [EOF], rec=studio(recording()))
@@ -348,7 +407,7 @@ class PortsTest(unittest.TestCase):
             "skipped: no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)",
         ])
         self.assertNotIn(ports.USB_WAIT, host.commands_run)
-        self.assertNotIn(ports.PLUG_READY, [event[1] for event in host.transcript if event[0] == "prompt"])
+        self.assertNotIn(ports.PLUG_READY + " [Y/n] ", [event[1] for event in host.transcript if event[0] == "prompt"])
         # No domain either: the Thunderbolt/USB4 host only comes up with a USB4 or Thunderbolt partner attached.
         links = found["ports.thunderbolt"]
         self.assertEqual((links["status"], links["classification"]["outcome"]), ("skip", "not-tested"))
@@ -373,33 +432,57 @@ class PortsTest(unittest.TestCase):
         host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
 
         messages = [event[1] for event in host.transcript if event[0] == "prompt"]
-        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY + " [Y/n] "])
         self.assertIn(ports.PLUG_THUNDERBOLT, host.output)
         self.assertNotIn(ports.PLUG_USB, host.output)  # the M2's USB controllers are up
         links = results(host)["ports.thunderbolt"]
         self.assertEqual((links["status"], links["classification"]["outcome"]), ("pass", "works"))
         self.assertEqual(links["evidence"][-1], "the Thunderbolt/USB4 host came up once a device was plugged in")
 
-    def test_at_the_mac_a_thunderbolt_host_that_never_comes_up_fails_or_can_be_skipped(self):
-        for answer_, status in ((ENTER, "fail"), ("s", "skip"), (EOF, "skip")):
+    def test_at_the_mac_a_thunderbolt_device_whose_host_never_comes_up_fails(self):
+        rec = with_command(with_command(live_recording(), ports.THUNDERBOLT_LIST), ports.THUNDERBOLT_WAIT)
+        rec = with_command(rec, ports.PARTNERS, stdout=TB_PARTNER)
+        host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
+
+        links = results(host)["ports.thunderbolt"]
+        self.assertEqual((links["status"], links["classification"]["outcome"]), ("fail", "fails"))  # the M2's host is supported
+        self.assertIn("a Thunderbolt/USB4 device is attached (port 1: Thunderbolt alt mode)", links["evidence"])
+        self.assertEqual(links["evidence"][-1], f"no domain came up within {ports.WAIT_SECONDS} s of plugging in a Thunderbolt/USB4 device")
+        self.assertNotIn(ports.PLUG_REAL_THUNDERBOLT, host.output)
+
+    def test_a_usb4_partner_counts_as_a_thunderbolt_device(self):
+        self.assertEqual(ports.parse_partners("partner 0 usb_mode=usb2,usb3,[usb4] tbt=no\n"), ["port 0: USB4 mode"])
+        self.assertEqual(ports.parse_partners("partner 0 usb_mode=[usb2],usb3,usb4 tbt=no\n"), [])
+
+    def test_at_the_mac_a_display_that_isnt_thunderbolt_is_skipped_after_asking_for_a_real_device(self):
+        # The M1's run: a DP alt-mode monitor with a USB 2 hub never enters Thunderbolt/USB4 mode, so no domain.
+        for again, waits in ((EOF, 1), ("n", 1), (ENTER, 2)):
+            with self.subTest(again=again):
+                rec = with_command(with_command(live_recording(), ports.THUNDERBOLT_LIST), ports.THUNDERBOLT_WAIT)
+                rec = with_command(rec, ports.PARTNERS, stdout=DP_MONITOR)
+                host = run("ports", [ENTER, ENTER, again, "y", "y"], rec=rec)
+
+                links = results(host)["ports.thunderbolt"]
+                self.assertEqual((links["status"], links["classification"]["outcome"]), ("skip", "not-tested"))
+                self.assertIn(ports.NOT_THUNDERBOLT, links["evidence"][-1])
+                self.assertIn(ports.PLUG_REAL_THUNDERBOLT, host.output)
+                self.assertEqual(host.commands_run.count(ports.THUNDERBOLT_WAIT), waits)
+
+    def test_at_the_mac_plugging_in_can_be_skipped(self):
+        for answer_ in ("s", "n", EOF):
             with self.subTest(answer=answer_):
                 rec = with_command(with_command(live_recording(), ports.THUNDERBOLT_LIST), ports.THUNDERBOLT_WAIT)
                 host = run("ports", [ENTER, answer_, "y", "y"], rec=rec)
 
-                links = results(host)["ports.thunderbolt"]
-                self.assertEqual(links["status"], status)
-                if status == "fail":
-                    self.assertEqual(links["classification"]["outcome"], "fails")  # the M2's host is supported
-                    self.assertEqual(links["evidence"][-1], f"no domain came up within {ports.WAIT_SECONDS} s of plugging in a Thunderbolt/USB4 device")
-                else:
-                    self.assertNotIn(ports.THUNDERBOLT_WAIT, host.commands_run)
+                self.assertEqual(results(host)["ports.thunderbolt"]["status"], "skip")
+                self.assertNotIn(ports.THUNDERBOLT_WAIT, host.commands_run)
 
     def test_at_the_mac_with_no_usb_controller_the_human_plugs_a_device_in_and_the_controller_comes_up(self):
         rec = with_command(with_command(live_recording(), ports.USB, stdout=NO_CONTROLLER), ports.USB_WAIT, stdout=STICK_IN)
         host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
 
         messages = [event[1] for event in host.transcript if event[0] == "prompt"]
-        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY + " [Y/n] "])
         self.assertLess(host.output.index(ports.PLUG_USB), host.output.index("Found:"))
         self.assertLess(host.commands_run.index(ports.USB), host.commands_run.index(ports.USB_WAIT))
         usb = results(host)["ports.usb-c"]
@@ -434,7 +517,7 @@ class PortsTest(unittest.TestCase):
             self.assertEqual(timeout_for(argv), WATCH_TIMEOUT_SECONDS)
 
     def test_the_scripts_never_read_a_name_vendor_string_or_serial(self):
-        for script in (ports.USB_SCRIPT, ports.USB_WAIT_SCRIPT, ports.THUNDERBOLT_WAIT_SCRIPT, ports.THUNDERBOLT_SCRIPT, ports.DISPLAYS_SCRIPT, camera.DEVICES_SCRIPT):
+        for script in (ports.USB_SCRIPT, ports.USB_WAIT_SCRIPT, ports.THUNDERBOLT_WAIT_SCRIPT, ports.THUNDERBOLT_SCRIPT, ports.PARTNERS_SCRIPT, ports.DISPLAYS_SCRIPT, camera.DEVICES_SCRIPT):
             for private in ("product", "manufacturer", "serial", "device_name", "vendor_name", "unique_id", "/name", "edid"):
                 self.assertNotIn(private, script)
 

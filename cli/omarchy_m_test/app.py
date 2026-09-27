@@ -270,7 +270,7 @@ def _resume(ui: Ui, saved: State | None, key: dict, sections: Sequence[Section],
     if not left:
         return None
     ui.text(f"An earlier run stopped with {len(saved.done)} section(s) done; left to run: {', '.join(left)}.")
-    if ui.confirm("Resume where it stopped?", default=True):
+    if ui.confirm("Resume where it stopped?", on_eof=True):
         selected = [s for s in saved.selected if s in saved.done or s not in skip]
         return State(selected, dict(saved.done), [], key, dict(saved.shared), list(saved.serials), list(saved.names))
     return None

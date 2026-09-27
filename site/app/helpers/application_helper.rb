@@ -19,6 +19,15 @@ module ApplicationHelper
     tag.span(Catalogue.outcome_words(outcome), class: "badge badge-#{ResultState.for_outcome(outcome)} outcome outcome-#{outcome}")
   end
 
+  # A check's outcome badge; a yes the human gave by pressing Enter reads "works (unconfirmed)", uncoloured.
+  def check_outcome_badge(check)
+    outcome = check.dig("classification", "outcome")
+    return outcome_badge(outcome) unless Report.answered_by_default?(check)
+
+    tag.span("#{Catalogue.outcome_words(outcome)} (unconfirmed)", class: "badge badge-unconfirmed outcome outcome-#{outcome} answered-by-default",
+                                                                  title: "Answered by pressing Enter (the default), not a typed y: not counted in the matrix")
+  end
+
   # One matrix cell: a coloured square once machines agree or a tester confirms, an outlined hint while unconfirmed.
   def matrix_cell(cell, feature_id:, link: nil)
     glyph = ResultState.glyph(cell.display_state)

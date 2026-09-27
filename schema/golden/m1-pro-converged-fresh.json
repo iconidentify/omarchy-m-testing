@@ -4,7 +4,7 @@
     "name": "omarchy-m-test",
     "version": "0.1.7"
   },
-  "consent_version": 4,
+  "consent_version": 5,
   "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
@@ -1017,7 +1017,7 @@
       "status": "skip",
       "evidence": [
         "eglinfo (mesa-utils) isn't installed",
-        "skipped: you chose not to install mesa-utils"
+        "skipped: pacman couldn't install mesa-utils ((1/1) Arming ConditionNeedsUpdate...)"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1588,8 +1588,15 @@
       "status": "skip",
       "evidence": [
         "Hyprland couldn't list the input devices (run from the desktop to see them)",
-        "asked: On the built-in trackpad, try a click, a tap, a two-finger click (right-click), two-finger scrolling both ways and a three-finger swipe between workspaces: did each work smoothly?",
-        "answer: none (counted as skipped)"
+        "Hyprland config: tap-to-click off, three-finger workspace swipe off",
+        "click: asked: On the built-in trackpad, press down to click: did it click?",
+        "click: answer: none (counted as skipped)",
+        "tap-to-click: skipped: off in your config",
+        "two-finger click: asked: Click with two fingers: did it right-click (a menu, where there is one)?",
+        "two-finger click: answer: none (counted as skipped)",
+        "two-finger scroll: asked: Scroll with two fingers, up and down: did it scroll smoothly both ways?",
+        "two-finger scroll: answer: none (counted as skipped)",
+        "three-finger swipe: skipped: off in your config"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1870,7 +1877,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install glmark2 vkmark"
+        "skipped: pacman couldn't install glmark2 vkmark ((1/1) Arming ConditionNeedsUpdate...)"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1888,7 +1895,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install glmark2 vkmark"
+        "skipped: pacman couldn't install glmark2 vkmark ((1/1) Arming ConditionNeedsUpdate...)"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1906,7 +1913,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install glmark2 vkmark"
+        "skipped: pacman couldn't install glmark2 vkmark ((1/1) Arming ConditionNeedsUpdate...)"
       ],
       "classification": {
         "outcome": "not-tested",
@@ -1924,7 +1931,7 @@
       "status": "skip",
       "evidence": [
         "already installed: ffmpeg",
-        "skipped: you chose not to install glmark2 vkmark"
+        "skipped: pacman couldn't install glmark2 vkmark ((1/1) Arming ConditionNeedsUpdate...)"
       ],
       "classification": {
         "outcome": "not-tested",

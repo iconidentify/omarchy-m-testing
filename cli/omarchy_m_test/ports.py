@@ -25,8 +25,13 @@ script).
     Thunderbolt partner is attached (the driver brings the block up once the
     Type-C PHY is in USB4/Thunderbolt mode), so with the bus there and no
     domain it's skipped over SSH or with nobody at the Mac, and at the Mac
-    the human is asked to plug a Thunderbolt/USB4 device in first. A kernel
-    without the bus fails.
+    the human is asked to plug a Thunderbolt/USB4 device in first. If no
+    domain comes up, the USB-C partners say why: a partner in Thunderbolt
+    alt mode (SVID 8087) or USB4 mode is a Thunderbolt/USB4 device, and the
+    check fails; anything else (a DP alt-mode display, a USB hub) never
+    starts the host, so it's skipped ("the device you plugged in isn't
+    Thunderbolt/USB4"), after the human is asked once for a real one. A
+    kernel without the bus fails.
   - External displays (automatic, usb4-displays): the DRM connectors on
     USB-C (connector type USB: card2-USB-2 is Hyprland's USB-2) from
     /sys/class/drm, connected or not, in use and their preferred mode. It
@@ -104,6 +109,19 @@ while [ $i -lt {WAIT_SECONDS} ] && ! linked; do sleep 1; i=$((i + 1)); done
 """ + THUNDERBOLT_SCRIPT
 THUNDERBOLT_WAIT = ["sh", "-c", THUNDERBOLT_WAIT_SCRIPT]
 
+# "partner N usb_mode=MODES tbt=yes|no" per USB-C partner: its USB modes, comma-separated (the active one in
+# brackets, when the kernel has usb_mode), and whether it has Thunderbolt's alternate mode (SVID 8087). No
+# other SVID leaves the script: they are vendor ids.
+PARTNERS_SCRIPT = r"""for p in /sys/class/typec/port*-partner; do
+  [ -d "$p" ] || continue
+  n=${p##*/port}; n=${n%-partner}
+  case $n in ''|*[!0-9]*) continue;; esac
+  modes=$(tr -s ' \n' ',' 2>/dev/null < "$p/usb_mode")
+  if cat "$p"/port*-partner.*/svid 2>/dev/null | grep -qix '8087'; then tbt=yes; else tbt=no; fi
+  echo "partner $n usb_mode=${modes%,} tbt=$tbt"
+done"""
+PARTNERS = ["sh", "-c", PARTNERS_SCRIPT]
+
 # "connector NAME STATUS ENABLED MODE" per DRM connector (MODE: the preferred one, when connected).
 DISPLAYS_SCRIPT = r"""for c in /sys/class/drm/card*-*; do
   [ -r "$c/status" ] || continue
@@ -122,16 +140,22 @@ PLUG_IN = (
     "Plug in what you'd like checked on the USB-C ports: a USB stick or hub, a Thunderbolt or USB4 dock or device, "
     "a display over USB-C (or a USB-C to DisplayPort or HDMI adapter)."
 )
-READY = "Press Enter once they're in (or now, with nothing to plug in): "
+READY = "Ready: they're in, or there's nothing to plug in? [Y/n] "
 PLUG_USB = (
     "No USB device is attached, and on Apple Silicon the USB controller only comes up while one is. "
     "Plug a USB device (a stick, keyboard, mouse or hub) into a USB-C port to check it."
 )
-PLUG_READY = "Press Enter once it's in, or type s to skip: "
+PLUG_READY = "Is it plugged in (n skips this check)?"
 NOTHING_ATTACHED = "no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)"
 PLUG_THUNDERBOLT = (
     "No Thunderbolt or USB4 device is attached, and the Thunderbolt/USB4 host only comes up while one is. "
     "Plug one in to check it: a Thunderbolt or USB4 dock or drive, or another Mac over a Thunderbolt cable."
+)
+NOT_THUNDERBOLT = "the device you plugged in isn't Thunderbolt/USB4"
+PLUG_REAL_THUNDERBOLT = (
+    "No Thunderbolt/USB4 host came up: what's plugged in isn't a Thunderbolt or USB4 device (a USB-C display "
+    "or a USB hub never starts it). To check Thunderbolt/USB4, plug in a Thunderbolt or USB4 dock or drive, "
+    "or another Mac over a Thunderbolt cable."
 )
 NO_THUNDERBOLT_ATTACHED = ("no Thunderbolt/USB4 device attached (the Thunderbolt/USB4 host only comes up "
                            "while a USB4 or Thunderbolt device is plugged in)")
@@ -195,11 +219,7 @@ def _plug_in(ctx: Context, what: str) -> bool:
     """Ask the human at the Mac to plug a device in; False when they skip."""
     ui = ctx.ui or Ui(ctx.host)
     ui.text(what)
-    try:
-        answer = ui.ask(PLUG_READY)
-    except EOFError:
-        return False
-    return answer.strip().lower() not in ("s", "skip")
+    return ui.confirm(PLUG_READY)
 
 
 def _usb_evidence(usb: Usb) -> list[str]:
@@ -281,9 +301,16 @@ def thunderbolt(ctx: Context) -> tuple[dict, Thunderbolt]:
         if not _plug_in(ctx, PLUG_THUNDERBOLT):
             return _automatic(THUNDERBOLT, "skip", [none, f"skipped: {NO_THUNDERBOLT_ATTACHED}; plugging one in was skipped"]), found
         found, prompted = parse_thunderbolt(ctx.host.run(THUNDERBOLT_WAIT).stdout), True
+        if not found.domains and not thunderbolt_partners(ctx) and _plug_in(ctx, PLUG_REAL_THUNDERBOLT):
+            found = parse_thunderbolt(ctx.host.run(THUNDERBOLT_WAIT).stdout)
         if not found.domains:
+            partners = thunderbolt_partners(ctx)
+            if not partners:
+                return _automatic(THUNDERBOLT, "skip", [none, f"skipped: {NOT_THUNDERBOLT} (no USB-C partner in Thunderbolt "
+                                                        "alt mode or USB4 mode), so the Thunderbolt/USB4 host never starts"]), found
             return _automatic(THUNDERBOLT, "fail", [
-                none, f"no domain came up within {WAIT_SECONDS} s of plugging in a Thunderbolt/USB4 device"]), found
+                none, f"a Thunderbolt/USB4 device is attached ({', '.join(partners)})",
+                f"no domain came up within {WAIT_SECONDS} s of plugging in a Thunderbolt/USB4 device"]), found
     evidence = [f"Thunderbolt/USB4 controllers: {len(found.domains)} (domains registered by thunderbolt-apple-nhi)"]
     for fields in found.devices:
         evidence.append("linked: a Thunderbolt or USB4 device" + _link(fields))
@@ -296,6 +323,27 @@ def thunderbolt(ctx: Context) -> tuple[dict, Thunderbolt]:
     if prompted:
         evidence.append("the Thunderbolt/USB4 host came up once a device was plugged in")
     return _automatic(THUNDERBOLT, "pass", evidence), found
+
+
+def parse_partners(stdout: str) -> list[str]:
+    """The USB-C partners that are Thunderbolt/USB4 devices, described ("port 1: Thunderbolt alt mode")."""
+    found = []
+    for line in stdout.splitlines():
+        words = line.split()
+        if len(words) < 2 or words[0] != "partner":
+            continue
+        fields = dict(word.partition("=")[::2] for word in words[2:] if "=" in word)
+        modes = [mode for mode in fields.get("usb_mode", "").split(",") if mode]
+        active = next((mode.strip("[]") for mode in modes if mode.startswith("[")), None)
+        if fields.get("tbt") == "yes":
+            found.append(f"port {words[1]}: Thunderbolt alt mode")
+        elif active == "usb4":
+            found.append(f"port {words[1]}: USB4 mode")
+    return found
+
+
+def thunderbolt_partners(ctx: Context) -> list[str]:
+    return parse_partners(ctx.host.run(PARTNERS).stdout)
 
 
 @dataclass(frozen=True)

@@ -84,10 +84,18 @@ class Report < ApplicationRecord
 
   def tester? = Tester.allowlisted?(tester_login)
 
-  # Result per catalogue feature this report tested, from its checks' outcomes
-  # alone: feature id => ResultState, where a failure is "fails".
+  # A human check answered yes by a bare Enter (the prompt's default), not a
+  # typed y: shown as "works (unconfirmed)", and never counted towards a
+  # feature's state, so it colours no matrix cell and gates nothing.
+  def self.answered_by_default?(check) = check["answered_by_default"] == true
+
+  # The checks that count towards feature states: all but those answered by default.
+  def counted_checks = checks.reject { |check| Report.answered_by_default?(check) }
+
+  # Result per catalogue feature this report tested, from its counted checks'
+  # outcomes alone: feature id => ResultState, where a failure is "fails".
   def tested_states
-    @tested_states ||= checks.group_by { |check| check.dig("classification", "feature") }
+    @tested_states ||= counted_checks.group_by { |check| check.dig("classification", "feature") }
                              .transform_values { |group| ResultState.combine(group.map { |check| check.dig("classification", "outcome") }) }
   end
 
