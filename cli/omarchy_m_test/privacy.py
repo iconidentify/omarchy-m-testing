@@ -19,7 +19,8 @@ Recordings (recording.py) pass the same Scrubber before they are saved.
 The Scrubber works from patterns plus what this machine tells it about
 itself (Scrubber.for_host): its hostname, the accounts under /home and the
 names of saved network connections (not those NetworkManager keeps for virtual
-interfaces such as docker0 or tailscale0), so those are removed wherever they appear.
+interfaces such as lo, docker0 or tailscale0, by type or by name), so those are
+removed wherever they appear.
 """
 
 from __future__ import annotations
@@ -44,6 +45,23 @@ SAVED_CONNECTIONS = ["nmcli", "--get-values", "NAME,TYPE", "connection", "show"]
 # turn every mention of the interface into <ssid>. Wi-Fi, VPN, Ethernet and
 # the rest are learned.
 _INTERFACE_CONNECTION_TYPES = {"loopback", "bridge", "tun", "dummy", "veth", "macvlan", "vxlan", "ip-tunnel"}
+# The same connections by name, as the kernel, Docker, Tailscale and libvirt
+# name their interfaces: kept out of learning when nmcli gives a type that
+# isn't a network a person names (Wi-Fi, VPN, WireGuard), and left alone where
+# NetworkManager activates one on its own interface ("device (lo): Activation:
+# starting connection 'lo'"). Only these exact shapes and contexts, so a
+# Wi-Fi network called "docker-home", or even "docker0", is still scrubbed.
+_INTERFACE_CONNECTION_NAME = re.compile(r"lo|docker\d+|tailscale\d+|veth[0-9a-f]+|br-[0-9a-f]{12}|virbr\d+(?:-nic)?")
+_NAMED_NETWORK_TYPES = {"802-11-wireless", "wifi", "vpn", "wireguard", "wifi-p2p"}
+
+
+def _quoted_network(m: re.Match) -> str:
+    name = m.group(3)
+    line = m.string[m.string.rfind("\n", 0, m.start()) + 1:m.start()]
+    if (m.group(1).lower() == "connection" and _INTERFACE_CONNECTION_NAME.fullmatch(name)
+            and line.endswith(f"device ({name}): Activation: starting ")):
+        return m.group(0)
+    return f"{m.group(1)}{m.group(2)}'<ssid>'"
 
 # Only these fields reach a report. A dict lists allowed keys (True: keep the
 # value as is); a one-item list means "a list of these".
@@ -233,7 +251,8 @@ _rule(rf"(?<![0-9A-Za-z])(?:0x)?{_HEX}{{16,}}(?![0-9A-Za-z])", "<hex>")
 # Wi-Fi network names in NetworkManager, iwd, wpa_supplicant, iw and nmcli output.
 _rule(r"(?i)\b(e?ssid)(\s*[:=]?\s*)(['\"])(.*?)\3", r"\1\2\3<ssid>\3")
 _rule(r"(?i)\b(e?ssid)(\s*[:=]\s*)(?!['\"<])([^,\n]*?[^,\s])(?=,|\s*$|\s+[\w-]+[:=])", r"\1\2<ssid>")
-_rule(r"(?i)\b(connection|access point|network|connected to|to network|for network|known network)(\s+)'([^'\n]*)'", r"\1\2'<ssid>'")
+_rule(r"(?i)\b(connection|access point|network|connected to|to network|for network|known network)(\s+)'([^'\n]*)'",
+      _quoted_network)
 _rule(r"^(\s*ssid )(\S.*)$", r"\1<ssid>")
 _rule(r"(?i)\b((?:connected|connecting|joined|joining) to network\s+|Wireless network\s+)(?!['<])(\S+)", r"\1<ssid>")
 _rule(r"(policy: set )'[^'\n]*'", r"\1'<ssid>'")
@@ -242,6 +261,9 @@ _rule(r"(?m)^(\s*[\w.-]+:wifi:[\w ()-]+:)(?!<ssid>)(.+)$", r"\1<ssid>")
 _rule(r"(?m)^(\s*Connected network\s+)(\S.*?)\s*$", r"\1<ssid>")
 _rule(r"(/var/lib/iwd/)[^/\s]+?(\.(?:psk|open|8021x))\b", r"\1<ssid>\2")
 _rule(r"(system-connections/)[^/\s'\"]+", r"\1<ssid>")
+# nmcli's own list of connections (NAME:TYPE): a Wi-Fi network or VPN is scrubbed there whatever its name,
+# even one too short to learn and remove elsewhere ("lo").
+_rule(r"(?m)^(?!<ssid>:)(?:[^\n:\\]|\\.)+(:(?:802-11-wireless|wifi|vpn|wireguard|wifi-p2p))$", r"<ssid>\1")
 # Hostnames: journal and syslog line prefixes, uname -a, host=... and hostnamed.
 _rule(rf"(?m)^(\s*(?:{_FULL_TIME}|{_SYSLOG_TIME}|{_ISO_TIME})\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+[^\s\[\]:]+(?:\[\d+\])?:)", r"\1<hostname>\3")
 _rule(r"(?m)^(\s*\[\s*\d+\.\d+\]\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+(?:kernel|[^\s\[\]:]+\[\d+\]):)", r"\1<hostname>\3")
@@ -380,8 +402,10 @@ def saved_connection_names(stdout: str) -> list[str]:
         if not colon:
             name, kind = line, ""
         name = re.sub(r"\\(.)", r"\1", name)
-        if kind.strip() not in _INTERFACE_CONNECTION_TYPES:
-            names.append(name)
+        kind = kind.strip()
+        if kind in _INTERFACE_CONNECTION_TYPES or (kind not in _NAMED_NETWORK_TYPES and _INTERFACE_CONNECTION_NAME.fullmatch(name)):
+            continue
+        names.append(name)
     return names
 
 

@@ -5,7 +5,7 @@
     "version": "0.1.6"
   },
   "consent_version": 4,
-  "catalogue_version": 10,
+  "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -1503,7 +1503,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "supported"
+          "aurora": "unknown"
         }
       }
     },
@@ -1658,15 +1658,16 @@
     {
       "id": "ports.usb-c",
       "kind": "automatic",
-      "status": "fail",
+      "status": "skip",
       "evidence": [
         "USB-C ports: 4 (USB-PD controller, /sys/class/typec), 1 with something plugged in",
         "port 1: plugged in (data device, power sink)",
         "no USB controller (no root hub in /sys/bus/usb)",
-        "USB devices: none"
+        "USB devices: none",
+        "skipped: no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)"
       ],
       "classification": {
-        "outcome": "fails",
+        "outcome": "not-tested",
         "feature": "usb3-tb-ports",
         "layer": "asahi",
         "expected": {
@@ -1678,17 +1679,18 @@
     {
       "id": "ports.thunderbolt",
       "kind": "automatic",
-      "status": "fail",
+      "status": "skip",
       "evidence": [
-        "no Thunderbolt/USB4 controller: no domain registered (thunderbolt-apple-acio, thunderbolt-apple-nhi)"
+        "no Thunderbolt/USB4 domain registered (thunderbolt-apple-nhi)",
+        "skipped: no Thunderbolt/USB4 device attached (the Thunderbolt/USB4 host only comes up while a USB4 or Thunderbolt device is plugged in)"
       ],
       "classification": {
-        "outcome": "fails",
+        "outcome": "not-tested",
         "feature": "thunderbolt",
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "supported"
+          "aurora": "unknown"
         }
       }
     },

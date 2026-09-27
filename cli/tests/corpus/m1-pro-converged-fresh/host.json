@@ -915,7 +915,8 @@
       "stdout": {
         "corpus": "wifi.log"
       },
-      "stderr": ""
+      "stderr": "",
+      "note": "Three lines restored by hand: the run's scrubber turned the connection names of lo, docker0 and tailscale0 (NetworkManager names them after the interface, as nmcli's connection list shows) into <ssid>, and pseudonymizing then gave them the Wi-Fi network's name and UUID. They carry their own names again, with made-up UUIDs."
     },
     {
       "argv": [

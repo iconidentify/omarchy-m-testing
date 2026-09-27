@@ -5,7 +5,7 @@
     "version": "0.1.6"
   },
   "consent_version": 4,
-  "catalogue_version": 10,
+  "catalogue_version": 11,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -1416,7 +1416,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "supported"
+          "aurora": "unknown"
         }
       }
     },
@@ -1596,7 +1596,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "supported"
+          "aurora": "unknown"
         }
       }
     },
