@@ -35,7 +35,7 @@ KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [Y/n/s] "
 # Omarchy's default config (as the recordings hold it): tap-to-click and the three-finger swipe are off, so not asked.
 ASKED_GESTURES = (inputs.CLICK, inputs.TWO_FINGER_CLICK, inputs.SCROLL)
 GESTURE_PROMPTS = [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in ASKED_GESTURES]
-ALL_ON = "tap-global 1\ntap-device apple-spi-trackpad true\ngesture 3 workspace\nfiles 2\n"
+ALL_ON = "tap-global 1\ntap-device apple-spi-trackpad true\ngesture 3 horizontal workspace\nfiles 2\n"
 DEVICES_PROMPT = ports.DEVICES_QUESTION + " [Y/n/s] "
 PICTURE_PROMPT = ports.PICTURE_QUESTION + " [Y/n/s] "
 PREVIEW = camera.preview_argv("video0")
@@ -248,14 +248,17 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertIs(check(host, "input.trackpad-gestures")[human.DEFAULTED], True)
 
     def test_the_gesture_script_reads_only_on_off_facts_for_built_in_trackpads(self):
-        self.assertIn("apple-(spi|mtp|internal)-", inputs.GESTURE_CONFIG_SCRIPT)
+        self.assertIn("case $name in apple-spi-*|apple-mtp-*|apple-internal-*) ;; *) continue;; esac", inputs.GESTURE_CONFIG_SCRIPT)
         config = inputs.parse_gesture_config("tap-global 1\ntap-device apple-mtp-multi-touch false\ntap-device apple-spi-trackpad true\nfiles 1\n",
                                              ["apple-mtp-multi-touch"])
         self.assertEqual((config.tap, config.swipe), (False, False))
 
     def test_a_later_statement_turns_a_gesture_back_off_and_a_live_option_wins(self):
-        later_off = "tap-global unavailable\ngesture 3 workspace\ngesture 3 unset\nfiles 2\n"
+        later_off = "tap-global unavailable\ngesture 3 horizontal workspace\ngesture 3 horizontal unset\nfiles 2\n"
         self.assertIs(inputs.parse_gesture_config(later_off).swipe, False)
+        # Hyprland's unset matches a gesture's direction: unsetting another one leaves the workspace swipe on.
+        other_unset = "gesture 3 horizontal workspace\ngesture 3 vertical other\ngesture 3 vertical unset\nfiles 1\n"
+        self.assertIs(inputs.parse_gesture_config(other_unset).swipe, True)
         self.assertIs(inputs.parse_gesture_config("workspace-swipe 1\nworkspace-swipe 0\nfiles 1\n").swipe, False)
         self.assertIs(inputs.parse_gesture_config("swipe-live 1\nworkspace-swipe 0\nfiles 1\n").swipe, True)
         self.assertIs(inputs.parse_gesture_config("tap-global 0\nfiles 0\n").tap, False)

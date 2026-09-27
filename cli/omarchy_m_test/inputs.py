@@ -61,14 +61,16 @@ GESTURE_QUESTIONS = {
 }
 OFF_IN_CONFIG = "off in your config"
 # Run as `sh -c SCRIPT`: "tap-global N|unavailable" (Hyprland's live input:touchpad:tap-to-click), "swipe-live N"
-# (older Hyprland's live gestures:workspace_swipe, when it has it), "files N" (config files read), then from each
-# config file in order, uncommented statements only (a file is flattened and split at each hl. call, device
-# block and gesture/workspace_swipe line, so multi-line blocks count): "tap-device NAME true|false" for a built-in
-# Apple trackpad, "gesture 3 workspace" or "gesture 3 unset" for a three-finger gesture, and "workspace-swipe 1|0".
+# (older Hyprland's live gestures:workspace_swipe, when it has it), then from each config file in order,
+# uncommented statements only (a file is flattened and split at each hl. call, device block and
+# gesture/workspace_swipe line, so multi-line blocks count): "tap-device NAME true|false" for a built-in Apple
+# trackpad, "gesture 3 DIRECTION ACTION" for a three-finger gesture (ACTION workspace, unset or other: never a
+# command), "workspace-swipe 1|0"; last "files N", the config files read.
 GESTURE_CONFIG_SCRIPT = r"""tap=$(hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | sed -n 's/^int: *//p')
 echo "tap-global ${tap:-unavailable}"
 swipe=$(hyprctl getoption gestures:workspace_swipe 2>/dev/null | sed -n 's/^int: *//p')
 [ -n "$swipe" ] && echo "swipe-live $swipe"
+field() { printf '%s\n' "$1" | sed -nE "s/.*$2=\"?([A-Za-z0-9_-]+)\"?([,;}].*)?$/\1/p"; }
 n=0
 for f in "$HOME"/.local/share/omarchy/default/hypr/*.lua "$HOME"/.local/share/omarchy/default/hypr/*.conf \
          "$HOME"/.config/hypr/*.lua "$HOME"/.config/hypr/*.conf; do
@@ -76,14 +78,29 @@ for f in "$HOME"/.local/share/omarchy/default/hypr/*.lua "$HOME"/.local/share/om
   n=$((n + 1))
   { sed -e 's/--.*$//' -e 's/#.*$//' "$f" | tr -d ' \t' | tr '\n' ';'; echo; } |
     sed -e 's/^/;/' -e 's/hl\./\nhl./g' -e 's/device{/\ndevice{/g' -e 's/;gesture=/\ngesture=/g' -e 's/;workspace_swipe=/\nworkspace_swipe=/g' |
-    sed -nE \
-      -e 's/^(hl\.device\(\{|device\{)[^}]*name="?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)"?[,;][^}]*tap[_-]to[_-]click=(true|false|1|0).*/tap-device \2 \4/p' \
-      -e 's/^(hl\.device\(\{|device\{)[^}]*tap[_-]to[_-]click=(true|false|1|0)[,;][^}]*name="?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)"?[,;}].*/tap-device \3 \2/p' \
-      -e '/^hl\.gesture\(\{[^}]*fingers=3[,}]/{/action="workspace"/s/.*/gesture 3 workspace/p;}' \
-      -e 's/^gesture=3,[^,;]*,workspace([,;].*)?$/gesture 3 workspace/p' \
-      -e 's/^gesture=3,[^,;]*,unset([,;].*)?$/gesture 3 unset/p' \
-      -e 's/^workspace_swipe=(true|1|yes|on)(;.*)?$/workspace-swipe 1/p' \
-      -e 's/^workspace_swipe=(false|0|no|off)(;.*)?$/workspace-swipe 0/p'
+    while IFS= read -r c; do
+      case $c in
+        'hl.device({'*|'device{'*)
+          c=${c%%\}*}
+          name=$(field "$c" name); tap=$(field "$c" 'tap[_-]to[_-]click')
+          case $name in apple-spi-*|apple-mtp-*|apple-internal-*) ;; *) continue;; esac
+          case $tap in true|false|1|0) echo "tap-device $name $tap";; esac;;
+        'hl.gesture({'*)
+          c=${c%%\}*}
+          [ "$(field "$c" fingers)" = 3 ] || continue
+          action=$(printf '%s\n' "$c" | sed -nE 's/.*action="([a-z]+)"([,;].*)?$/\1/p')
+          case $action in workspace|unset) ;; *) action=other;; esac
+          echo "gesture 3 $(field "$c" direction) $action";;
+        'gesture=3,'*)
+          c=${c#gesture=}; c=${c%%;*}
+          old=$IFS; IFS=,; set -- $c; IFS=$old
+          dir=$2; shift 2; action=other
+          for a in "$@"; do case $a in *:*) ;; workspace|unset) action=$a; break;; *) break;; esac; done
+          echo "gesture 3 $dir $action";;
+        'workspace_swipe='*)
+          case ${c#workspace_swipe=} in true*|1*|yes*|on*) echo "workspace-swipe 1";; *) echo "workspace-swipe 0";; esac;;
+      esac
+    done
 done
 echo "files $n"
 """
@@ -135,11 +152,13 @@ class GestureConfig:
 
 
 def parse_gesture_config(stdout: str, trackpads: Sequence[str] = ()) -> GestureConfig:
-    """What GESTURE_CONFIG_SCRIPT found: a later statement overrides an earlier one, a live option the config."""
+    """What GESTURE_CONFIG_SCRIPT found: a later statement overrides an earlier one (a three-finger gesture per
+    direction, as Hyprland's unset matches it), a live option the config."""
     tap: bool | None = None
     tap_global: bool | None = None
-    swipe: bool | None = None
+    old_swipe: bool | None = None
     swipe_live: bool | None = None
+    actions: dict[str, str] = {}  # three-finger gestures: direction => its last action
     files = 0
     for line in stdout.splitlines():
         words = line.split()
@@ -148,19 +167,23 @@ def parse_gesture_config(stdout: str, trackpads: Sequence[str] = ()) -> GestureC
         elif len(words) == 2 and words[0] == "swipe-live" and words[1] in ("0", "1"):
             swipe_live = words[1] == "1"
         elif len(words) == 2 and words[0] == "workspace-swipe":
-            swipe = words[1] == "1"
+            old_swipe = words[1] == "1"
         elif len(words) == 3 and words[0] == "tap-device" and (not trackpads or words[1] in trackpads):
             tap = words[2] in ("true", "1")
-        elif len(words) == 3 and words[:2] == ["gesture", "3"]:
-            swipe = words[2] == "workspace"
+        elif len(words) == 4 and words[:2] == ["gesture", "3"]:
+            if words[3] == "unset":
+                actions.pop(words[2], None)
+            else:
+                actions[words[2]] = words[3]
         elif len(words) == 2 and words[0] == "files" and words[1].isdigit():
             files = int(words[1])
     if tap is None:
         tap = tap_global
+    swipe: bool | None = "workspace" in actions.values() or bool(old_swipe)
     if swipe_live is not None:
         swipe = swipe_live
-    elif swipe is None and files:
-        swipe = False  # the config was read and turns no three-finger workspace swipe on
+    elif not swipe and not files:
+        swipe = None  # no config read: can't tell
     return GestureConfig(tap, swipe)
 
 
