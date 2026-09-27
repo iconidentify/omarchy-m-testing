@@ -1,0 +1,24 @@
+INFO  platform         Apple MacBook Pro (14-inch, M1 Pro, 2021) (apple,j314s apple,t6000 apple,arm-platform)
+PASS  kernel           running 7.1.12-2-11-ARCH from linux-aurora 7.1.12.aurora2-11
+INFO  packages         m1n1-aurora 1.6.1.aurora1-3, uboot-asahi 2026.07.asahi2-4, limine 12.9.0-1, omarchy 4.0.0.alpha.quattro.r1790484851.g0052582276d9-1.362956774610001, omarchy-settings 4.0.0.alpha.quattro.r1790484851.g0052582276d9-1.362956774610001, omarchy-mac 0.1.0-5.362956774610001, omarchy-mac-boot 20260926-1.362956774610001
+PASS  repos            omarchy asahi-alarm core extra alarm aur
+PASS  kernel-repo      linux-aurora updates from [omarchy]
+PASS  boot-check       running linux-aurora 7.1.12-2-11-ARCH; installed boot files match
+INFO  boot-loader      Limine, ESP /boot/efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/EFI/Linux/omarchy_linux-aurora.efi
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/limine.conf
+INFO  boot-file        d4c2a8f1e6b3907a5c1d  /boot/efi/m1n1/boot.bin
+PASS  units            no failed system or user units
+PASS  vendor-firmware  omarchy-vendor-firmware.service finished in this boot
+PASS  speakersafetyd   speakersafetyd is active
+PASS  displays         1 active: eDP-1 3024x1964@120
+PASS  sound-cards      AppleJ314, AppleJ314HPAI
+PASS  default-sink     MacBook Pro J314 Speakers (audio_effect.j314-convolver)
+PASS  wifi             wlan0 is connected
+PASS  wifi-backend     NetworkManager uses iwd
+TIMEOUT bluetoothctl -
+FAIL  bluetooth        no Bluetooth controller
+PASS  snapshots        /.snapshots is a btrfs subvolume holding 2 snapshots
+PASS  migrations       no pending migrations
+INFO  coredumps        none this boot
+14 passed, 1 failed, 0 warnings, 0 skipped

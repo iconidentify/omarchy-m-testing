@@ -1,0 +1,152 @@
+Sep 27 17:20:04.884835 omarchy-m1-pro systemd[1]: Starting Network Manager...
+Sep 27 17:20:04.908214 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9081] NetworkManager (version 1.58.1-1) is starting... (boot:3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:20:04.908223 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9082] Read config: /etc/NetworkManager/NetworkManager.conf, /usr/lib/NetworkManager/conf.d/{20-connectivity.conf,20-omarchy-mac-wifi.conf}, /etc/NetworkManager/conf.d/omarchy-wifi-powersave.conf
+Sep 27 17:20:04.914502 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9144] manager[0xaaaba043d620]: monitoring kernel firmware directory '/lib/firmware'.
+Sep 27 17:20:04.949210 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9492] hostname: omarchy-m1-pro: using hostnamed
+Sep 27 17:20:04.949220 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9492] hostname: omarchy-m1-pro hostname changed from (none) to "omarchy"
+Sep 27 17:20:04.949365 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9493] dns-mgr: init: dns=systemd-resolved rc-manager=symlink, plugin=systemd-resolved
+Sep 27 17:20:04.951094 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9510] rfkill1: found Wi-Fi radio killswitch (at /sys/devices/platform/soc/590000000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/ieee80211/phy0/rfkill1) (driver brcmfmac)
+Sep 27 17:20:04.951360 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9513] manager[0xaaaba043d620]: rfkill: Wi-Fi hardware radio set enabled
+Sep 27 17:20:04.951369 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9513] manager[0xaaaba043d620]: rfkill: WWAN hardware radio set enabled
+Sep 27 17:20:04.954280 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9542] Loaded device plugin: NMAtmManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-adsl.so)
+Sep 27 17:20:04.956764 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9567] Loaded device plugin: NMBluezManager (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-bluetooth.so)
+Sep 27 17:20:04.957655 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9576] Loaded device plugin: NMOvsFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-ovs.so)
+Sep 27 17:20:04.965817 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9658] Loaded device plugin: NMTeamFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-team.so)
+Sep 27 17:20:04.967191 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9671] Loaded device plugin: NMWifiFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wifi.so)
+Sep 27 17:20:04.967656 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9676] Loaded device plugin: NMWwanFactory (/usr/lib/NetworkManager/1.58.1-1/libnm-device-plugin-wwan.so)
+Sep 27 17:20:04.967834 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9678] manager: rfkill: Wi-Fi enabled by radio killswitch; enabled by state file
+Sep 27 17:20:04.967862 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9678] manager: rfkill: WWAN enabled by radio killswitch; enabled by state file
+Sep 27 17:20:04.967880 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9678] manager: Networking is enabled by state file
+Sep 27 17:20:04.967969 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9679] settings: Loaded settings plugin: keyfile (internal)
+Sep 27 17:20:04.968545 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9685] dhcp: init: Using DHCP client 'internal'
+Sep 27 17:20:04.968691 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9686] manager: (lo): new Loopback device (/org/freedesktop/NetworkManager/Devices/1)
+Sep 27 17:20:04.969852 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9698] device (lo): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:20:04.970057 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9700] device (lo): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:20:04.970488 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9704] device (lo): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:20:04.972401 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9723] manager: (wlan0): new 802.11 Wi-Fi device (/org/freedesktop/NetworkManager/Devices/2)
+Sep 27 17:20:04.972662 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9726] device (wlan0): state change: unmanaged -> unavailable (reason 'managed', managed-type: 'external')
+Sep 27 17:20:04.985528 omarchy-m1-pro systemd[1]: Starting Wireless service...
+Sep 27 17:20:04.986651 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9866] bus-manager: acquired D-Bus service "org.freedesktop.NetworkManager"
+Sep 27 17:20:04.986667 omarchy-m1-pro systemd[1]: Started Network Manager.
+Sep 27 17:20:04.987117 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9871] ovsdb: disconnected from ovsdb
+Sep 27 17:20:04.987280 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9872] device (lo): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.987380 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9873] device (lo): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.987472 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9874] device (lo): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.987694 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9876] device (lo): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.990155 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9901] device (lo): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.990217 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9902] device (lo): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 17:20:04.990407 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9904] device (lo): Activation: successful, device activated.
+Sep 27 17:20:04.990681 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9906] manager: startup complete
+Sep 27 17:20:05.011131 omarchy-m1-pro iwd[6394]: Wireless daemon version 3.12
+Sep 27 17:20:05.011289 omarchy-m1-pro iwd[6394]: Loaded configuration from /usr/lib/omarchy-mac/iwd/main.conf
+Sep 27 17:20:05.011395 omarchy-m1-pro systemd[1]: Started Wireless service.
+Sep 27 17:20:05.011436 omarchy-m1-pro iwd[6394]: station: Network configuration is disabled.
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]: Wiphy: 0, Name: phy0
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]:         Permanent Address: 7a:3e:51:c0:9d:24
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]:         2.4GHz Band:
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]:                 Bitrates (non-HT):
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]:                          1.0 Mbps
+Sep 27 17:20:05.011734 omarchy-m1-pro iwd[6394]:                          2.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                          5.5 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         11.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                          6.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                          9.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         12.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         18.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         24.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         36.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         48.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         54.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HT Capabilities:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         HT20
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Short GI for 20Mhz
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Short GI for 40Mhz
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HT RX MCS indexes:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         0-15
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HE Capabilities
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Interface Types: station
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:         5GHz Band:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 Bitrates (non-HT):
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                          6.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                          9.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         12.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         18.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         24.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         36.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         48.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         54.0 Mbps
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HT Capabilities:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         HT40
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Short GI for 20Mhz
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Short GI for 40Mhz
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HT RX MCS indexes:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         0-15
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 VHT Capabilities:
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Short GI for 80Mhz
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max RX MCS: 0-9 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max TX MCS: 0-9 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                 HE Capabilities
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Interface Types: station
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE RX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE TX <= 80MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE RX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                         Max HE TX <= 160MHz MCS: 0-11 for NSS: 2
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:         Ciphers: BIP-CMAC-256 BIP-GMAC-256 BIP-GMAC-128 CCMP-256
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                  GCMP-256 GCMP-128 BIP-CMAC-128 CCMP-128
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:                  TKIP
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:         Supported iftypes: ad-hoc station ap p2p-client p2p-go p2p-device
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]:         Driver Flags: DefaultInterface
+Sep 27 17:20:05.011783 omarchy-m1-pro iwd[6394]: Wiphy phy0 will only use the default interface
+Sep 27 17:20:05.155505 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493605.1554] audit: op="connections-reload" pid=6530 uid=0 result="success"
+Sep 27 17:20:05.520067 omarchy-m1-pro iwd[6394]: event: state, old: disconnected, new: autoconnect_quick
+Sep 27 17:20:05.521037 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493605.5210] device (wlan0): new IWD device state is disconnected
+Sep 27 17:20:05.521069 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493605.5210] device (wlan0): state change: unavailable -> disconnected (reason 'supplicant-available', managed-type: 'full')
+Sep 27 17:23:04.117986 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493784.1179] hostname: omarchy-m1-pro hostname changed from "omarchy" to "omarchy-m1-pro"
+Sep 27 17:24:40.917352 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9173] device (wlan0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:24:40.917459 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9174] audit: op="connection-add-activate" uuid="3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0" name="Wattlebird-5G" pid=37999 uid=1000 result="success"
+Sep 27 17:24:40.920513 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9204] device (wlan0): state change: disconnected -> prepare (reason 'none', managed-type: 'full')
+Sep 27 17:24:40.920823 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9208] manager: NetworkManager state is now CONNECTING
+Sep 27 17:24:40.921112 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9210] device (wlan0): state change: prepare -> config (reason 'none', managed-type: 'full')
+Sep 27 17:24:40.933532 omarchy-m1-pro iwd[6394]: event: connect-info, ssid: Wattlebird-5G, bss: 7a:3e:51:c0:9d:24, signal: -46, load: 0/255
+Sep 27 17:24:40.933532 omarchy-m1-pro iwd[6394]: event: state, old: autoconnect_full, new: connecting
+Sep 27 17:24:40.934495 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493880.9344] device (wlan0): new IWD device state is connecting
+Sep 27 17:24:41.323969 omarchy-m1-pro iwd[6394]: event: state, old: connecting, new: connected
+Sep 27 17:24:41.325577 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.3255] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful.  Connected to 'Wattlebird-5G'.
+Sep 27 17:24:41.326090 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.3260] device (wlan0): state change: config -> ip-config (reason 'none', managed-type: 'full')
+Sep 27 17:24:41.334982 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.3349] dhcp4 (wlan0): activation: beginning transaction (timeout in 45 seconds)
+Sep 27 17:24:41.336234 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.3362] device (wlan0): new IWD device state is connected
+Sep 27 17:24:41.453675 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.4536] dhcp4 (wlan0): state changed new lease, address=10.61.23.147, acd pending
+Sep 27 17:24:41.571862 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.5718] dhcp4 (wlan0): state changed new lease, address=10.61.23.1
+Sep 27 17:24:41.581313 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.5812] policy: set 'Wattlebird-5G' (wlan0) as default for IPv4 routing and DNS
+Sep 27 17:24:41.594660 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.5946] device (wlan0): state change: ip-config -> ip-check (reason 'none', managed-type: 'full')
+Sep 27 17:24:41.618432 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.6184] device (wlan0): state change: ip-check -> secondaries (reason 'none', managed-type: 'full')
+Sep 27 17:24:41.618916 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.6189] device (wlan0): state change: secondaries -> activated (reason 'none', managed-type: 'full')
+Sep 27 17:24:41.619274 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.6192] manager: NetworkManager state is now CONNECTED_SITE
+Sep 27 17:24:41.619425 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493881.6194] device (wlan0): Activation: successful, device activated.
+Sep 27 17:24:42.269925 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493882.2698] manager: NetworkManager state is now CONNECTED_GLOBAL
+Sep 27 17:25:35.556015 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.5559] manager: (tailscale0): new Tun device (/org/freedesktop/NetworkManager/Devices/3)
+Sep 27 17:25:35.557836 omarchy-m1-pro iwd[6394]: udev interface=tailscale0 ifindex=3
+Sep 27 17:25:35.705546 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7055] manager: (docker0): new Bridge device (/org/freedesktop/NetworkManager/Devices/4)
+Sep 27 17:25:35.706763 omarchy-m1-pro iwd[6394]: udev interface=docker0 ifindex=4
+Sep 27 17:25:35.725812 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7257] device (docker0): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:25:35.726138 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7261] device (docker0): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:25:35.726617 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7266] device (docker0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:25:35.727996 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7279] device (docker0): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.728253 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7282] device (docker0): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.728389 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7283] device (docker0): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.728676 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7286] device (docker0): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.754628 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7546] device (docker0): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.754797 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7547] device (docker0): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 17:25:35.755107 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7550] device (docker0): Activation: successful, device activated.
+Sep 27 17:25:38.169163 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1691] device (tailscale0): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:25:38.173478 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1734] device (tailscale0): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
+Sep 27 17:25:38.178751 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1786] device (tailscale0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:25:38.181511 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1814] device (tailscale0): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.182823 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1816] device (tailscale0): state change: prepare -> config (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.183101 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1830] device (tailscale0): state change: config -> ip-config (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.184781 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1847] device (tailscale0): state change: ip-config -> ip-check (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.187011 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1869] device (tailscale0): state change: ip-check -> secondaries (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.187240 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1872] device (tailscale0): state change: secondaries -> activated (reason 'none', managed-type: 'external')
+Sep 27 17:25:38.187927 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1879] device (tailscale0): Activation: successful, device activated.

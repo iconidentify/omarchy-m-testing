@@ -130,6 +130,7 @@ CORPUS_HOLDS = {
     "m1-pro-mx-mac": ("IPv4 address", "IPv6 address"),
     "m1-pro-converged": ("MAC address", "IPv4 address", "UUID", "long hex identifier", "home path"),
     "m2-max-converged": ("MAC address", "IPv4 address", "UUID", "long hex identifier", "home path"),
+    "m1-pro-converged-fresh": ("MAC address", "IPv4 address", "UUID", "long hex identifier", "home path"),
 }
 
 
