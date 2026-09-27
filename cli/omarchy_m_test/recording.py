@@ -20,7 +20,8 @@ A recording is a JSON file (recording_version 1):
   }
 
 A bundled script's run (Host.run_bundled) is a command whose argv starts with
-"bundled:<name>", e.g. ["bundled:mac-check"].
+"bundled:<name>", e.g. ["bundled:mac-check"]. A command the host stopped at its
+time limit carries "timed_out": the limit in seconds (CommandResult.timed_out).
 
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A binary file the recorder could not scrub is kept only as its size and
@@ -165,7 +166,7 @@ class RecordedHost:
         self.commands_run.append(argv)
         for entry in self.recording.get("commands", []):
             if entry["argv"] == argv:
-                return CommandResult(entry["returncode"], entry.get("stdout", ""), entry.get("stderr", ""))
+                return CommandResult(entry["returncode"], entry.get("stdout", ""), entry.get("stderr", ""), entry.get("timed_out", 0))
         raise RecordingMiss(f"command not in recording: {argv}")
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
@@ -305,16 +306,21 @@ class RecordingHost:
     def run(self, argv: Sequence[str]) -> CommandResult:
         argv = list(argv)
         result = self.inner.run(argv)
-        if not any(entry["argv"] == argv for entry in self.commands):
-            self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
+        self._keep(argv, result)
         return result
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
         argv = bundled_argv(name, args)
         result = self.inner.run_bundled(name, args)
-        if not any(entry["argv"] == argv for entry in self.commands):
-            self.commands.append({"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
+        self._keep(argv, result)
         return result
+
+    def _keep(self, argv: list[str], result: CommandResult) -> None:
+        if not any(entry["argv"] == argv for entry in self.commands):
+            entry = {"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}
+            if result.timed_out:
+                entry["timed_out"] = result.timed_out
+            self.commands.append(entry)
 
     def read_file(self, path: str) -> bytes:
         try:
@@ -401,6 +407,7 @@ class RecordingHost:
                     "returncode": entry["returncode"],
                     "stdout": scrubber.scrub(entry["stdout"]),
                     "stderr": scrubber.scrub(entry["stderr"]),
+                    **({"timed_out": entry["timed_out"]} if entry.get("timed_out") else {}),
                 }
                 for entry in self.commands
             ],

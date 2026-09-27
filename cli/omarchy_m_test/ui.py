@@ -14,6 +14,11 @@ Everything at a terminal is wrapped to one text column, the logo's width
 on under the start of its own text (a hanging indent after a list number, a
 "- " or a result's PASS/FAIL/SKIP), never back at the terminal's left edge.
 
+Progress: each section starts with where the run is, "Section 4/13 · Audio",
+and a bar across every section the run has, each weighted by how many checks
+it reports (done, this one, still to come). At a terminal the same line stays
+under the live feed while the section runs; off one it's plain ASCII.
+
 Human checks (human.py) ask with Ui.human: yes, no or skip, plus an optional
 note. Off a terminal, or without gum, that is one line ("n the left speaker
 crackles"); with gum, a choice then a note. In the middle of a section every
@@ -25,10 +30,11 @@ from __future__ import annotations
 import re
 import textwrap
 from collections import deque
+from dataclasses import dataclass
 from typing import Sequence
 
 from . import TOOL_NAME, TOOL_VERSION
-from .host import CommandResult, Host, Terminal
+from .host import Bounded, CommandResult, Host, Terminal
 from .theme import Theme, load, with_padding
 
 ESC = "\033["
@@ -44,6 +50,7 @@ FEED_MAX_ROWS = 20
 FEED_MIN_ROWS = 3
 FEED_ROWS_PER_LINE = 3  # a long command or output line wraps to at most this many rows
 RULE = "─"
+PROGRESS_BAR_WIDTH = 30
 # What a wrapped line hangs under: a list number, a dash or arrow, or a result's status word.
 _HANG = re.compile(r"^(\s*(?:\d+\.\s+(?:skip\s+|\s{4}\s)?|[-*→]\s+|(?:PASS|FAIL|SKIP|INFO)\s+)?)")
 
@@ -67,6 +74,46 @@ HUMAN_HINT = (
 HUMAN_TRIES = 3
 NOTE_PROMPT = "Note (optional, Enter to go on): "
 _CONTROL = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|[\x00-\x08\x0b-\x1f\x7f]")
+
+
+@dataclass(frozen=True)
+class Progress:
+    """Where a run is: section `number` of `count`, and the checks before it, in it and in all (the bar's weights)."""
+
+    number: int
+    count: int
+    title: str
+    done: int
+    current: int
+    total: int
+
+    @property
+    def label(self) -> str:
+        return f"Section {self.number}/{self.count} · {self.title}"
+
+    @property
+    def percent(self) -> int:
+        return round(100 * self.done / self.total) if self.total else 0
+
+    def cells(self, width: int) -> tuple[int, int, int]:
+        """The bar's done, current and still-to-come cells, `width` in all (this section always shows)."""
+        if not self.total:
+            return 0, 0, width
+        done = min(width, round(width * self.done / self.total))
+        current = min(width - done, max(1, round(width * (self.done + self.current) / self.total) - done))
+        return done, current, width - done - current
+
+    def plain(self) -> str:
+        done, current, rest = self.cells(PROGRESS_BAR_WIDTH)
+        return f"{self.label} [{'#' * done}{'=' * current}{'-' * rest}] {self.percent}%"
+
+
+def progress_of(sections: Sequence, number: int, done_ids: set[str]) -> Progress:
+    """The progress at the start of sections[number - 1], `sections` being the ones this run runs, in order."""
+    weights = [max(1, len(section.check_ids)) for section in sections]
+    current = sections[number - 1]
+    done = sum(weight for section, weight in zip(sections, weights) if section.id in done_ids and section is not current)
+    return Progress(number, len(sections), current.title, done, weights[number - 1], sum(weights))
 
 
 class Interrupted(KeyboardInterrupt):
@@ -141,8 +188,10 @@ class Ui:
     def ask(self, message: str) -> str:
         return self.host.prompt(message)
 
-    def section(self, title: str, description: str) -> "Host":
+    def section(self, title: str, description: str, progress: Progress | None = None) -> "Host":
         """Start a section; returns the host its checks run through."""
+        if progress:
+            self.host.show(progress.plain())
         return self.host
 
     def end_section(self) -> None:
@@ -253,13 +302,23 @@ class StyledUi(Ui):
     def _io(self) -> Host:
         return self.feed if self.feed else self.host
 
-    def section(self, title: str, description: str) -> "Host":
-        self.host.show("\n" + self.pad + BOLD + self.paint("accent", title))
+    def section(self, title: str, description: str, progress: Progress | None = None) -> "Host":
+        if progress:
+            self.host.show("\n" + self.pad + self.progress_line(progress))
+        self.host.show(("" if progress else "\n") + self.pad + BOLD + self.paint("accent", title))
         self.host.show(self.pad + self.paint("accent", RULE * min(self.column, max(len(title), 40))))
         self.host.show(self.paint("dark_foreground", self._padded(description)) + "\n")
-        rows = max(FEED_MIN_ROWS, min(FEED_MAX_ROWS, self.terminal.height - 16))
-        self.feed = Feed(self.host, self, rows)
+        rows = max(FEED_MIN_ROWS, min(FEED_MAX_ROWS, self.terminal.height - 16 - (1 if progress else 0)))
+        self.feed = Feed(self.host, self, rows, progress)
         return self.feed
+
+    def progress_line(self, progress: Progress, width: int | None = None) -> str:
+        """The bar in the theme's colours (done, this section, to come), then "Section 4/13 · Audio  31%"."""
+        text = f"  {progress.label}  {progress.percent}%"
+        cells = max(10, min(PROGRESS_BAR_WIDTH * 2, (width or self.column) - len(text)))
+        done, current, rest = progress.cells(cells)
+        bar = self.paint("green", "━" * done) + self.paint("accent", "━" * current) + self.paint("dark_foreground", "─" * rest)
+        return bar + self.paint("foreground", f"  {progress.label}") + self.paint("dark_foreground", f"  {progress.percent}%")
 
     def end_section(self) -> None:
         if self.feed:
@@ -328,11 +387,15 @@ class StyledUi(Ui):
 
 def unlogged(host: Host) -> Host:
     """The host under a section's feed: what runs through it isn't shown (a poll repeated every second)."""
+    if isinstance(host, Bounded):
+        return Bounded(unlogged(host.inner))
     return host.inner if isinstance(host, Feed) else host
 
 
 def note(host: Host, text: str) -> None:
     """A line of the section's feed that no command printed (nothing off a terminal)."""
+    if isinstance(host, Bounded):
+        host = host.inner
     if isinstance(host, Feed):
         host.note(text)
 
@@ -345,14 +408,15 @@ class Feed:
     below.
     """
 
-    def __init__(self, inner: Host, ui: StyledUi, rows: int):
+    def __init__(self, inner: Host, ui: StyledUi, rows: int, progress: Progress | None = None):
         self.inner = inner
         self.ui = ui
-        self.rows = rows
+        self.progress = progress
         self.lines: deque[str] = deque(maxlen=rows)
+        self.rows = rows + (1 if progress else 0)  # the lines, then the progress line under them
         self.drawn = False
         self.width = max(20, ui.terminal.width - ui.left - len(FEED_PREFIX) - 1)
-        self.inner.show(HIDE_CURSOR + ("\n" * (rows - 1)))
+        self.inner.show(HIDE_CURSOR + ("\n" * (self.rows - 1)))
         self.drawn = True
         self._draw(up=True)
 
@@ -423,11 +487,14 @@ class Feed:
             self._draw(up=True)
 
     def _draw(self, up: bool) -> None:
-        shown = list(self.lines) + [""] * (self.rows - len(self.lines))
+        feed_rows = self.rows - (1 if self.progress else 0)
+        shown = list(self.lines) + [""] * (feed_rows - len(self.lines))
         frame = "\n".join(
             CLEAR_LINE + (self.ui.paint("dark_foreground", f"{self.ui.pad}{FEED_PREFIX}{line}") if line else "")
             for line in shown
         )
+        if self.progress:
+            frame += "\n" + CLEAR_LINE + self.ui.pad + self.ui.progress_line(self.progress, self.ui.terminal.width - self.ui.left - 1)
         self.inner.show((f"{ESC}{self.rows}A\r" if up else "") + frame)
 
     def _lift(self) -> None:

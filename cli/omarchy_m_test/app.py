@@ -17,13 +17,13 @@ from . import TOOL_NAME, TOOL_VERSION, presence, privacy, report, signing, syste
 from .catalogue import CatalogueError
 from .consent import ACCEPT_PROMPT, DISCLAIMER, accepted
 from .explain import explain, line, load_catalogue
-from .host import Host, NetworkError
+from .host import Bounded, Host, NetworkError
 from .machine import NotAppleSilicon, identify
 from .recording import RecordingHost
 from .safety import Guarded
 from .sections import APPLE
 from .session import PROGRESS, Changes, Checkpoint, Context, Section, State, run_key, skipped
-from .ui import Ui
+from .ui import Ui, progress_of
 
 DEFAULT_SITE = "https://omarchy-m-testing.org"
 DEFAULT_OUTPUT = "omarchy-m-test-report.json"
@@ -195,13 +195,14 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     ui.text(f"Checking {machine.model} ({found.describe()})...")
     ui.text("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
     shared = state.shared
+    running = [section for section in sections if section.id in state.selected and section.id not in blocked]
     try:
-        for section in sections:
-            if section.id not in state.selected or section.id in state.done or section.id in blocked:
+        for number, section in enumerate(running, 1):
+            if section.id in state.done:
                 continue
-            section_host = ui.section(section.title, section.description)
+            section_host = ui.section(section.title, section.description, progress_of(running, number, set(state.done)))
             try:
-                results = section.run(Context(section_host, machine, catalogue, changes, found, shared, cache, ui))
+                results = section.run(Context(Bounded(section_host), machine, catalogue, changes, found, shared, cache, ui))
             finally:
                 ui.end_section()
                 changes.restore()

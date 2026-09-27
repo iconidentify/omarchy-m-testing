@@ -33,14 +33,36 @@ Operations:
                              sign), creating it silently on first use: 0600, in a 0700 directory.
                              Returns the public key and the signature; SigningError if it can't.
                              Only the public key and signatures ever leave the machine.
+
+Nothing a command runs may hold up the run (a pager, a password prompt, a
+PipeWire or D-Bus call to a wedged server). Every command RealHost runs:
+  - gets a hard time limit: COMMAND_TIMEOUT_SECONDS, or its program's in
+    PROGRAM_TIMEOUT_SECONDS, a bundled script's in BUNDLED_TIMEOUTS; when it
+    runs out the whole process group is killed and the result says so
+    (CommandResult.timed_out, exit 124). A section's host (Bounded) turns that
+    into TimedOut, which the section reports as skipped, never as a failure;
+  - reads stdin from /dev/null, runs in its own process group (so a child
+    that opens the terminal to ask for a password is stopped, never shown,
+    and a Ctrl-C reaches only this tool), and has PAGER/SYSTEMD_PAGER=cat;
+  - runs sudo non-interactively: `sudo` without -n gets it (the one password
+    prompt is `sudo -v`, on the terminal through run_tty).
+Bundled scripts also run with a PATH shim (SHIMMED_PROGRAMS): each IPC tool
+they call (pactl, wpctl, pw-dump, journalctl, systemctl...) gets its own time
+limit, and a timed-out one prints "TIMEOUT <program> <seconds>" into the
+script's output (SHIM_MARKER), so the result it was for is skipped
+(scripts.py) while the script's other checks still report.
 """
 
 from __future__ import annotations
 
+import atexit
 import http.client
 import os
+import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -51,6 +73,16 @@ from typing import Protocol, Sequence
 from . import bundled
 
 COMMAND_TIMEOUT_SECONDS = 60
+# IPC to a session server (PipeWire, PulseAudio, D-Bus, systemd): an answer takes well under a second, or never comes.
+IPC_TIMEOUT_SECONDS = 15
+PROGRAM_TIMEOUT_SECONDS = {
+    **{name: IPC_TIMEOUT_SECONDS for name in (
+        "pactl", "pacat", "parec", "paplay", "pw-dump", "pw-cli", "pw-cat", "pw-play", "pw-record", "pw-metadata", "wpctl",
+        "busctl", "gdbus", "dbus-send", "bluetoothctl", "iwctl", "hyprctl", "brightnessctl",
+    )},
+    "systemctl": 20,
+    "nmcli": 20,
+}
 # A script that starts with LONG_RUNNING waits on the human (the lid, the charger): it gets WATCH_TIMEOUT_SECONDS.
 # The clock the timeout counts stops while the Mac is asleep (CLOCK_MONOTONIC), so a suspend doesn't use it up.
 LONG_RUNNING = ": omarchy-m-test waits on the human\n"
@@ -58,6 +90,14 @@ WATCH_TIMEOUT_SECONDS = 1800
 # Bundled check scripts run many commands (mac-check's boot check rebuilds and
 # compares the m1n1 image), so they get longer.
 BUNDLED_TIMEOUT_SECONDS = 300
+# The read-only omarchy-mac checks take seconds; a wedged audio or display server must not hold the run for minutes.
+BUNDLED_TIMEOUTS = {"apple-audio-check": 90, "apple-display-check": 90}
+# Inside a bundled script, the programs that get their own limit (the shim), and how long.
+SHIMMED_PROGRAMS = {**PROGRAM_TIMEOUT_SECONDS, "journalctl": 60, "pacman": 60}
+SHIM_MARKER = "TIMEOUT"  # "TIMEOUT pactl 15": a line of a bundled script's output the shim added
+SHIM_FD = 9  # where the shim writes its marker: the script's own stdout, even where a check discards it
+# Everything a command runs sees these: no pager, no prompt for a password or a Git credential.
+QUIET_ENV = {"PAGER": "cat", "SYSTEMD_PAGER": "cat", "GIT_PAGER": "cat", "SYSTEMD_PAGERSECURE": "1", "GIT_TERMINAL_PROMPT": "0"}
 # Installing and removing temporary test packages downloads them first.
 PACKAGE_TIMEOUT_SECONDS = 1800
 HTTP_TIMEOUT_SECONDS = 30
@@ -76,6 +116,36 @@ class CommandResult:
     returncode: int
     stdout: str
     stderr: str
+    timed_out: int = 0  # the time limit, in seconds, the host stopped it at (0: it ended by itself)
+
+
+class TimedOut(Exception):
+    """A command in a section ran out of time (Bounded): the section reports its checks as skipped."""
+
+    def __init__(self, argv: Sequence[str], seconds: int):
+        super().__init__(f"{' '.join(argv)} timed out after {seconds}s")
+        self.argv = list(argv)
+        self.seconds = seconds
+
+
+class Bounded:
+    """A section's host: a command the host stopped at its time limit raises TimedOut.
+
+    A bundled script's timeout doesn't raise: scripts.py keeps what it printed
+    and skips the rest. Everything else passes straight through.
+    """
+
+    def __init__(self, inner: "Host"):
+        self.inner = inner
+
+    def run(self, argv: Sequence[str]) -> CommandResult:
+        result = self.inner.run(argv)
+        if result.timed_out:
+            raise TimedOut(argv, result.timed_out)
+        return result
+
+    def __getattr__(self, name: str):
+        return getattr(self.inner, name)
 
 
 @dataclass(frozen=True)
@@ -144,40 +214,115 @@ def _changes_packages(argv: list[str]) -> bool:
     return command[:1] == ["pacman"] and any(a.startswith(("-S", "-R")) and not a.startswith("-Sp") for a in command[1:2])
 
 
+def timeout_for(argv: Sequence[str]) -> int:
+    """How long RealHost.run gives a command."""
+    argv = list(argv)
+    if _changes_packages(argv):
+        return PACKAGE_TIMEOUT_SECONDS
+    if argv[:2] == ["sh", "-c"] and len(argv) > 2 and argv[2].startswith(LONG_RUNNING):
+        return WATCH_TIMEOUT_SECONDS
+    command = argv[2:] if argv[:2] == ["sudo", "-n"] else argv
+    return PROGRAM_TIMEOUT_SECONDS.get(os.path.basename(command[0]) if command else "", COMMAND_TIMEOUT_SECONDS)
+
+
+def non_interactive(argv: Sequence[str]) -> list[str]:
+    """sudo never asks for a password: `sudo ...` becomes `sudo -n ...`."""
+    argv = list(argv)
+    if argv[:1] == ["sudo"] and "-n" not in argv[1:2] and "--non-interactive" not in argv[1:2]:
+        return ["sudo", "-n", *argv[1:]]
+    return argv
+
+
+# A shimmed program: the real one (found on the PATH the script started with), under its own time limit.
+# timeout(1) runs it in a process group of its own and kills all of it; if the script is killed first,
+# timeout still ends its program within the limit.
+_SHIM = """#!/bin/sh
+PATH=$OMARCHY_M_TEST_PATH timeout -k 2 {seconds} {name} "$@"
+status=$?
+if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+  echo "{marker} {name} {seconds}" >&{fd} 2>/dev/null
+fi
+exit "$status"
+"""
+_SUDO_SHIM = """#!/bin/sh
+PATH=$OMARCHY_M_TEST_PATH exec sudo -n "$@"
+"""
+# The script runs with the shim's descriptor open on its stdout.
+_WITH_MARKER_FD = f'exec bash "$0" "$@" {SHIM_FD}>&1'
+
+
 class RealHost:
     """The host backed by this machine, its terminal and the network."""
 
+    def __init__(self) -> None:
+        self._shims: str | None = None
+
     def run(self, argv: Sequence[str]) -> CommandResult:
-        argv = list(argv)
-        if _changes_packages(argv):
-            return self._run(argv, PACKAGE_TIMEOUT_SECONDS)
-        if argv[:2] == ["sh", "-c"] and len(argv) > 2 and argv[2].startswith(LONG_RUNNING):
-            return self._run(argv, WATCH_TIMEOUT_SECONDS)
-        return self._run(argv, COMMAND_TIMEOUT_SECONDS)
+        argv = non_interactive(argv)
+        return self._run(argv, timeout_for(argv))
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
         try:
             path = bundled.script_path(name)
         except FileNotFoundError as missing:
             return CommandResult(127, "", f"{missing}\n")
-        return self._run(["bash", path, *args], BUNDLED_TIMEOUT_SECONDS, name)
+        timeout = BUNDLED_TIMEOUTS.get(name, BUNDLED_TIMEOUT_SECONDS)
+        env = {"OMARCHY_M_TEST_PATH": os.environ.get("PATH", os.defpath)}
+        shims = self._shim_dir()
+        if shims:
+            env["PATH"] = shims + os.pathsep + env["OMARCHY_M_TEST_PATH"]
+        return self._run(["bash", "-c", _WITH_MARKER_FD, path, *args], timeout, name, env)
 
-    def _run(self, argv: list[str], timeout: int, name: str | None = None) -> CommandResult:
+    def _shim_dir(self) -> str | None:
+        """The shim directory, made once per run and removed at exit; None if it can't be made (no shim then)."""
+        if self._shims is None:
+            if shutil.which("timeout") is None:  # coreutils' timeout(1) does the limiting; without it, no shim
+                return None
+            try:
+                directory = tempfile.mkdtemp(prefix="omarchy-m-test-shims.")
+                atexit.register(shutil.rmtree, directory, True)
+                for program, seconds in SHIMMED_PROGRAMS.items():
+                    self._write_shim(directory, program, _SHIM.format(seconds=seconds, name=program, marker=SHIM_MARKER, fd=SHIM_FD))
+                self._write_shim(directory, "sudo", _SUDO_SHIM)
+            except OSError:
+                return None
+            self._shims = directory
+        return self._shims
+
+    @staticmethod
+    def _write_shim(directory: str, program: str, text: str) -> None:
+        path = os.path.join(directory, program)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.chmod(path, 0o755)
+
+    def _run(self, argv: list[str], timeout: int, name: str | None = None, env: dict[str, str] | None = None) -> CommandResult:
         name = name or argv[0]
         try:
-            done = subprocess.run(
+            process = subprocess.Popen(
                 argv,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=timeout,
                 stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env={**os.environ, **QUIET_ENV, **(env or {})},
+                process_group=0,
             )
         except FileNotFoundError:
             return CommandResult(127, "", f"{name}: command not found\n")
-        except subprocess.TimeoutExpired:
-            return CommandResult(124, "", f"{name}: timed out after {timeout}s\n")
-        return CommandResult(done.returncode, done.stdout, done.stderr)
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as expired:
+            _kill_group(process)
+            stdout, stderr = _leftovers(process, expired)
+            text = _text(stderr)
+            if text and not text.endswith("\n"):
+                text += "\n"
+            return CommandResult(124, _text(stdout), text + f"{name}: timed out after {timeout}s\n", timed_out=timeout)
+        except BaseException:  # Ctrl-C: the command's group doesn't get the terminal's signal, so end it here
+            _kill_group(process)
+            process.wait()
+            raise
+        return CommandResult(process.returncode, _text(stdout), _text(stderr))
 
     def read_file(self, path: str) -> bytes:
         with open(path, "rb") as f:
@@ -304,3 +449,34 @@ class RealHost:
             return HttpResponse(error.code, "")
         except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error
+
+
+def _kill_group(process: subprocess.Popen) -> None:
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except OSError:
+        pass  # it ended already
+    try:
+        process.kill()
+    except OSError:
+        pass
+
+
+def _leftovers(process: subprocess.Popen, expired: subprocess.TimeoutExpired) -> tuple[bytes, bytes]:
+    """What a killed command printed. A daemon it started in a session of its own may keep the pipes open: don't wait for it."""
+    try:
+        return process.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        for pipe in (process.stdout, process.stderr):
+            try:
+                pipe.close()  # type: ignore[union-attr]
+            except OSError:
+                pass
+        process.wait()
+        return expired.stdout or b"", expired.stderr or b""
+
+
+def _text(data: bytes | str | None) -> str:
+    if data is None:
+        return ""
+    return data if isinstance(data, str) else data.decode("utf-8", "replace")

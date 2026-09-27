@@ -17,6 +17,7 @@ from .system import System
 
 MAC_CHECK_RESULTS = "mac_check"
 DISPLAY_CHECK_RESULTS = "display_check"
+AUDIO_CHECK_RESULTS = "audio_check"
 BOOT_LOADER = "boot_loader"
 INVENTORY = "inventory"
 
@@ -124,7 +125,9 @@ def display(ctx: Context) -> list[dict]:
 
 def audio(ctx: Context) -> list[dict]:
     """The automatic audio checks (which play nothing) first, then the microphone, the tone and the jack."""
-    return [*mac_check(ctx), *scripts.audio_check(ctx.host, _system(ctx)), *live_audio.run(ctx)]
+    if AUDIO_CHECK_RESULTS not in ctx.cache:  # kept if a live check times out (sections.timed_out)
+        ctx.cache[AUDIO_CHECK_RESULTS] = scripts.audio_check(ctx.host, _system(ctx))
+    return [*mac_check(ctx), *ctx.cache[AUDIO_CHECK_RESULTS], *live_audio.run(ctx)]
 
 
 def network(ctx: Context) -> list[dict]:

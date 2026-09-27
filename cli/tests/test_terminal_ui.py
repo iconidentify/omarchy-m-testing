@@ -15,7 +15,8 @@ import unittest
 from omarchy_m_test.app import main
 from omarchy_m_test.host import CommandResult, HttpResponse
 from omarchy_m_test.recording import ENDED, INTERRUPT
-from omarchy_m_test.ui import BOLD, RESET, RULE
+from omarchy_m_test.sections import APPLE
+from omarchy_m_test.ui import BOLD, FEED_PREFIX, RESET, RULE, Progress, progress_of
 from tests.desktop import (
     ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, UNANSWERED_AT_A_TERMINAL, GREEN_RGB, GREY_RGB, LOGO, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
@@ -43,6 +44,21 @@ def ttys(mac) -> list[tuple[list[str], object]]:
     return [(event[1], event[2]) for event in mac.transcript if event[0] == "tty"]
 
 
+class ProgressTest(unittest.TestCase):
+    def test_the_bar_is_weighted_by_each_sections_checks_and_shows_the_current_one(self):
+        running = list(APPLE)
+        weights = [len(section.check_ids) for section in running]
+        audio = next(n for n, section in enumerate(running, 1) if section.id == "audio")
+        found = progress_of(running, audio, {section.id for section in running[:audio - 1]})
+        self.assertEqual((found.number, found.count, found.title), (audio, len(running), "Audio"))
+        self.assertEqual((found.done, found.current, found.total), (sum(weights[:audio - 1]), weights[audio - 1], sum(weights)))
+        self.assertEqual(found.label, f"Section {audio}/{len(running)} · Audio")
+        self.assertEqual(sum(found.cells(30)), 30)
+        self.assertEqual(Progress(13, 13, "Benchmarks", 99, 1, 100).cells(30), (30, 0, 0))  # never wider than the bar
+        self.assertEqual(Progress(1, 2, "Boot", 0, 1, 100).cells(30), (0, 1, 29))
+        self.assertEqual(Progress(2, 4, "CPU", 5, 5, 20).plain(), "Section 2/4 · CPU [########=======---------------] 25%")
+
+
 class OmarchyLookTest(unittest.TestCase):
     def run_omarchy(self, env=None, answers=(ENTER, ALL_KEPT, *GUM_UNANSWERED, UPLOAD_NO), **kwargs):
         mac = host(omarchy_desktop(recording(), env), answers=answers, terminal=TERMINAL, **kwargs)
@@ -66,10 +82,29 @@ class OmarchyLookTest(unittest.TestCase):
         left = " " * ((TERMINAL.width - max(len(line) for line in LOGO.splitlines())) // 2)
         shows = [e[1] for e in mac.transcript if e[0] == "show"]
         title = next(i for i, text in enumerate(shows) if text.endswith("Boot" + RESET))
-        self.assertEqual(shows[title], "\n" + left + BOLD + "\033[" + ACCENT_RGB + "mBoot" + RESET)
+        self.assertEqual(shows[title], left + BOLD + "\033[" + ACCENT_RGB + "mBoot" + RESET)
         self.assertEqual(shows[title + 1], left + "\033[" + ACCENT_RGB + "m" + RULE * 40 + RESET)
         # No FIGlet font: omarchy-ascii is never run, so nothing but the terminal's own font draws a title.
         self.assertFalse(any(argv[:1] == ["omarchy-ascii"] for argv in mac.commands_run))
+
+    def test_each_section_starts_with_where_the_run_is_and_the_bar_stays_under_the_live_feed(self):
+        status, mac = self.run_omarchy()
+
+        self.assertEqual(status, 0)
+        plain = [re.sub(r"\033\[[0-9;?]*[A-Za-z]", "", e[1]) for e in mac.transcript if e[0] == "show"]
+        starts = [text.strip() for text in plain if "\r" not in text and re.match(r"^\n *[━─]+  Section \d+/", text)]
+        found = [re.search(r"Section (\d+)/(\d+) · (\w+)", text).groups() for text in starts]
+        count = len(found)  # the sections this run runs (Sleep isn't, without a seat): numbered 1 to count, in order
+        self.assertGreater(count, 10)
+        titles = [title for _, _, title in found]
+        self.assertEqual(found, [(str(n), str(count), title) for n, title in enumerate(titles, 1)])
+        self.assertEqual(titles, [section.title for section in APPLE if section.title in titles])
+        self.assertTrue(starts[0].endswith("  0%"), starts[0])
+        # The live feed redraws with the same line as its last row, in the theme's colours.
+        frames = [e[1] for e in mac.transcript if e[0] == "show" and FEED_PREFIX in e[1] and "Section 1/" in e[1]]
+        self.assertTrue(frames)
+        self.assertTrue(re.sub(r"\033\[[0-9;?]*[A-Za-z]", "", frames[-1]).rstrip().endswith(f"Section 1/{count} · Boot  0%"))
+        self.assertIn(ACCENT_RGB, frames[-1].rsplit("\n", 1)[-1])
 
     def test_long_lines_wrap_inside_the_text_column_under_their_own_start(self):
         status, mac = self.run_omarchy()
@@ -186,6 +221,10 @@ class FallbackLookTest(unittest.TestCase):
 
         self.assertNotIn("\033", mac.output)
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
+        # Where the run is, as plain ASCII at each section's start.
+        starts = [e[1] for e in mac.transcript if e[0] == "show" and e[1].startswith("Section ")]
+        self.assertEqual(starts[0], f"Section 1/{len(starts)} · Boot [{'=' * 6}{'-' * 24}] 0%")
+        self.assertTrue(all(re.fullmatch(r"Section \d+/\d+ · [A-Za-z ]+ \[[#=-]{30}\] \d+%", text) for text in starts), starts)
 
 
 class LiveFeedTest(unittest.TestCase):
