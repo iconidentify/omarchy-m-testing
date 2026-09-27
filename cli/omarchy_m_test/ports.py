@@ -10,7 +10,13 @@ script).
     (tipd) registered in /sys/class/typec, whether something is plugged into
     each and the data and power roles, and the USB controllers (root hubs)
     and devices in /sys/bus/usb with their speed and class. It passes with
-    at least one USB-C port and one USB controller.
+    at least one USB-C port and one USB controller. On Apple Silicon the
+    USB controllers (dwc3's xHCI host) only exist while something is plugged
+    in (the USB-C role switch registers the host on attach and removes it on
+    unplug), so no controller with USB-C ports up is normal on an empty Mac:
+    over SSH, or with nobody at the Mac, it's skipped ("no USB device
+    attached"); at the Mac the human is asked to plug a USB device in (or
+    skip), and it passes once the controller comes up, and fails if it doesn't.
   - Thunderbolt/USB4 (automatic, thunderbolt): the domains Aurora's
     thunderbolt-apple-nhi registered in /sys/bus/thunderbolt, and the
     devices and other computers linked to them (generation, speed, lanes,
@@ -32,6 +38,7 @@ import re
 from dataclasses import dataclass, field
 
 from . import human, presence
+from .host import LONG_RUNNING
 from .session import Context
 from .ui import Ui
 
@@ -60,6 +67,12 @@ for d in /sys/bus/usb/devices/*; do
   echo "usb $kind speed=$(cat "$d/speed") class=$class"
 done"""
 USB = ["sh", "-c", USB_SCRIPT]
+# After the human plugs a USB device in: wait up to USB_WAIT_SECONDS for a root hub, then list as USB_SCRIPT does.
+USB_WAIT_SECONDS = 20
+USB_WAIT_SCRIPT = LONG_RUNNING + f"""i=0
+while [ $i -lt {USB_WAIT_SECONDS} ] && ! ls -d /sys/bus/usb/devices/usb* >/dev/null 2>&1; do sleep 1; i=$((i + 1)); done
+""" + USB_SCRIPT
+USB_WAIT = ["sh", "-c", USB_WAIT_SCRIPT]
 
 # "nobus" without the Thunderbolt bus, else "thunderbolt NAME DEVTYPE key=value..." per entry.
 THUNDERBOLT_SCRIPT = r"""if [ ! -d /sys/bus/thunderbolt/devices ]; then echo nobus; exit 0; fi
@@ -92,6 +105,12 @@ PLUG_IN = (
     "a display over USB-C (or a USB-C to DisplayPort or HDMI adapter)."
 )
 READY = "Press Enter once they're in (or now, with nothing to plug in): "
+PLUG_USB = (
+    "No USB device is attached, and on Apple Silicon the USB controller only comes up while one is. "
+    "Plug a USB device (a stick, keyboard, mouse or hub) into a USB-C port to check it."
+)
+PLUG_USB_READY = "Press Enter once it's in, or type s to skip: "
+NOTHING_ATTACHED = "no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)"
 DEVICES_QUESTION = (
     "Is everything you plugged into the USB-C ports listed above, and does it work "
     "(a stick's files open, a hub's or dock's ports work, a charger charges)?"
@@ -133,6 +152,33 @@ def _speed(mbps: str) -> str:
 
 def usb_c(ctx: Context) -> tuple[dict, Usb]:
     usb = parse_usb(ctx.host.run(USB).stdout)
+    prompted = False
+    if usb.ports and not usb.roots:
+        if presence.of(ctx.host, ctx.cache).blocks() is not None:
+            return _automatic(USB_C, "skip", [*_usb_evidence(usb), f"skipped: {NOTHING_ATTACHED}"]), usb
+        if not _plug_usb(ctx):
+            return _automatic(USB_C, "skip", [*_usb_evidence(usb), f"skipped: {NOTHING_ATTACHED}; plugging one in was skipped"]), usb
+        usb, prompted = parse_usb(ctx.host.run(USB_WAIT).stdout), True
+    evidence = _usb_evidence(usb)
+    if prompted:
+        evidence.append("the USB controller came up once a USB device was plugged in" if usb.roots
+                        else f"no USB controller came up within {USB_WAIT_SECONDS} s of plugging in a USB device")
+    status = "pass" if usb.ports and usb.roots else "fail"
+    return _automatic(USB_C, status, evidence), usb
+
+
+def _plug_usb(ctx: Context) -> bool:
+    """Ask the human at the Mac to plug a USB device in; False when they skip."""
+    ui = ctx.ui or Ui(ctx.host)
+    ui.text(PLUG_USB)
+    try:
+        answer = ui.ask(PLUG_USB_READY)
+    except EOFError:
+        return False
+    return answer.strip().lower() not in ("s", "skip")
+
+
+def _usb_evidence(usb: Usb) -> list[str]:
     evidence = []
     if usb.ports:
         plugged = [port for port in usb.ports if port[1]]
@@ -152,8 +198,7 @@ def usb_c(ctx: Context) -> tuple[dict, Usb]:
             f"{USB_CLASSES.get(cls, f'class {cls}' if cls else 'unknown class')} at {_speed(speed)}" for speed, cls in usb.devices))
     else:
         evidence.append("USB devices: none")
-    status = "pass" if usb.ports and usb.roots else "fail"
-    return _automatic(USB_C, status, evidence), usb
+    return evidence
 
 
 @dataclass

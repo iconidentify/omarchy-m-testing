@@ -22,7 +22,7 @@ Sep 27 17:20:04.968545 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.
 Sep 27 17:20:04.968691 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9686] manager: (lo): new Loopback device (/org/freedesktop/NetworkManager/Devices/1)
 Sep 27 17:20:04.969852 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9698] device (lo): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
 Sep 27 17:20:04.970057 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9700] device (lo): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
-Sep 27 17:20:04.970488 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9704] device (lo): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:20:04.970488 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9704] device (lo): Activation: starting connection 'lo' (8e4b1f27-3c6a-4d90-b5e2-71f0a9c3d648)
 Sep 27 17:20:04.972401 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9723] manager: (wlan0): new 802.11 Wi-Fi device (/org/freedesktop/NetworkManager/Devices/2)
 Sep 27 17:20:04.972662 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493604.9726] device (wlan0): state change: unmanaged -> unavailable (reason 'managed', managed-type: 'external')
 Sep 27 17:20:04.985528 omarchy-m1-pro systemd[1]: Starting Wireless service...
@@ -132,7 +132,7 @@ Sep 27 17:25:35.705546 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.
 Sep 27 17:25:35.706763 omarchy-m1-pro iwd[6394]: udev interface=docker0 ifindex=4
 Sep 27 17:25:35.725812 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7257] device (docker0): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
 Sep 27 17:25:35.726138 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7261] device (docker0): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
-Sep 27 17:25:35.726617 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7266] device (docker0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:25:35.726617 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7266] device (docker0): Activation: starting connection 'docker0' (b2d7e9a4-6f13-4c85-9a0e-3e51c7f2b904)
 Sep 27 17:25:35.727996 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7279] device (docker0): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
 Sep 27 17:25:35.728253 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7282] device (docker0): state change: prepare -> config (reason 'none', managed-type: 'external')
 Sep 27 17:25:35.728389 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7283] device (docker0): state change: config -> ip-config (reason 'none', managed-type: 'external')
@@ -142,7 +142,7 @@ Sep 27 17:25:35.754797 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.
 Sep 27 17:25:35.755107 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493935.7550] device (docker0): Activation: successful, device activated.
 Sep 27 17:25:38.169163 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1691] device (tailscale0): state change: unmanaged -> unavailable (reason 'connection-assumed', managed-type: 'external')
 Sep 27 17:25:38.173478 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1734] device (tailscale0): state change: unavailable -> disconnected (reason 'connection-assumed', managed-type: 'external')
-Sep 27 17:25:38.178751 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1786] device (tailscale0): Activation: starting connection 'Wattlebird-5G' (3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0)
+Sep 27 17:25:38.178751 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1786] device (tailscale0): Activation: starting connection 'tailscale0' (f5a0c3e8-1d42-4b7f-8e96-2c4d7b1a9e53)
 Sep 27 17:25:38.181511 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1814] device (tailscale0): state change: disconnected -> prepare (reason 'none', managed-type: 'external')
 Sep 27 17:25:38.182823 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1816] device (tailscale0): state change: prepare -> config (reason 'none', managed-type: 'external')
 Sep 27 17:25:38.183101 omarchy-m1-pro NetworkManager[6387]: <info>  [1790493938.1830] device (tailscale0): state change: config -> ip-config (reason 'none', managed-type: 'external')

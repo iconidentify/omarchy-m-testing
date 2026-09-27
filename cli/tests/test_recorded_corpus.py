@@ -246,6 +246,31 @@ class RecordModeTest(unittest.TestCase):
 
         self.assertEqual(names, ["Bellbird", "Kestrel:Home VPN", "Wired connection 1"])
 
+    def test_virtual_interface_connections_are_left_out_by_name_too_and_look_alike_networks_arent(self):
+        names = privacy.saved_connection_names(
+            "lo:generic\ndocker1:generic\ntailscale0:generic\nveth3f2a9c1:802-3-ethernet\nbr-4d1e0a7b9c23:generic\n"
+            "virbr0-nic:generic\ndocker-home:802-11-wireless\nlo-fi:802-11-wireless\n"
+        )
+
+        self.assertEqual(names, ["docker-home", "lo-fi"])
+
+    def test_networkmanager_activating_lo_docker0_and_tailscale0_keeps_their_names(self):
+        # The fresh M1's journal: NetworkManager activates its loopback, bridge and tunnel connections by name.
+        m1 = json.loads(read(seeded_recording_path("m1-pro-converged-fresh")))
+        outputs = {tuple(entry["argv"]): entry["stdout"] for entry in m1["commands"]}
+        journal = next(stdout for argv, stdout in outputs.items() if argv[0] == "journalctl" and "--unit=NetworkManager.service" in argv)
+
+        for interface in ("lo", "docker0", "tailscale0"):
+            self.assertIn(f"device ({interface}): Activation: starting connection '{interface}' (<uuid>)", journal)
+        self.assertIn("device (wlan0): Activation: starting connection '<ssid>' (<uuid>)", journal)
+        self.assertIn("Connected to '<ssid>'", journal)
+        self.assertNotIn("Wattlebird", json.dumps(m1))
+
+    def test_a_network_named_like_an_interface_but_not_shaped_like_one_is_still_scrubbed(self):
+        scrubber = privacy.Scrubber()
+        self.assertEqual(scrubber.scrub("Activation: starting connection 'docker-home' (x)"), "Activation: starting connection '<ssid>' (x)")
+        self.assertEqual(scrubber.scrub("Activation: starting connection 'br-0123456789ab' (x)"), "Activation: starting connection 'br-0123456789ab' (x)")
+
 
 class ZeroLeakTest(unittest.TestCase):
     """Real M1/M2 kernel logs and device-tree dumps go in; no identifier comes out."""
