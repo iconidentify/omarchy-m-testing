@@ -93,8 +93,8 @@ BUNDLED_TIMEOUT_SECONDS = 300
 # The read-only omarchy-mac checks take seconds; a wedged audio or display server must not hold the run for minutes.
 BUNDLED_TIMEOUTS = {"apple-audio-check": 90, "apple-display-check": 90}
 # Inside a bundled script, the programs that get their own limit (the shim), and how long.
-SHIMMED_PROGRAMS = {**PROGRAM_TIMEOUT_SECONDS, "journalctl": 60, "pacman": 60}
-SHIM_MARKER = "TIMEOUT"  # "TIMEOUT pactl 15": a line of a bundled script's output the shim added
+SHIMMED_PROGRAMS = {**PROGRAM_TIMEOUT_SECONDS, "journalctl": 30, "pacman": 60}
+SHIM_MARKER = "TIMEOUT"  # "TIMEOUT pactl 15" (or "TIMEOUT pactl -": the script's own timeout stopped it): a line the shim added
 SHIM_FD = 9  # where the shim writes its marker: the script's own stdout, even where a check discards it
 # Everything a command runs sees these: no pager, no prompt for a password or a Git credential.
 QUIET_ENV = {"PAGER": "cat", "SYSTEMD_PAGER": "cat", "GIT_PAGER": "cat", "SYSTEMD_PAGERSECURE": "1", "GIT_TERMINAL_PROMPT": "0"}
@@ -234,21 +234,45 @@ def non_interactive(argv: Sequence[str]) -> list[str]:
 
 
 # A shimmed program: the real one (found on the PATH the script started with), under its own time limit.
-# timeout(1) runs it in a process group of its own and kills all of it; if the script is killed first,
+# timeout(1) runs it in a process group of its own and kills all of it. It runs in the background so the
+# shim can still say it timed out when the script's own `timeout 10 ...` stops the shim first (TERM);
+# stdin is handed on explicitly (a background job's would be /dev/null). If the script is killed outright,
 # timeout still ends its program within the limit.
 _SHIM = """#!/bin/sh
-PATH=$OMARCHY_M_TEST_PATH timeout -k 2 {seconds} {name} "$@"
+exec 7<&0
+PATH=$OMARCHY_M_TEST_PATH timeout -k 2 {seconds} {command} "$@" <&7 7<&- &
+child=$!
+trap 'kill -TERM "$child" 2>/dev/null; echo "{marker} {name} -" 2>/dev/null >&{fd}; exit 124' TERM INT
+wait "$child"
 status=$?
 if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
-  echo "{marker} {name} {seconds}" >&{fd} 2>/dev/null
+  echo "{marker} {name} {seconds}" 2>/dev/null >&{fd}
 fi
 exit "$status"
 """
-_SUDO_SHIM = """#!/bin/sh
-PATH=$OMARCHY_M_TEST_PATH exec sudo -n "$@"
-"""
-# The script runs with the shim's descriptor open on its stdout.
+
 _WITH_MARKER_FD = f'exec bash "$0" "$@" {SHIM_FD}>&1'
+
+
+def _shim(name: str, seconds: int | str, command: str) -> str:
+    return _SHIM.format(seconds=seconds, name=name, command=command, marker=SHIM_MARKER, fd=SHIM_FD)
+
+
+def _sudo_shim() -> str:
+    """sudo, always -n; a shimmed program run through it (`sudo -n journalctl -k`) keeps its limit (sudo's own PATH skips the shim)."""
+    limits = "\n".join(f"  {program}) limit={seconds} ;;" for program, seconds in SHIMMED_PROGRAMS.items())
+    shimmed = _shim("$program", "$limit", "sudo -n").replace("#!/bin/sh\n", "")
+    return f"""#!/bin/sh
+program=
+for arg in "$@"; do
+  case $arg in -*) ;; *) program=${{arg##*/}}; break ;; esac
+done
+limit=
+case $program in
+{limits}
+esac
+if [ -z "$limit" ]; then PATH=$OMARCHY_M_TEST_PATH exec sudo -n "$@"; fi
+{shimmed}"""
 
 
 class RealHost:
@@ -282,8 +306,8 @@ class RealHost:
                 directory = tempfile.mkdtemp(prefix="omarchy-m-test-shims.")
                 atexit.register(shutil.rmtree, directory, True)
                 for program, seconds in SHIMMED_PROGRAMS.items():
-                    self._write_shim(directory, program, _SHIM.format(seconds=seconds, name=program, marker=SHIM_MARKER, fd=SHIM_FD))
-                self._write_shim(directory, "sudo", _SUDO_SHIM)
+                    self._write_shim(directory, program, _shim(program, seconds, program))
+                self._write_shim(directory, "sudo", _sudo_shim())
             except OSError:
                 return None
             self._shims = directory
@@ -379,11 +403,25 @@ class RealHost:
         return Terminal(size.columns, size.lines)
 
     def run_tty(self, argv: Sequence[str], env: dict[str, str] | None = None) -> CommandResult:
+        """On the terminal, in the foreground (it reads keys). A prompt waits on the human for as long as it takes;
+        a watch (LONG_RUNNING: the lid, the charger) gets WATCH_TIMEOUT_SECONDS, like in run()."""
+        argv = list(argv)
+        watch = argv[:2] == ["sh", "-c"] and len(argv) > 2 and argv[2].startswith(LONG_RUNNING)
         try:
-            done = subprocess.run(list(argv), stdout=subprocess.PIPE, text=True, errors="replace", env={**os.environ, **(env or {})})
+            process = subprocess.Popen(argv, stdout=subprocess.PIPE, env={**os.environ, **QUIET_ENV, **(env or {})})
         except FileNotFoundError:
             return CommandResult(127, "", f"{argv[0]}: command not found\n")
-        return CommandResult(done.returncode, done.stdout, "")
+        try:
+            stdout, _ = process.communicate(timeout=WATCH_TIMEOUT_SECONDS if watch else None)
+        except subprocess.TimeoutExpired as expired:
+            process.kill()
+            stdout, _ = _leftovers(process, expired)
+            return CommandResult(124, _text(stdout), f"{argv[0]}: timed out after {WATCH_TIMEOUT_SECONDS}s\n", timed_out=WATCH_TIMEOUT_SECONDS)
+        except BaseException:
+            process.kill()
+            process.wait()
+            raise
+        return CommandResult(process.returncode, _text(stdout), "")
 
     def post_json(self, url: str, body: str) -> HttpResponse:
         return self._post(url, body.encode("utf-8"), "application/json")
@@ -468,10 +506,11 @@ def _leftovers(process: subprocess.Popen, expired: subprocess.TimeoutExpired) ->
         return process.communicate(timeout=5)
     except subprocess.TimeoutExpired:
         for pipe in (process.stdout, process.stderr):
-            try:
-                pipe.close()  # type: ignore[union-attr]
-            except OSError:
-                pass
+            if pipe is not None:
+                try:
+                    pipe.close()
+                except OSError:
+                    pass
         process.wait()
         return expired.stdout or b"", expired.stderr or b""
 

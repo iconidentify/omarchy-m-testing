@@ -17,7 +17,8 @@ on under the start of its own text (a hanging indent after a list number, a
 Progress: each section starts with where the run is, "Section 4/13 · Audio",
 and a bar across every section the run has, each weighted by how many checks
 it reports (done, this one, still to come). At a terminal the same line stays
-under the live feed while the section runs; off one it's plain ASCII.
+under the live feed while the section runs; off one it's plain ASCII
+("Section 4/13 - Audio [###===---] 31%").
 
 Human checks (human.py) ask with Ui.human: yes, no or skip, plus an optional
 note. Off a terminal, or without gum, that is one line ("n the left speaker
@@ -104,8 +105,9 @@ class Progress:
         return done, current, width - done - current
 
     def plain(self) -> str:
+        """ASCII only, off a terminal: "Section 4/13 - Audio [#####=====----] 31%"."""
         done, current, rest = self.cells(PROGRESS_BAR_WIDTH)
-        return f"{self.label} [{'#' * done}{'=' * current}{'-' * rest}] {self.percent}%"
+        return f"Section {self.number}/{self.count} - {self.title} [{'#' * done}{'=' * current}{'-' * rest}] {self.percent}%"
 
 
 def progress_of(sections: Sequence, number: int, done_ids: set[str]) -> Progress:
@@ -314,11 +316,14 @@ class StyledUi(Ui):
 
     def progress_line(self, progress: Progress, width: int | None = None) -> str:
         """The bar in the theme's colours (done, this section, to come), then "Section 4/13 · Audio  31%"."""
-        text = f"  {progress.label}  {progress.percent}%"
-        cells = max(10, min(PROGRESS_BAR_WIDTH * 2, (width or self.column) - len(text)))
+        width = width or self.column
+        label, percent = f"  {progress.label}", f"  {progress.percent}%"
+        cells = min(PROGRESS_BAR_WIDTH * 2, width - len(label) - len(percent))
+        if cells < 10:  # a narrow terminal: the words only, cut to fit (one row, or the feed's redraw drifts)
+            return self.paint("foreground", (progress.label + percent)[:max(1, width)])
         done, current, rest = progress.cells(cells)
         bar = self.paint("green", "━" * done) + self.paint("accent", "━" * current) + self.paint("dark_foreground", "─" * rest)
-        return bar + self.paint("foreground", f"  {progress.label}") + self.paint("dark_foreground", f"  {progress.percent}%")
+        return bar + self.paint("foreground", label) + self.paint("dark_foreground", percent)
 
     def end_section(self) -> None:
         if self.feed:

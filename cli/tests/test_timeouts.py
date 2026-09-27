@@ -95,6 +95,37 @@ class BundledScriptTimeoutTest(_Scratch):
                          {"audio.speaker-amps-unlocked": "pass", "audio.speaker-dsp": "skip", "audio.microphone-mapping": "pass"})
         self.assertIn("skip: pactl timed out after 1s", by_id["audio.speaker-dsp"]["evidence"][0])
 
+    def test_a_hung_pactl_the_scripts_own_timeout_stops_is_still_a_skip(self):
+        # mac-check style: `timeout 1 bluetoothctl show`, the script's own limit shorter than the shim's.
+        with mock.patch.dict(host_module.SHIMMED_PROGRAMS, {"pactl": 20}):
+            results, took = self.audio_check(
+                "if timeout 1 pactl info >/dev/null 2>&1; then echo 'PASS speaker DSP sink present';"
+                " else echo 'FAIL speaker DSP sink present'; fi\n"
+            )
+        self.assertLess(took, 15)
+        dsp = next(result for result in results if result["id"] == "audio.speaker-dsp")
+        self.assertEqual(dsp["status"], "skip")
+        self.assertTrue(dsp["evidence"][0].startswith("skip: pactl timed out ("), dsp["evidence"])
+
+    def test_sudo_is_always_non_interactive_and_a_hung_program_under_it_keeps_its_limit(self):
+        # A stand-in sudo that runs its command (after -n) and says it was given -n.
+        self.executable("sudo", '#!/bin/sh\n[ "$1" = -n ] && shift && echo "sudo -n" >&2\nexec "$@"\n')
+        results, took = self.audio_check(
+            "if sudo pactl info >/dev/null; then echo 'PASS speaker DSP sink present';"
+            " else echo 'FAIL speaker DSP sink present'; fi\n"
+            "sudo true 2>&1 | grep -q 'sudo -n' && echo 'PASS mic mapper running' || echo 'FAIL mic mapper running'\n"
+        )
+        self.assertLess(took, 15)
+        by_id = {result["id"]: result for result in results}
+        self.assertEqual((by_id["audio.speaker-dsp"]["status"], by_id["audio.microphone-mapping"]["status"]), ("skip", "pass"))
+        self.assertIn("pactl timed out after 1s", by_id["audio.speaker-dsp"]["evidence"][0])
+
+    def test_a_diagnostic_timing_out_doesnt_hide_another_checks_failure(self):
+        results, _ = self.audio_check(
+            "pactl info >/dev/null 2>&1\necho '  default source: none'\necho 'FAIL speaker DSP sink present'\n"
+        )
+        self.assertEqual(next(r for r in results if r["id"] == "audio.speaker-dsp")["status"], "fail")
+
     def test_a_script_that_blocks_altogether_keeps_what_it_reported_and_skips_the_rest(self):
         results, took = self.audio_check("echo 'PASS speaker amps unlocked this boot'\nsleep 30\n", limit=1)
         self.assertLess(took, 10)

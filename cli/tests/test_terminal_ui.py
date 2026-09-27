@@ -13,10 +13,10 @@ import re
 import unittest
 
 from omarchy_m_test.app import main
-from omarchy_m_test.host import CommandResult, HttpResponse
+from omarchy_m_test.host import CommandResult, HttpResponse, Terminal
 from omarchy_m_test.recording import ENDED, INTERRUPT
 from omarchy_m_test.sections import APPLE
-from omarchy_m_test.ui import BOLD, FEED_PREFIX, RESET, RULE, Progress, progress_of
+from omarchy_m_test.ui import BOLD, FEED_PREFIX, RESET, RULE, Progress, Ui, progress_of
 from tests.desktop import (
     ACCENT_RGB, FEED_SECTIONS, GUM_UNANSWERED, OFFERED_OVER_SSH, TITLES, UNANSWERED, UNANSWERED_AT_A_TERMINAL, GREEN_RGB, GREY_RGB, LOGO, TERMINAL, TOKYO_GREEN_RGB,
     bare_desktop, command, host, omarchy_desktop, recording,
@@ -56,7 +56,14 @@ class ProgressTest(unittest.TestCase):
         self.assertEqual(sum(found.cells(30)), 30)
         self.assertEqual(Progress(13, 13, "Benchmarks", 99, 1, 100).cells(30), (30, 0, 0))  # never wider than the bar
         self.assertEqual(Progress(1, 2, "Boot", 0, 1, 100).cells(30), (0, 1, 29))
-        self.assertEqual(Progress(2, 4, "CPU", 5, 5, 20).plain(), "Section 2/4 · CPU [########=======---------------] 25%")
+        self.assertEqual(Progress(2, 4, "CPU", 5, 5, 20).plain(), "Section 2/4 - CPU [########=======---------------] 25%")
+
+
+    def test_on_a_narrow_terminal_the_progress_line_still_fits_one_row(self):
+        ui = Ui.for_host(host(omarchy_desktop(recording()), terminal=Terminal(40, 20)))
+        for width in (39, 30, 12):
+            line = re.sub(r"\033\[[0-9;]*m", "", ui.progress_line(Progress(13, 13, "Benchmarks", 90, 10, 100), width))
+            self.assertLessEqual(len(line), width, line)
 
 
 class OmarchyLookTest(unittest.TestCase):
@@ -223,8 +230,9 @@ class FallbackLookTest(unittest.TestCase):
         self.assertEqual(mac.written, {REPORT_FILE: GOLDEN})
         # Where the run is, as plain ASCII at each section's start.
         starts = [e[1] for e in mac.transcript if e[0] == "show" and e[1].startswith("Section ")]
-        self.assertEqual(starts[0], f"Section 1/{len(starts)} · Boot [{'=' * 6}{'-' * 24}] 0%")
-        self.assertTrue(all(re.fullmatch(r"Section \d+/\d+ · [A-Za-z ]+ \[[#=-]{30}\] \d+%", text) for text in starts), starts)
+        self.assertEqual(starts[0], f"Section 1/{len(starts)} - Boot [{'=' * 6}{'-' * 24}] 0%")
+        self.assertTrue(all(re.fullmatch(r"Section \d+/\d+ - [A-Za-z ]+ \[[#=-]{30}\] \d+%", text) for text in starts), starts)
+        self.assertTrue(all(text.isascii() for text in starts))
 
 
 class LiveFeedTest(unittest.TestCase):

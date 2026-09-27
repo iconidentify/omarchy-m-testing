@@ -292,6 +292,17 @@ class NotRunTest(unittest.TestCase):
         self.assert_skipped(run(at_desktop(desktop(returncode=4, stderr="no built-in screen among Hyprland's monitors\n"))),
                             "no built-in screen (a desktop Mac, or the lid is closed)")
 
+    def test_a_card_that_times_out_is_skipped_not_failed(self):
+        rec = desktop()
+        for entry in rec["commands"]:
+            if entry["argv"][:1] == ["bundled:video-card"]:
+                entry.update(returncode=124, stdout="", stderr="video-card: timed out after 300s\n", timed_out=300)
+        checks = run(at_desktop(rec))
+
+        for check_id in CHECKS:
+            self.assertEqual(checks[check_id]["status"], "skip")
+            self.assertIn("test card timed out after 300s", checks[check_id]["evidence"][-1])
+
     def test_a_card_ffmpeg_cant_encode_is_skipped_not_failed(self):
         checks = run(at_desktop(desktop(returncode=3, stderr="Unknown encoder 'libx265'\n")))
 

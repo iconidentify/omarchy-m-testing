@@ -16,7 +16,7 @@ the boot-loader line fills the report's system block.
 
 Nothing they run can hold up the run (host.py): each IPC tool a script calls
 has its own time limit, and a "TIMEOUT pactl 15" line (the host's shim) turns
-the next result line, if it failed, into a skip; a script that runs out of time
+the line right after it, if it's a failed result, into a skip; a script that runs out of time
 altogether keeps the results it printed, and the rest are skipped as timed
 out. A timeout is never a failure.
 """
@@ -66,7 +66,7 @@ _MAC_CHECK_LINE = re.compile(r"^(PASS|FAIL|WARN|SKIP|INFO)\s+(\S+)\s+(.*?)\s*$")
 _AUDIO_LINE = re.compile(r"^(PASS|FAIL) (.+?)\s*$")
 _DISPLAY_LINE = re.compile(r"^(ok|FAIL) - (.+?)\s*$")
 TIMED_OUT = "TIMEOUT"  # a line's status after the shim's marker: skipped, and so is its result (unless another line failed)
-_TIMEOUT_LINE = re.compile(rf"^{SHIM_MARKER} (\S+) (\d+)$")
+_TIMEOUT_LINE = re.compile(rf"^{SHIM_MARKER} (\S+) (\d+|-)$")
 
 
 @dataclass
@@ -94,16 +94,22 @@ def _from_lines(check_id: str, lines: list[tuple[str, str]], nothing: str) -> di
 
 
 def _lines(run: CommandResult):
-    """A script's output lines with the timeout (if any) the shim reported since the last result line: (line, timeout)."""
+    """A script's output lines, each with the timeout the shim reported just before it, if any: (line, timeout).
+
+    Only the line right after the marker gets it: a check's result line follows its own command's
+    timeout at once, and anything the script prints in between (a diagnostic's output, a note)
+    breaks the link, so a diagnostic's timeout rarely lands on another check's failure. When it does,
+    the skipped result still shows the FAIL line in its evidence.
+    """
     timeout = None
     for raw in run.stdout.splitlines():
         marker = _TIMEOUT_LINE.match(raw.strip())
         if marker:
-            timeout = f"{marker.group(1)} timed out after {marker.group(2)}s"
+            program, seconds = marker.groups()
+            timeout = f"{program} timed out" + (f" after {seconds}s" if seconds != "-" else "")
             continue
         yield raw, timeout
-        if raw[:4] in ("PASS", "FAIL", "WARN", "SKIP", "INFO", "ok -"):
-            timeout = None
+        timeout = None
 
 
 def _timed_out(status: str, raw: str, timeout: str | None) -> tuple[str, str]:
