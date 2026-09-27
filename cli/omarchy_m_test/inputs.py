@@ -60,24 +60,30 @@ GESTURE_QUESTIONS = {
     SWIPE: "Swipe three fingers left and right: did it switch workspaces?",
 }
 OFF_IN_CONFIG = "off in your config"
-# Run as `sh -c SCRIPT`: "tap-global N|unavailable" (Hyprland's input:touchpad:tap-to-click), "workspace-swipe N"
-# (older Hyprland's gestures:workspace_swipe, when it has it), "files N" (config files read), then from each
-# config file in order, uncommented lines only: "tap-device NAME true|false" for a built-in Apple trackpad and
-# "gesture 3 workspace" for a three-finger workspace gesture (Lua hl.gesture or hyprlang gesture =).
+# Run as `sh -c SCRIPT`: "tap-global N|unavailable" (Hyprland's live input:touchpad:tap-to-click), "swipe-live N"
+# (older Hyprland's live gestures:workspace_swipe, when it has it), "files N" (config files read), then from each
+# config file in order, uncommented statements only (a file is flattened and split at each hl. call, device
+# block and gesture/workspace_swipe line, so multi-line blocks count): "tap-device NAME true|false" for a built-in
+# Apple trackpad, "gesture 3 workspace" or "gesture 3 unset" for a three-finger gesture, and "workspace-swipe 1|0".
 GESTURE_CONFIG_SCRIPT = r"""tap=$(hyprctl getoption input:touchpad:tap-to-click 2>/dev/null | sed -n 's/^int: *//p')
 echo "tap-global ${tap:-unavailable}"
 swipe=$(hyprctl getoption gestures:workspace_swipe 2>/dev/null | sed -n 's/^int: *//p')
-[ -n "$swipe" ] && echo "workspace-swipe $swipe"
+[ -n "$swipe" ] && echo "swipe-live $swipe"
 n=0
 for f in "$HOME"/.local/share/omarchy/default/hypr/*.lua "$HOME"/.local/share/omarchy/default/hypr/*.conf \
          "$HOME"/.config/hypr/*.lua "$HOME"/.config/hypr/*.conf; do
   [ -r "$f" ] || continue
   n=$((n + 1))
-  sed -e 's/--.*$//' -e 's/#.*$//' "$f" | tr -d ' \t' | sed -nE \
-    -e 's/.*name="?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)"?,.*tap[_-]to[_-]click=(true|false|1|0).*/tap-device \1 \3/p' \
-    -e '/hl\.gesture\(/{/fingers=3/{/action="workspace"/s/.*/gesture 3 workspace/p;};}' \
-    -e 's/^gesture=3,[^,]*,workspace.*/gesture 3 workspace/p' \
-    -e 's/^workspace_swipe=(true|1|yes|on)$/workspace-swipe 1/p'
+  { sed -e 's/--.*$//' -e 's/#.*$//' "$f" | tr -d ' \t' | tr '\n' ';'; echo; } |
+    sed -e 's/^/;/' -e 's/hl\./\nhl./g' -e 's/device{/\ndevice{/g' -e 's/;gesture=/\ngesture=/g' -e 's/;workspace_swipe=/\nworkspace_swipe=/g' |
+    sed -nE \
+      -e 's/^(hl\.device\(\{|device\{)[^}]*name="?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)"?[,;][^}]*tap[_-]to[_-]click=(true|false|1|0).*/tap-device \2 \4/p' \
+      -e 's/^(hl\.device\(\{|device\{)[^}]*tap[_-]to[_-]click=(true|false|1|0)[,;][^}]*name="?(apple-(spi|mtp|internal)-[A-Za-z0-9_-]*)"?[,;}].*/tap-device \3 \2/p' \
+      -e '/^hl\.gesture\(\{[^}]*fingers=3[,}]/{/action="workspace"/s/.*/gesture 3 workspace/p;}' \
+      -e 's/^gesture=3,[^,;]*,workspace([,;].*)?$/gesture 3 workspace/p' \
+      -e 's/^gesture=3,[^,;]*,unset([,;].*)?$/gesture 3 unset/p' \
+      -e 's/^workspace_swipe=(true|1|yes|on)(;.*)?$/workspace-swipe 1/p' \
+      -e 's/^workspace_swipe=(false|0|no|off)(;.*)?$/workspace-swipe 0/p'
 done
 echo "files $n"
 """
@@ -129,24 +135,33 @@ class GestureConfig:
 
 
 def parse_gesture_config(stdout: str, trackpads: Sequence[str] = ()) -> GestureConfig:
+    """What GESTURE_CONFIG_SCRIPT found: a later statement overrides an earlier one, a live option the config."""
     tap: bool | None = None
     tap_global: bool | None = None
-    swipe, files = False, 0
+    swipe: bool | None = None
+    swipe_live: bool | None = None
+    files = 0
     for line in stdout.splitlines():
         words = line.split()
         if len(words) == 2 and words[0] == "tap-global" and words[1] in ("0", "1"):
             tap_global = words[1] == "1"
+        elif len(words) == 2 and words[0] == "swipe-live" and words[1] in ("0", "1"):
+            swipe_live = words[1] == "1"
         elif len(words) == 2 and words[0] == "workspace-swipe":
-            swipe = swipe or words[1] == "1"
+            swipe = words[1] == "1"
         elif len(words) == 3 and words[0] == "tap-device" and (not trackpads or words[1] in trackpads):
             tap = words[2] in ("true", "1")
-        elif words == ["gesture", "3", "workspace"]:
-            swipe = True
+        elif len(words) == 3 and words[:2] == ["gesture", "3"]:
+            swipe = words[2] == "workspace"
         elif len(words) == 2 and words[0] == "files" and words[1].isdigit():
             files = int(words[1])
     if tap is None:
         tap = tap_global
-    return GestureConfig(tap, swipe if swipe or files else None)
+    if swipe_live is not None:
+        swipe = swipe_live
+    elif swipe is None and files:
+        swipe = False  # the config was read and turns no three-finger workspace swipe on
+    return GestureConfig(tap, swipe)
 
 
 def gesture_config(ctx: Context) -> GestureConfig:

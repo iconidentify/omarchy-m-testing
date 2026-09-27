@@ -55,6 +55,21 @@ class AnsweredByDefaultTest < ActionDispatch::IntegrationTest
     assert_equal "tester", cell["data-verified"]
   end
 
+  test "a candidate set whose tester runs counted nothing is still waiting, not ready" do
+    bind_machine "a", "tester-one"
+    report = golden("m2-max-image2").tap do |r|
+      r["system"]["candidate_set"] = "edge-2026.09.27"
+      r["checks"].each { |check| check["answered_by_default"] = true }
+    end
+    upload_report report, machine: "a"
+    assert_response :created
+
+    get "/candidates/edge-2026.09.27"
+    assert_response :success
+    assert_match "Waiting for tester runs", response.body
+    assert_no_match "Ready for promotion", response.body
+  end
+
   test "a report without the field counts as before, and checks.csv says which answers were the default" do
     upload_report trackpad_yes(by_default: true), machine: "a"
     upload_report golden("m2-max-image2"), machine: "b"

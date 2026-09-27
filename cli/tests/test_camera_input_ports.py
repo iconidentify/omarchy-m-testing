@@ -253,6 +253,14 @@ class KeysAndTrackpadTest(unittest.TestCase):
                                              ["apple-mtp-multi-touch"])
         self.assertEqual((config.tap, config.swipe), (False, False))
 
+    def test_a_later_statement_turns_a_gesture_back_off_and_a_live_option_wins(self):
+        later_off = "tap-global unavailable\ngesture 3 workspace\ngesture 3 unset\nfiles 2\n"
+        self.assertIs(inputs.parse_gesture_config(later_off).swipe, False)
+        self.assertIs(inputs.parse_gesture_config("workspace-swipe 1\nworkspace-swipe 0\nfiles 1\n").swipe, False)
+        self.assertIs(inputs.parse_gesture_config("swipe-live 1\nworkspace-swipe 0\nfiles 1\n").swipe, True)
+        self.assertIs(inputs.parse_gesture_config("tap-global 0\nfiles 0\n").tap, False)
+        self.assertIsNone(inputs.parse_gesture_config("tap-global unavailable\nfiles 0\n").swipe)
+
     def test_a_mac_without_a_built_in_keyboard_or_trackpad_doesnt_ask(self):
         host = over_ssh("input", [EOF], rec=studio(recording()))
 
