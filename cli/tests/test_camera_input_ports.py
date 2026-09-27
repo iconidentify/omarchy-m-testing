@@ -293,15 +293,15 @@ class PortsTest(unittest.TestCase):
         self.assertEqual(found["ports.external-displays"]["evidence"][-1], "skipped: no display plugged into a USB-C port")
         self.assertEqual(questions(host), [])
 
-    def test_without_the_thunderbolt_driver_the_aurora_feature_fails(self):
-        for stdout, why in (("nobus\n", "no Thunderbolt bus in this kernel"), ("", "no domain registered")):
-            with self.subTest(why=why):
-                host = over_ssh("ports", [EOF, EOF], rec=with_command(recording(), ports.THUNDERBOLT_LIST, stdout=stdout))
+    def test_without_the_thunderbolt_bus_the_m2_fails_and_without_a_domain_over_ssh_it_is_skipped(self):
+        host = over_ssh("ports", [EOF, EOF], rec=with_command(recording(), ports.THUNDERBOLT_LIST, stdout="nobus\n"))
+        result = results(host)["ports.thunderbolt"]
+        self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
+        self.assertEqual(result["classification"]["expected"]["aurora"], "supported")
+        self.assertIn("no Thunderbolt bus in this kernel", result["evidence"][0])
 
-                result = results(host)["ports.thunderbolt"]
-                self.assertEqual((result["status"], result["classification"]["outcome"]), ("fail", "fails"))
-                self.assertEqual(result["classification"]["expected"]["aurora"], "supported")
-                self.assertIn(why, result["evidence"][0])
+        host = over_ssh("ports", [EOF, EOF], rec=with_command(recording(), ports.THUNDERBOLT_LIST))
+        self.assertEqual(results(host)["ports.thunderbolt"]["status"], "skip")
 
     def test_a_display_connected_but_not_lit_fails_and_its_picture_isnt_asked(self):
         drm = "connector card1-eDP-1 connected enabled 3456x2234\nconnector card2-USB-2 connected disabled 3440x1440\n"
@@ -348,18 +348,58 @@ class PortsTest(unittest.TestCase):
             "skipped: no USB device attached (the USB controller only comes up while something is plugged into a USB-C port)",
         ])
         self.assertNotIn(ports.USB_WAIT, host.commands_run)
-        self.assertNotIn(ports.PLUG_USB_READY, [event[1] for event in host.transcript if event[0] == "prompt"])
-        # No domain on the M1: Aurora doesn't bring Thunderbolt up there yet, so it's a gap, not "should work".
+        self.assertNotIn(ports.PLUG_READY, [event[1] for event in host.transcript if event[0] == "prompt"])
+        # No domain either: the Thunderbolt/USB4 host only comes up with a USB4 or Thunderbolt partner attached.
         links = found["ports.thunderbolt"]
+        self.assertEqual((links["status"], links["classification"]["outcome"]), ("skip", "not-tested"))
+        self.assertEqual(links["evidence"], [
+            "no Thunderbolt/USB4 domain registered (thunderbolt-apple-nhi)",
+            "skipped: no Thunderbolt/USB4 device attached (the Thunderbolt/USB4 host only comes up "
+            "while a USB4 or Thunderbolt device is plugged in)",
+        ])
+        self.assertNotIn(ports.THUNDERBOLT_WAIT, host.commands_run)
+
+    def test_thunderbolt_failing_on_an_m1_is_an_expected_gap_not_a_should_work(self):
+        # Aurora's Thunderbolt host hasn't been seen working on a real M1 yet: the catalogue says unknown.
+        host = over_ssh("ports", [EOF], rec=with_command(recording(M1), ports.THUNDERBOLT_LIST, stdout="nobus\n"))
+
+        links = results(host)["ports.thunderbolt"]
         self.assertEqual((links["status"], links["classification"]["outcome"]), ("fail", "not-in-asahi"))
-        self.assertEqual(links["classification"]["expected"], {"asahi": "wip", "aurora": "unsupported"})
+        self.assertEqual(links["classification"]["expected"], {"asahi": "wip", "aurora": "unknown"})
+
+    def test_at_the_mac_with_no_thunderbolt_domain_the_human_plugs_a_device_in_and_the_host_comes_up(self):
+        linked = "thunderbolt 0-0 thunderbolt_device generation=4 rx_speed=20.0Gb/s rx_lanes=2 authorized=1\nthunderbolt domain0 thunderbolt_domain\n"
+        rec = with_command(with_command(live_recording(), ports.THUNDERBOLT_LIST), ports.THUNDERBOLT_WAIT, stdout=linked)
+        host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
+
+        messages = [event[1] for event in host.transcript if event[0] == "prompt"]
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
+        self.assertIn(ports.PLUG_THUNDERBOLT, host.output)
+        self.assertNotIn(ports.PLUG_USB, host.output)  # the M2's USB controllers are up
+        links = results(host)["ports.thunderbolt"]
+        self.assertEqual((links["status"], links["classification"]["outcome"]), ("pass", "works"))
+        self.assertEqual(links["evidence"][-1], "the Thunderbolt/USB4 host came up once a device was plugged in")
+
+    def test_at_the_mac_a_thunderbolt_host_that_never_comes_up_fails_or_can_be_skipped(self):
+        for answer_, status in ((ENTER, "fail"), ("s", "skip"), (EOF, "skip")):
+            with self.subTest(answer=answer_):
+                rec = with_command(with_command(live_recording(), ports.THUNDERBOLT_LIST), ports.THUNDERBOLT_WAIT)
+                host = run("ports", [ENTER, answer_, "y", "y"], rec=rec)
+
+                links = results(host)["ports.thunderbolt"]
+                self.assertEqual(links["status"], status)
+                if status == "fail":
+                    self.assertEqual(links["classification"]["outcome"], "fails")  # the M2's host is supported
+                    self.assertEqual(links["evidence"][-1], f"no domain came up within {ports.WAIT_SECONDS} s of plugging in a Thunderbolt/USB4 device")
+                else:
+                    self.assertNotIn(ports.THUNDERBOLT_WAIT, host.commands_run)
 
     def test_at_the_mac_with_no_usb_controller_the_human_plugs_a_device_in_and_the_controller_comes_up(self):
         rec = with_command(with_command(live_recording(), ports.USB, stdout=NO_CONTROLLER), ports.USB_WAIT, stdout=STICK_IN)
         host = run("ports", [ENTER, ENTER, "y", "y"], rec=rec)
 
         messages = [event[1] for event in host.transcript if event[0] == "prompt"]
-        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_USB_READY])
+        self.assertEqual(messages[1:3], [ports.READY, ports.PLUG_READY])
         self.assertLess(host.output.index(ports.PLUG_USB), host.output.index("Found:"))
         self.assertLess(host.commands_run.index(ports.USB), host.commands_run.index(ports.USB_WAIT))
         usb = results(host)["ports.usb-c"]
@@ -375,7 +415,7 @@ class PortsTest(unittest.TestCase):
         usb = results(run("ports", [ENTER, ENTER, "y", "y"], rec=rec))["ports.usb-c"]
 
         self.assertEqual((usb["status"], usb["classification"]["outcome"]), ("fail", "fails"))
-        self.assertEqual(usb["evidence"][-1], f"no USB controller came up within {ports.USB_WAIT_SECONDS} s of plugging in a USB device")
+        self.assertEqual(usb["evidence"][-1], f"no USB controller came up within {ports.WAIT_SECONDS} s of plugging in a USB device")
 
     def test_at_the_mac_the_human_can_skip_plugging_a_usb_device_in(self):
         for skip in ("s", EOF):
@@ -388,12 +428,13 @@ class PortsTest(unittest.TestCase):
                 self.assertTrue(usb["evidence"][-1].endswith("plugging one in was skipped"), usb["evidence"][-1])
                 self.assertNotIn(ports.USB_WAIT, host.commands_run)
 
-    def test_the_wait_for_the_usb_controller_is_a_watch_with_the_long_timeout(self):
-        self.assertTrue(ports.USB_WAIT_SCRIPT.startswith(LONG_RUNNING))
-        self.assertEqual(timeout_for(ports.USB_WAIT), WATCH_TIMEOUT_SECONDS)
+    def test_the_waits_for_the_usb_controller_and_the_thunderbolt_host_are_watches_with_the_long_timeout(self):
+        for argv in (ports.USB_WAIT, ports.THUNDERBOLT_WAIT):
+            self.assertTrue(argv[2].startswith(LONG_RUNNING))
+            self.assertEqual(timeout_for(argv), WATCH_TIMEOUT_SECONDS)
 
     def test_the_scripts_never_read_a_name_vendor_string_or_serial(self):
-        for script in (ports.USB_SCRIPT, ports.USB_WAIT_SCRIPT, ports.THUNDERBOLT_SCRIPT, ports.DISPLAYS_SCRIPT, camera.DEVICES_SCRIPT):
+        for script in (ports.USB_SCRIPT, ports.USB_WAIT_SCRIPT, ports.THUNDERBOLT_WAIT_SCRIPT, ports.THUNDERBOLT_SCRIPT, ports.DISPLAYS_SCRIPT, camera.DEVICES_SCRIPT):
             for private in ("product", "manufacturer", "serial", "device_name", "vendor_name", "unique_id", "/name", "edid"):
                 self.assertNotIn(private, script)
 

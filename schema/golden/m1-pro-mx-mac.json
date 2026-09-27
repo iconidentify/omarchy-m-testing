@@ -1416,7 +1416,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "unsupported"
+          "aurora": "unknown"
         }
       }
     },
@@ -1596,7 +1596,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "unsupported"
+          "aurora": "unknown"
         }
       }
     },

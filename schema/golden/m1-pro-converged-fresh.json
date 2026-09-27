@@ -1503,7 +1503,7 @@
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "unsupported"
+          "aurora": "unknown"
         }
       }
     },
@@ -1679,17 +1679,18 @@
     {
       "id": "ports.thunderbolt",
       "kind": "automatic",
-      "status": "fail",
+      "status": "skip",
       "evidence": [
-        "no Thunderbolt/USB4 controller: no domain registered (thunderbolt-apple-acio, thunderbolt-apple-nhi)"
+        "no Thunderbolt/USB4 domain registered (thunderbolt-apple-nhi)",
+        "skipped: no Thunderbolt/USB4 device attached (the Thunderbolt/USB4 host only comes up while a USB4 or Thunderbolt device is plugged in)"
       ],
       "classification": {
-        "outcome": "not-in-asahi",
+        "outcome": "not-tested",
         "feature": "thunderbolt",
         "layer": "asahi",
         "expected": {
           "asahi": "wip",
-          "aurora": "unsupported"
+          "aurora": "unknown"
         }
       }
     },

@@ -46,11 +46,22 @@ SAVED_CONNECTIONS = ["nmcli", "--get-values", "NAME,TYPE", "connection", "show"]
 # the rest are learned.
 _INTERFACE_CONNECTION_TYPES = {"loopback", "bridge", "tun", "dummy", "veth", "macvlan", "vxlan", "ip-tunnel"}
 # The same connections by name, as the kernel, Docker, Tailscale and libvirt
-# name their interfaces: kept out of learning whatever type nmcli gives, and
-# left alone where NetworkManager's journal quotes a connection by name
-# ("Activation: starting connection 'lo'"). Only these exact shapes, so a
-# Wi-Fi network called "docker-home" is still scrubbed.
+# name their interfaces: kept out of learning when nmcli gives a type that
+# isn't a network a person names (Wi-Fi, VPN, WireGuard), and left alone where
+# NetworkManager activates one on its own interface ("device (lo): Activation:
+# starting connection 'lo'"). Only these exact shapes and contexts, so a
+# Wi-Fi network called "docker-home", or even "docker0", is still scrubbed.
 _INTERFACE_CONNECTION_NAME = re.compile(r"lo|docker\d+|tailscale\d+|veth[0-9a-f]+|br-[0-9a-f]{12}|virbr\d+(?:-nic)?")
+_NAMED_NETWORK_TYPES = {"802-11-wireless", "wifi", "vpn", "wireguard", "wifi-p2p"}
+
+
+def _quoted_network(m: re.Match) -> str:
+    name = m.group(3)
+    line = m.string[m.string.rfind("\n", 0, m.start()) + 1:m.start()]
+    if (m.group(1).lower() == "connection" and _INTERFACE_CONNECTION_NAME.fullmatch(name)
+            and line.endswith(f"device ({name}): Activation: starting ")):
+        return m.group(0)
+    return f"{m.group(1)}{m.group(2)}'<ssid>'"
 
 # Only these fields reach a report. A dict lists allowed keys (True: keep the
 # value as is); a one-item list means "a list of these".
@@ -241,7 +252,7 @@ _rule(rf"(?<![0-9A-Za-z])(?:0x)?{_HEX}{{16,}}(?![0-9A-Za-z])", "<hex>")
 _rule(r"(?i)\b(e?ssid)(\s*[:=]?\s*)(['\"])(.*?)\3", r"\1\2\3<ssid>\3")
 _rule(r"(?i)\b(e?ssid)(\s*[:=]\s*)(?!['\"<])([^,\n]*?[^,\s])(?=,|\s*$|\s+[\w-]+[:=])", r"\1\2<ssid>")
 _rule(r"(?i)\b(connection|access point|network|connected to|to network|for network|known network)(\s+)'([^'\n]*)'",
-      lambda m: m.group(0) if _INTERFACE_CONNECTION_NAME.fullmatch(m.group(3)) else f"{m.group(1)}{m.group(2)}'<ssid>'")
+      _quoted_network)
 _rule(r"^(\s*ssid )(\S.*)$", r"\1<ssid>")
 _rule(r"(?i)\b((?:connected|connecting|joined|joining) to network\s+|Wireless network\s+)(?!['<])(\S+)", r"\1<ssid>")
 _rule(r"(policy: set )'[^'\n]*'", r"\1'<ssid>'")
@@ -388,8 +399,10 @@ def saved_connection_names(stdout: str) -> list[str]:
         if not colon:
             name, kind = line, ""
         name = re.sub(r"\\(.)", r"\1", name)
-        if kind.strip() not in _INTERFACE_CONNECTION_TYPES and not _INTERFACE_CONNECTION_NAME.fullmatch(name):
-            names.append(name)
+        kind = kind.strip()
+        if kind in _INTERFACE_CONNECTION_TYPES or (kind not in _NAMED_NETWORK_TYPES and _INTERFACE_CONNECTION_NAME.fullmatch(name)):
+            continue
+        names.append(name)
     return names
 
 
