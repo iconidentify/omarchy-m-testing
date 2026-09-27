@@ -267,6 +267,11 @@ class RecordModeTest(unittest.TestCase):
         self.assertIn("Connected to '<ssid>'", journal)
         self.assertNotIn("Wattlebird", json.dumps(m1))
 
+    def test_nmclis_connection_list_scrubs_every_wi_fi_network_and_vpn_even_one_too_short_to_learn(self):
+        listed = "lo:802-11-wireless\nlo:loopback\nKestrel\\:Home:vpn\nwg:wireguard\ndocker0:bridge\n"
+
+        self.assertEqual(privacy.Scrubber().scrub(listed), "<ssid>:802-11-wireless\nlo:loopback\n<ssid>:vpn\n<ssid>:wireguard\ndocker0:bridge\n")
+
     def test_a_network_named_like_an_interface_but_not_shaped_like_one_is_still_scrubbed(self):
         scrubber = privacy.Scrubber()
         self.assertEqual(scrubber.scrub("Activation: starting connection 'docker-home' (x)"), "Activation: starting connection '<ssid>' (x)")

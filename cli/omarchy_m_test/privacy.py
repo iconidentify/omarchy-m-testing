@@ -261,6 +261,9 @@ _rule(r"(?m)^(\s*[\w.-]+:wifi:[\w ()-]+:)(?!<ssid>)(.+)$", r"\1<ssid>")
 _rule(r"(?m)^(\s*Connected network\s+)(\S.*?)\s*$", r"\1<ssid>")
 _rule(r"(/var/lib/iwd/)[^/\s]+?(\.(?:psk|open|8021x))\b", r"\1<ssid>\2")
 _rule(r"(system-connections/)[^/\s'\"]+", r"\1<ssid>")
+# nmcli's own list of connections (NAME:TYPE): a Wi-Fi network or VPN is scrubbed there whatever its name,
+# even one too short to learn and remove elsewhere ("lo").
+_rule(r"(?m)^(?!<ssid>:)(?:[^\n:\\]|\\.)+(:(?:802-11-wireless|wifi|vpn|wireguard|wifi-p2p))$", r"<ssid>\1")
 # Hostnames: journal and syslog line prefixes, uname -a, host=... and hostnamed.
 _rule(rf"(?m)^(\s*(?:{_FULL_TIME}|{_SYSLOG_TIME}|{_ISO_TIME})\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+[^\s\[\]:]+(?:\[\d+\])?:)", r"\1<hostname>\3")
 _rule(r"(?m)^(\s*\[\s*\d+\.\d+\]\s+)(?!<)([A-Za-z0-9][A-Za-z0-9.-]*)(\s+(?:kernel|[^\s\[\]:]+\[\d+\]):)", r"\1<hostname>\3")

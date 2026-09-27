@@ -91,9 +91,16 @@ for d in /sys/bus/thunderbolt/devices/*; do
   echo "$line"
 done"""
 THUNDERBOLT_LIST = ["sh", "-c", THUNDERBOLT_SCRIPT]
-# After the human plugs a Thunderbolt/USB4 device in: wait up to WAIT_SECONDS for a domain, then list as THUNDERBOLT_SCRIPT does.
-THUNDERBOLT_WAIT_SCRIPT = LONG_RUNNING + f"""i=0
-while [ $i -lt {WAIT_SECONDS} ] && ! ls -d /sys/bus/thunderbolt/devices/domain* >/dev/null 2>&1; do sleep 1; i=$((i + 1)); done
+# After the human plugs a Thunderbolt/USB4 device in: wait up to WAIT_SECONDS for a linked device or computer
+# (a domain alone may come up before its peer enumerates), then list as THUNDERBOLT_SCRIPT does.
+THUNDERBOLT_WAIT_SCRIPT = LONG_RUNNING + f"""linked() {{
+  for d in /sys/bus/thunderbolt/devices/*-*; do
+    case ${{d##*/}} in *-0|*:*|'*-*') ;; *) return 0;; esac
+  done
+  return 1
+}}
+i=0
+while [ $i -lt {WAIT_SECONDS} ] && ! linked; do sleep 1; i=$((i + 1)); done
 """ + THUNDERBOLT_SCRIPT
 THUNDERBOLT_WAIT = ["sh", "-c", THUNDERBOLT_WAIT_SCRIPT]
 
