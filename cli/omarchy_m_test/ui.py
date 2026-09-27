@@ -90,7 +90,7 @@ def wrap(text: str, width: int) -> list[str]:
             hang = re.match(r"\s*", line).group(0)[: width // 2]
         lines += textwrap.wrap(
             line[len(hang):], width, initial_indent=hang, subsequent_indent=" " * len(hang),
-            break_long_words=False, break_on_hyphens=False,
+            break_long_words=True, break_on_hyphens=False,
         ) or [line]
     return lines
 

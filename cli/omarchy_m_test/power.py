@@ -101,7 +101,8 @@ RESTORE_SCRIPT = (
 
 IDLE_SECONDS = 30
 UNPLUG_SECONDS = 60
-# Run as `sh -c SCRIPT sh BATTERY_DIR SECONDS TTY LABEL`: "unplugged", or "timeout STATUS" / "skipped STATUS" (a key).
+# Run as `sh -c SCRIPT sh BATTERY_DIR SECONDS TTY LABEL` (TTY the terminal's width, 0 off one):
+# "unplugged", or "timeout STATUS" / "skipped STATUS" (a key).
 UNPLUG_SCRIPT = sleep.TICK_FUNCTION + r"""d=$1 wait=$(($2 * 2)) tty=$3 label=$4 n=0
 while :; do
   s=$(tr -d ' \n' < "$d/status" 2>/dev/null)
@@ -403,8 +404,8 @@ def parse_samples(stdout: str) -> list[Sample]:
     return samples
 
 
-def unplug_argv(battery_dir: str, tty: bool = False, label: str = "", seconds: int = UNPLUG_SECONDS) -> list[str]:
-    return ["sh", "-c", UNPLUG_SCRIPT, "sh", battery_dir, str(seconds), "1" if tty else "0", label]
+def unplug_argv(battery_dir: str, tty: int = 0, label: str = "", seconds: int = UNPLUG_SECONDS) -> list[str]:
+    return ["sh", "-c", UNPLUG_SCRIPT, "sh", battery_dir, str(seconds), str(tty), label]
 
 
 def unplug(ctx: Context, battery: str) -> tuple[bool, str | None]:
@@ -427,11 +428,12 @@ def unplug(ctx: Context, battery: str) -> tuple[bool, str | None]:
 
 def wait_for_unplug(ctx: Context, directory: str) -> str | None:
     """Wait for the battery to discharge: None once it does, else why not (and the human is told)."""
-    if ctx.host.terminal() is not None:
-        answer = ctx.host.run_tty(unplug_argv(directory, tty=True, label=getattr(_ui(ctx), "pad", "") + "Power")).stdout
+    terminal = ctx.host.terminal()
+    if terminal is not None:
+        answer = ctx.host.run_tty(unplug_argv(directory, tty=terminal.width, label=getattr(_ui(ctx), "pad", "") + "Power")).stdout
     else:
         answer = ctx.host.run(unplug_argv(directory)).stdout
-    word, _, status = answer.strip().partition(" ")
+    word, _, status = answer.strip().rpartition("\n")[-1].partition(" ")
     if word == "unplugged":
         _ui(ctx).text("On battery.")
         return None

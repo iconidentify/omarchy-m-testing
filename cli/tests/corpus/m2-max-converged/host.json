@@ -754,10 +754,7 @@
       "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
     },
     "/var/lib/omarchy/mac-first-boot/pending": null,
-    "/var/lib/omarchy/mac-first-boot/deferred-steps": {
-      "text": "install/hardware/apple/limine-boot.sh\n",
-      "note": "M2 Max at its desk, 2026-09-27 (read-only, after the owner's 0.1.4 run); the journal without its sudo lines and with two of its five boots"
-    }
+    "/var/lib/omarchy/image/deferred-steps": null
   },
   "dirs": {
     "/home": [

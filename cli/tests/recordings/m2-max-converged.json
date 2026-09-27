@@ -609,9 +609,7 @@
     "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": {
       "text": "# Deferred hardware setup waits for first boot, which creates the package\n# keyring its steps need and runs the queue itself, and never starts while\n# first boot is still pending. What first boot left queued is usually a step\n# that needs the network (one that installs a package the image does not\n# carry). network-online.target waits for nothing on\n# Omarchy (NetworkManager-wait-online.service is masked), so the retry waits\n# for NetworkManager to bring up its saved connections itself; with nothing to\n# connect it goes on at once.\n[Unit]\nAfter=omarchy-mac-first-boot.service NetworkManager.service\nConditionPathExists=!/var/lib/omarchy/mac-first-boot/pending\n\n[Service]\nExecStartPre=-/usr/bin/nm-online -q -s -t 30\n"
     },
-    "/var/lib/omarchy/mac-first-boot/deferred-steps": {
-      "text": "install/hardware/apple/limine-boot.sh\n"
-    },
+    "/var/lib/omarchy/image/deferred-steps": null,
     "/var/lib/omarchy/mac-first-boot/pending": null,
     "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
     "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {

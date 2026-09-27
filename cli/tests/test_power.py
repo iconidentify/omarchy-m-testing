@@ -236,7 +236,7 @@ class IdleDrawTest(unittest.TestCase):
 
         waits = [argv for kind, argv, _ in (e for e in host.transcript if e[0] == "tty") if argv[:3] == UNPLUG[:3]]
         self.assertEqual(len(waits), 1)
-        self.assertEqual(waits[0][6], "1")  # the countdown and the key, on the terminal
+        self.assertEqual(waits[0][6], str(TERMINAL.width))  # the countdown (cut to the width) and the key, on the terminal
         self.assertTrue(waits[0][7].endswith("Power"))
         self.assertEqual(check(host, power.IDLE_DRAW)["evidence"], ["skipped: you chose not to unplug the charger (battery Full)"])
 

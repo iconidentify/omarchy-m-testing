@@ -18,7 +18,7 @@ from omarchy_m_test import sleep
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import ENDED, EOF
 from omarchy_m_test.safety import refusal
-from omarchy_m_test.host import CommandResult
+from omarchy_m_test.host import LONG_RUNNING, CommandResult
 from tests.desktop import CHECKPOINT, TERMINAL, omarchy_desktop
 from tests.live_mac import (
     AWAKE_AGAIN, BEFORE_CLAMSHELL, BEFORE_FAILED_CLAMSHELL, BEFORE_SUSPEND, CATALOGUE_PATH, CLAMSHELL_AT, FAILED_AFTER,
@@ -349,7 +349,7 @@ class TerminalTest(unittest.TestCase):
         self.assertEqual(check(host, sleep.LID_SUSPEND)["status"], "pass")  # closed after 40 s: still in time
         watches_ = [argv for kind, argv, _ in (e for e in host.transcript if e[0] == "tty") if argv[:3] == WATCH[:3]]
         self.assertEqual(len(watches_), 1)
-        self.assertEqual(watches_[0][4:8], [str(sleep.CLOSE_SECONDS), str(sleep.CLOSED_SECONDS), str(sleep.AFTER_OPEN_SECONDS), "1"])
+        self.assertEqual(watches_[0][4:8], [str(sleep.CLOSE_SECONDS), str(sleep.CLOSED_SECONDS), str(sleep.AFTER_OPEN_SECONDS), str(TERMINAL.width)])
         self.assertEqual(watches_[0][8].strip(), "Sleep")
 
     def test_a_key_while_the_lid_is_awaited_skips_the_step(self):
@@ -373,14 +373,20 @@ class TerminalTest(unittest.TestCase):
                     f.write(f"#!/bin/sh\n{body}\n")
                 os.chmod(os.path.join(stubs, name), 0o755)
             env = {**os.environ, "PATH": stubs + os.pathsep + os.environ["PATH"]}
-            argv = sleep.lid_watch_argv(close=2, tty=True, label="  Sleep")
+            argv = sleep.lid_watch_argv(close=2, tty=200, label="  Sleep")
+            narrow = sleep.lid_watch_argv(close=1, tty=30, label="  Sleep")
             keyed = subprocess.run([bash, "--posix", *argv[1:]], input="x", capture_output=True, text=True, env=env, timeout=20)
             waited = subprocess.run([bash, "--posix", *argv[1:]], input="", capture_output=True, text=True, env=env, timeout=20)
+            cut = subprocess.run([bash, "--posix", *narrow[1:]], input="", capture_output=True, text=True, env=env, timeout=20)
         self.assertIn("skipped", keyed.stdout.split()[-2:])
         self.assertIn("  Sleep: close the lid now, 2 s left (any key skips)", keyed.stderr)
         self.assertEqual(waited.stdout.split()[-2], "timeout")
         self.assertIn("1 s left", waited.stderr)
         self.assertTrue(waited.stderr.endswith("\033[2K"))  # the countdown's line is cleared at the end
+        # Cut to the terminal's width, so the line never wraps (\r clears only the row it's on).
+        self.assertIn("\033[2K  Sleep: close the lid now, 1", cut.stderr)
+        self.assertTrue(all(len(line.replace("\033[2K", "")) <= 29 for line in cut.stderr.split("\n")), cut.stderr)
+        self.assertTrue(argv[2].startswith(LONG_RUNNING))  # the host gives it more than a command's 60 s
 
 
 # -- Wi-Fi and Thunderbolt after the resume --------------------------------------------------

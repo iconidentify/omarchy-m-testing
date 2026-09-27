@@ -51,6 +51,10 @@ from typing import Protocol, Sequence
 from . import bundled
 
 COMMAND_TIMEOUT_SECONDS = 60
+# A script that starts with LONG_RUNNING waits on the human (the lid, the charger): it gets WATCH_TIMEOUT_SECONDS.
+# The clock the timeout counts stops while the Mac is asleep (CLOCK_MONOTONIC), so a suspend doesn't use it up.
+LONG_RUNNING = ": omarchy-m-test waits on the human\n"
+WATCH_TIMEOUT_SECONDS = 1800
 # Bundled check scripts run many commands (mac-check's boot check rebuilds and
 # compares the m1n1 image), so they get longer.
 BUNDLED_TIMEOUT_SECONDS = 300
@@ -145,7 +149,11 @@ class RealHost:
 
     def run(self, argv: Sequence[str]) -> CommandResult:
         argv = list(argv)
-        return self._run(argv, PACKAGE_TIMEOUT_SECONDS if _changes_packages(argv) else COMMAND_TIMEOUT_SECONDS)
+        if _changes_packages(argv):
+            return self._run(argv, PACKAGE_TIMEOUT_SECONDS)
+        if argv[:2] == ["sh", "-c"] and len(argv) > 2 and argv[2].startswith(LONG_RUNNING):
+            return self._run(argv, WATCH_TIMEOUT_SECONDS)
+        return self._run(argv, COMMAND_TIMEOUT_SECONDS)
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
         try:

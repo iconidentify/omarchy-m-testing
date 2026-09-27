@@ -16,7 +16,9 @@ FIRST_BOOT_JOURNAL = ["journalctl", "--unit=omarchy-provision-hardware.service",
 MAC_FIRST_BOOT_DROPIN = "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf"
 MAC_FIRST_BOOT_JOURNAL = ["journalctl", "--unit=omarchy-mac-first-boot.service", "--output=short-iso", "--no-pager"]
 MAC_FIRST_BOOT_PENDING = "/var/lib/omarchy/mac-first-boot/pending"
-MAC_FIRST_BOOT_QUEUE = "/var/lib/omarchy/mac-first-boot/deferred-steps"
+# The hardware steps still queued (omarchy-provision-hardware drains it; its unit runs only while it exists).
+IMAGE_QUEUE = "/var/lib/omarchy/image/deferred-steps"
+MAC_FIRST_BOOT_INCOMPLETE = "Some hardware setup could not finish yet"
 _MAC_FIRST_BOOT_LINE = re.compile(r"(systemd\[1\]: .*(Omarchy first boot|omarchy-mac-first-boot)|omarchy-mac-first-boot\[\d+\]: )")
 MAC_FIRST_BOOT_DONE = ("Finished Omarchy first boot", "omarchy-mac-first-boot.service: Deactivated successfully")
 ASAHI_GPU_DRIVER = "/sys/bus/platform/drivers/asahi"
@@ -79,7 +81,8 @@ def first_boot_setup(host: Host) -> dict:
     if failed:
         evidence = [lines[i] for i in failed[:6]]
         later = [i for i in done if i > failed[-1]]
-        evidence.append(f"a later run completed: {lines[later[-1]]}" if later else "no later run completed")
+        # The journal line on its own: the scrubber finds a hostname only where a journal line starts.
+        evidence += ["a later run completed:", lines[later[-1]]] if later else ["no later run completed"]
         return _result("setup.first-boot-hardware", "fail", evidence)
     if done:
         return _result("setup.first-boot-hardware", "pass", [lines[done[-1]]])
@@ -104,19 +107,21 @@ def _mac_first_boot(host: Host) -> dict | None:
     lines = [line for line in host.run(MAC_FIRST_BOOT_JOURNAL).stdout.splitlines() if _MAC_FIRST_BOOT_LINE.search(line)]
     evidence = ["omarchy-provision-hardware.service is disabled on this image by design: "
                 "omarchy-mac-first-boot runs the deferred hardware setup (20-mac-first-boot.conf)"]
-    queued = [step.strip() for step in (_read(host, MAC_FIRST_BOOT_QUEUE) or "").splitlines() if step.strip()]
+    queued = [step.strip() for step in (_read(host, IMAGE_QUEUE) or "").splitlines() if step.strip()]
     failed = [line for line in lines if any(mark in line for mark in FIRST_BOOT_FAILED) or "Failed to start Omarchy first boot" in line]
     done = [line for line in lines if any(mark in line for mark in MAC_FIRST_BOOT_DONE)]
     if failed:
         later = [line for line in done if lines.index(line) > lines.index(failed[-1])]
-        return _result(check, "fail", [*evidence, *failed[:6], f"a later run completed: {later[-1]}" if later else "no later run completed"])
+        return _result(check, "fail", [*evidence, *failed[:6], *(["a later run completed:", later[-1]] if later else ["no later run completed"])])
     if _exists(host, MAC_FIRST_BOOT_PENDING):
         return _result(check, "skip", [*evidence, f"first boot hasn't finished yet ({MAC_FIRST_BOOT_PENDING} is still there)", *lines[-3:]])
     if not done:
         return _result(check, "skip", [*evidence, "first boot is done, but its journal no longer shows how it went"])
     said = [line for line in lines if "omarchy-mac-first-boot[" in line][-2:]
-    listed = [f"listed in {MAC_FIRST_BOOT_QUEUE}: {', '.join(queued)}"] if queued else []
-    return _result(check, "pass", [*evidence, *said, done[-1], *listed])
+    incomplete = [line for line in lines if MAC_FIRST_BOOT_INCOMPLETE in line]
+    if queued:  # first boot finishes with steps that need the network still queued, for the unit to retry
+        return _result(check, "fail", [*evidence, *incomplete[-1:], done[-1], f"still queued in {IMAGE_QUEUE}: {', '.join(queued)}"])
+    return _result(check, "pass", [*evidence, *said, done[-1], f"nothing left queued ({IMAGE_QUEUE} is gone)"])
 
 
 def hardware_packages(system: System) -> dict:

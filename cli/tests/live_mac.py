@@ -340,7 +340,7 @@ class LiveMac(RecordedHost):
                 s.battery_status = s.unplug
             if s.battery_status == "Discharging":
                 return CommandResult(0, "unplugged\n", "")
-            return CommandResult(0, f"{'skipped' if s.key_pressed and argv[6] == '1' else 'timeout'} {s.battery_status}\n", "")
+            return CommandResult(0, f"{'skipped' if s.key_pressed and argv[6] != '0' else 'timeout'} {s.battery_status}\n", "")
         if argv[:3] == ["sh", "-c", power.READING_SCRIPT]:
             return CommandResult(0, _take(s.readings), "")
         if argv == ["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"]:

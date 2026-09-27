@@ -832,7 +832,7 @@
         "2026-09-27T00:24:52+10:00 <hostname> omarchy-mac-first-boot[5969]: Creating this Mac's package keyring...",
         "2026-09-27T00:25:06+10:00 <hostname> omarchy-mac-first-boot[5969]: Ready for account setup.",
         "2026-09-27T00:25:06+10:00 <hostname> systemd[1]: Finished Omarchy first boot: finish this Mac's image, then owner setup.",
-        "listed in /var/lib/omarchy/mac-first-boot/deferred-steps: install/hardware/apple/limine-boot.sh"
+        "nothing left queued (/var/lib/omarchy/image/deferred-steps is gone)"
       ],
       "classification": {
         "outcome": "works",

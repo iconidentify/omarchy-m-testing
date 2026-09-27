@@ -112,7 +112,9 @@ class GoldenRunsTest(unittest.TestCase):
         self.assertEqual(setup["classification"]["outcome"], "fails")
         self.assertEqual(setup["classification"]["layer"], "omarchy")
         self.assertIn("Deferred hardware step failed: install/hardware/vulkan.sh", setup["evidence"][0])
-        self.assertIn("a later run completed", setup["evidence"][-1])
+        # The journal line on its own line, as the journal has it: the scrubber only finds a hostname there.
+        self.assertEqual(setup["evidence"][-2], "a later run completed:")
+        self.assertTrue(setup["evidence"][-1].split()[1] == "<hostname>", setup["evidence"][-1])
         self.assertIn("FAIL  setup.first-boot-hardware  doesn't work, but should on this Mac (First-boot hardware setup)", mac.output)
 
     def test_mac_check_lines_become_classified_results_with_their_lines_as_evidence(self):
@@ -446,7 +448,28 @@ class ConvergedFirstBootTest(unittest.TestCase):
         self.assertEqual(setup["status"], "pass")
         self.assertIn("omarchy-mac-first-boot runs the deferred hardware setup", setup["evidence"][0])
         self.assertIn("Finished Omarchy first boot", setup["evidence"][-2])
-        self.assertEqual(setup["evidence"][-1], "listed in /var/lib/omarchy/mac-first-boot/deferred-steps: install/hardware/apple/limine-boot.sh")
+        self.assertEqual(setup["evidence"][-1], "nothing left queued (/var/lib/omarchy/image/deferred-steps is gone)")
+
+    def test_first_boot_done_with_steps_still_queued_fails(self):
+        """omarchy-mac-first-boot finishes (exit 0) when a step needs the network, leaving it queued for the unit."""
+        rec = converged_m2()
+        rec["files"]["/var/lib/omarchy/image/deferred-steps"] = {"text": "install/hardware/vulkan.sh\n"}
+        edit_lines(rec, ["journalctl", "--unit=omarchy-mac-first-boot.service", "--output=short-iso", "--no-pager"], lambda lines: [
+            *lines[:2], lines[1].replace("Creating this Mac's package keyring...", "Some hardware setup could not finish yet "
+                                         "(see /var/log/omarchy/mac-first-boot.log and /var/log/omarchy-install.log); it is retried after first boot."),
+            *lines[2:]])
+        setup = results(run(rec)[2])["setup.first-boot-hardware"]
+        self.assertEqual(setup["status"], "fail")
+        self.assertIn("Some hardware setup could not finish yet", setup["evidence"][1])
+        self.assertEqual(setup["evidence"][-1], "still queued in /var/lib/omarchy/image/deferred-steps: install/hardware/vulkan.sh")
+
+    def test_an_old_hostname_in_first_boot_lines_is_still_scrubbed(self):
+        rec = converged_m2()
+        edit_lines(rec, ["journalctl", "--unit=omarchy-mac-first-boot.service", "--output=short-iso", "--no-pager"], lambda lines: [
+            line.replace(" <hostname> ", " old-personal-host ").replace("Deactivated successfully.", "Failed with result 'exit-code'.")
+            for line in lines])
+        report = run(rec)[2]
+        self.assertNotIn("old-personal-host", json.dumps(report))
 
     def test_a_first_boot_still_pending_or_failed_says_so(self):
         base = converged_m2()

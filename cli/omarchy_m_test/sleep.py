@@ -62,6 +62,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import human
+from .host import LONG_RUNNING
 from .session import Context
 from .ui import Ui, note, unlogged
 
@@ -88,11 +89,12 @@ MONITORS_SCRIPT = (
     "'"
 )
 
-# Half a second, as `tick TEXT` in the watches below: with $tty = 1 (run on the terminal), TEXT on one line
-# of stderr and any key returns 0 (the human skipped); `read -t` is bash's, and any other sh just sleeps.
-TICK_FUNCTION = r"""tick() {
-  if [ "$tty" != 1 ]; then sleep 0.5; return 1; fi
-  printf '\r\033[2K%s' "$1" >&2
+# Half a second, as `tick TEXT` in the watches below: with $tty the terminal's width (0: not on one), TEXT on
+# one line of stderr, cut to fit, and any key returns 0 (the human skipped); `read -t` is bash's, and any
+# other sh just sleeps.
+TICK_FUNCTION = LONG_RUNNING + r"""tick() {
+  if [ "$tty" = 0 ]; then sleep 0.5; return 1; fi
+  printf "\r\033[2K%.$((tty - 1))s" "$1" >&2
   if [ -z "$1" ]; then sleep 0.5; return 1; fi
   read -r -s -n 1 -t 0.5 key 2>/dev/null
   r=$?
@@ -100,11 +102,11 @@ TICK_FUNCTION = r"""tick() {
   [ "$r" -gt 128 ] || sleep 0.5
   return 1
 }
-done_ticking() { if [ "$tty" = 1 ]; then printf '\r\033[2K' >&2; fi; }
+done_ticking() { if [ "$tty" != 0 ]; then printf '\r\033[2K' >&2; fi; }
 """
 
-# Run as `sh -c SCRIPT sh CLOSE CLOSED AFTER TTY LABEL` (seconds, counted in 0.5 s polls; TTY 1 at a terminal,
-# LABEL the countdown's words). Times are hundredths of a second since "start", the wall clock in nanoseconds.
+# Run as `sh -c SCRIPT sh CLOSE CLOSED AFTER TTY LABEL` (seconds, counted in 0.5 s polls; TTY the terminal's
+# width, 0 off one; LABEL the countdown's first words). Times are hundredths of a second since "start", the wall clock in nanoseconds.
 LID_WATCH_SCRIPT = TICK_FUNCTION + r"""wait=$(($1 * 2)) closed=$(($2 * 2)) after=$(($3 * 2)) tty=$4 label=$5
 start=$(date +%s%N)
 echo "start $start"
@@ -349,16 +351,17 @@ def parse_links(stdout: str) -> Links:
 
 
 def lid_watch_argv(close: int = CLOSE_SECONDS, closed: int = CLOSED_SECONDS, after: int = AFTER_OPEN_SECONDS,
-                   tty: bool = False, label: str = "") -> list[str]:
-    return ["sh", "-c", LID_WATCH_SCRIPT, "sh", str(close), str(closed), str(after), "1" if tty else "0", label]
+                   tty: int = 0, label: str = "") -> list[str]:
+    return ["sh", "-c", LID_WATCH_SCRIPT, "sh", str(close), str(closed), str(after), str(tty), label]
 
 
 def watch_lid(ctx: Context, label: str, closed: int = CLOSED_SECONDS) -> Lid:
     """The lid watch: on the terminal when there is one (a countdown, and any key skips), else in the background."""
     ui = _ui(ctx)
-    if ctx.host.terminal() is not None:
+    terminal = ctx.host.terminal()
+    if terminal is not None:
         pad = getattr(ui, "pad", "")
-        return parse_lid(ctx.host.run_tty(lid_watch_argv(closed=closed, tty=True, label=pad + label)).stdout)
+        return parse_lid(ctx.host.run_tty(lid_watch_argv(closed=closed, tty=terminal.width, label=pad + label)).stdout)
     return parse_lid(ctx.host.run(lid_watch_argv(closed=closed)).stdout)
 
 
