@@ -1,0 +1,25 @@
+ok - detector says apple-silicon
+omarchy-mac 0.1.0-5.362956774610001
+ok - omarchy-mac is installed
+ok - appledrm show_notch=1 is configured
+ok - appledrm is showing the notch strip
+  monitor eDP-1 3024x1964 scale 2
+  expect eDP-1 3456x2234 on the 16" M2 Max (2160 without the strip); check by eye that the bar clears the camera cutout
+ok - Hyprland draws the cursor in software
+ok - the software cursor was written once
+ok - sddm waits for the display controller
+ok - the display controller card exists
+  kernel: [   52.038566] omarchy kernel: apple-drm soc:display-subsystem: bound 38bc00000.dcp (ops dcp_comp_ops [appledrm])
+  sddm: [  308.063188] omarchy-m1-pro systemd[1]: Starting Simple Desktop Display Manager...
+  sddm: [  308.078154] omarchy-m1-pro systemd[1]: Started Simple Desktop Display Manager.
+  expect sddm Started after the appledrm card; by eye: greeter typing fills dots on the built-in panel with USB-C monitors attached
+ok - the panel backlight is apple-panel-bl
+  read-only: skipped the panel and external brightness steps
+  no external monitor attached; skipped the DDC case
+ok - ALS and keyboard LED are available
+ok - the ALS keyboard loop runs
+  lux 44, keys 0/255
+  read-only: skipped the lock-style keyboard blank
+  by eye: dim the keys to off with the keyboard-brightness keys; they stay off until the room light changes a lot
+
+0 failure(s)

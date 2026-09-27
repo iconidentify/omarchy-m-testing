@@ -1,0 +1,1125 @@
+{
+  "description": "MacBook Pro (14-inch, M1 Pro, 2021) on a fresh converged lab image (candidate set apple-test-0052582276d9, edge lane), over SSH: raw host answers for record mode",
+  "source": "Real run of omarchy-m-test 0.1.6 --dry-run --record on the M1 Pro, 2026-09-27 (Brisbane), over SSH with nobody at the Mac, about 20 minutes after a fresh install of the converged lab image (omarchy 4.0.0 quattro g0052582276d9, omarchy-mac 0.1.0, linux-aurora 7.1.12.aurora2-11, Limine, LUKS root). The image records no candidate set (target.booted holds only format and platform; no factory seal). mesa-utils, glmark2 and vkmark were installed for the run and removed after it. Every answer is what the Mac gave; nothing is reconstructed.",
+  "pseudonymized": "Committed evidence is pseudonymized: record mode saved it scrubbed, and every placeholder (<hostname>, <user>, <home>, <ssid>, <ip>, <mac>, <uuid>, <hex>, <hex words>, <disk>, <email>, <serial>, and uuid=<redacted>) was swapped back for a same-shape decoy, so rerunning record mode over it exercises the scrubber and gives the recording the Mac saved. The saved connections are a Wi-Fi decoy and an Ethernet decoy, plus tailscale0, docker0 and lo. NetworkManager's <info> and glmark2's and vkmark's <default> are their own. 'forbidden' lists the decoys and the lab hostname.",
+  "forbidden": [
+    "omarchy-m1-pro",
+    "kestrel",
+    "/home/kestrel",
+    "Wattlebird-5G",
+    "Lab Ethernet",
+    "10.61.23.147",
+    "10.61.23.1",
+    "10.200.4.9",
+    "10.88.0.12",
+    "7a:3e:51:c0:9d:24",
+    "3c1f6a2e-8b47-4d09-a5e3-91b2c7d4e8f0",
+    "d4c2a8f1e6b3907a5c1d",
+    "0a1b2c3d 4e5f6071 8293a4b5 c6d7e8f9",
+    "5e2b9c14-7a3d-4f68-b1e0-c9d2a4f7e316",
+    "maint@example.org",
+    "C02XK7HZJG5J"
+  ],
+  "env": {
+    "SSH_CONNECTION": "10.200.4.9 63313 10.88.0.12 22",
+    "XDG_SESSION_ID": "33",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "HOME": "/home/kestrel"
+  },
+  "commands": [
+    {
+      "argv": [
+        "uname",
+        "-m"
+      ],
+      "returncode": 0,
+      "stdout": "aarch64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-r"
+      ],
+      "returncode": 0,
+      "stdout": "7.1.12-2-11-ARCH\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "nmcli",
+        "--get-values",
+        "NAME,TYPE",
+        "connection",
+        "show"
+      ],
+      "returncode": 0,
+      "stdout": "Wattlebird-5G:802-11-wireless\ntailscale0:tun\nlo:loopback\ndocker0:bridge\nLab Ethernet:802-3-ethernet\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "loginctl",
+        "show-session",
+        "33",
+        "--property=Remote",
+        "--property=Seat",
+        "--property=Active"
+      ],
+      "returncode": 0,
+      "stdout": "Seat=\nRemote=yes\nActive=yes\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "omarchy",
+        "omarchy-dev",
+        "omarchy-settings",
+        "omarchy-settings-dev",
+        "omarchy-mac",
+        "omarchy-mac-boot",
+        "omarchy-mac-keyring",
+        "linux-aurora",
+        "linux-asahi",
+        "m1n1",
+        "m1n1-aurora",
+        "uboot-asahi",
+        "limine",
+        "mesa",
+        "vulkan-asahi",
+        "asahi-audio",
+        "speakersafetyd",
+        "alsa-ucm-conf-asahi"
+      ],
+      "returncode": 1,
+      "stdout": "omarchy 4.0.0.alpha.quattro.r1790484851.g0052582276d9-1.362956774610001\nomarchy-settings 4.0.0.alpha.quattro.r1790484851.g0052582276d9-1.362956774610001\nomarchy-mac 0.1.0-5.362956774610001\nomarchy-mac-boot 20260926-1.362956774610001\nlinux-aurora 7.1.12.aurora2-11\nlinux-aurora 7.1.12.aurora2-11\nm1n1-aurora 1.6.1.aurora1-3\nm1n1-aurora 1.6.1.aurora1-3\nuboot-asahi 2026.07.asahi2-4\nlimine 12.9.0-1\nmesa 1:26.2.3-1\nvulkan-asahi 1:26.2.3-1\nasahi-audio 4.1-1\nspeakersafetyd 2.0.1-1\nalsa-ucm-conf-asahi 10-1\n",
+      "stderr": "error: package 'omarchy-dev' was not found\nerror: package 'omarchy-settings-dev' was not found\nerror: package 'omarchy-mac-keyring' was not found\n"
+    },
+    {
+      "argv": [
+        "findmnt",
+        "--noheadings",
+        "--output",
+        "SOURCE",
+        "/"
+      ],
+      "returncode": 0,
+      "stdout": "/dev/mapper/root[/@]\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lsblk",
+        "--noheadings",
+        "--inverse",
+        "--raw",
+        "--output",
+        "TYPE,FSTYPE",
+        "/dev/mapper/root"
+      ],
+      "returncode": 0,
+      "stdout": "crypt btrfs\npart crypto_LUKS\ndisk \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:mac-check"
+      ],
+      "returncode": 1,
+      "stdout": {
+        "corpus": "mac-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-provision-hardware.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-27T17:20:19+10:00 omarchy-m1-pro systemd[1]: Omarchy first-boot hardware setup deferred from the image build skipped, unmet condition check ConditionPathExists=/var/lib/omarchy/image/deferred-steps\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--unit=omarchy-mac-first-boot.service",
+        "--output=short-iso",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": "2026-09-27T17:20:05+10:00 omarchy-m1-pro systemd[1]: Starting Omarchy first boot: finish this Mac's image, then owner setup...\n2026-09-27T17:20:05+10:00 omarchy-m1-pro omarchy-mac-first-boot[6454]: Creating this Mac's package keyring...\n2026-09-27T17:20:07+10:00 omarchy-m1-pro sudo[7434]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/mkdir -p /etc/mkinitcpio.conf.d\n2026-09-27T17:20:07+10:00 omarchy-m1-pro sudo[7434]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:07+10:00 omarchy-m1-pro sudo[7434]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7437]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/tee /etc/mkinitcpio.conf.d/apple_hid_modules.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7437]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7437]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7482]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/omarchy-mac-setup-system\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7482]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7482]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7671]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /etc/default/limine\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7671]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7671]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7674]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /etc/default/limine\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7674]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7674]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7677]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /etc/default/limine /tmp/tmp.qcry777VNA/0\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7677]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7677]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7680]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7680]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7680]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7683]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7683]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7683]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7686]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /boot/efi/limine.conf /tmp/tmp.qcry777VNA/1\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7686]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7686]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7689]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/efi/EFI/Linux\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7689]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7689]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7692]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /boot/efi/EFI/Linux\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7692]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7692]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7695]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /boot/efi/EFI/Linux /tmp/tmp.qcry777VNA/2\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7695]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7695]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7699]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /etc/boot/hooks/pre.d/20-omarchy-mac-cmdline\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7699]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7699]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7702]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /etc/boot/hooks/pre.d/20-omarchy-mac-cmdline /tmp/tmp.qcry777VNA/3\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7702]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7702]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7705]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /etc/default/update-grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7705]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7705]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7708]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /etc/default/update-grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7708]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7708]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7711]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /etc/default/update-grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7711]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7711]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7714]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/efi/EFI/BOOT/BOOTAA64.EFI\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7714]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7714]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7717]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /boot/efi/EFI/BOOT/BOOTAA64.EFI\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7717]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7717]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7720]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /boot/efi/EFI/BOOT/BOOTAA64.EFI /tmp/tmp.qcry777VNA/5\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7720]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7720]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7723]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7723]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7723]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7726]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /boot/grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7726]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7726]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7729]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/grub\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7729]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7729]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7732]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/grub/grub-aa64.efi\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7732]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7732]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7735]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /boot/grub/grub-aa64.efi\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7735]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7735]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7738]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /boot/grub/grub-aa64.efi\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7738]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7738]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7741]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -L /etc/pacman.d/hooks/81-omarchy-mac-limine-deploy.hook\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7741]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7741]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7744]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -e /etc/pacman.d/hooks/81-omarchy-mac-limine-deploy.hook\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7744]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7744]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7747]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cp -a -- /etc/pacman.d/hooks/81-omarchy-mac-limine-deploy.hook /tmp/tmp.qcry777VNA/8\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7747]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7747]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7750]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/mkdir -p /boot/efi/EFI/BOOT\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7750]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7750]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7753]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/tee /etc/default/limine\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7753]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7753]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7757]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/tee -a /etc/default/limine\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7757]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7757]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7760]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/install -d /etc/boot/hooks/pre.d\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7760]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7760]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7764]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/ln -sfn /usr/bin/omarchy-mac-limine-cmdline /etc/boot/hooks/pre.d/20-omarchy-mac-cmdline\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7764]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7764]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7767]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/omarchy-mac-limine-cmdline\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7767]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7767]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7791]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -q ^KERNEL_CMDLINE\\\\[default\\\\]=\"root=UUID= /etc/default/limine\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7791]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7791]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7797]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -o machine-id=[0-9a-f]\\\\{32\\\\} /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7797]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7797]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7802]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -Fq 'interface_branding: Omarchy Bootloader' /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7802]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7802]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7805]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/sed -i -E 's/^#?[[:space:]]*timeout:.*/timeout: 3/' /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7805]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7805]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7808]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -Eq '^timeout: ' /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7808]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7808]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7811]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/test -s /boot/efi/EFI/Linux/omarchy_linux-aurora.efi\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7811]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7811]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7816]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -Fq //linux-aurora /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7816]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7816]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7820]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -Fq boot():/EFI/Linux/omarchy_linux-aurora.efi /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7820]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7820]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7824]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/touch /var/lib/omarchy/image/boot-rebuild\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7824]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7824]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7828]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/sync /var/lib/omarchy/image/boot-rebuild /var/lib/omarchy/image\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7828]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7828]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7831]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/grep -Fq '/GRUB (recovery)' /boot/efi/limine.conf\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7831]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7831]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7834]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/install -d /etc/pacman.d/hooks\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7834]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:08+10:00 omarchy-m1-pro sudo[7834]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7837]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/tee /etc/pacman.d/hooks/81-omarchy-mac-limine-deploy.hook\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7837]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7837]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7840]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/omarchy-mac-limine-deploy\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7840]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7840]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7850]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/cmp -s /usr/share/limine/BOOTAA64.EFI /boot/efi/EFI/BOOT/BOOTAA64.EFI\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7850]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7850]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7853]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/limine-snapper-sync\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7853]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7853]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7959]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/systemctl enable --now limine-snapper-sync.service\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7959]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[7959]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8011]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/rm -rf /boot/efi/limine\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8011]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8011]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8014]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/rm -f /boot/efi/EFI/BOOT/grub-aa64.efi\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8014]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8014]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8017]:     root : PWD=/ ; USER=root ; COMMAND=/usr/bin/rm -rf /tmp/tmp.qcry777VNA\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8017]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)\n2026-09-27T17:20:09+10:00 omarchy-m1-pro sudo[8017]: pam_unix(sudo:session): session closed for user root\n2026-09-27T17:20:19+10:00 omarchy-m1-pro omarchy-mac-first-boot[6454]: Ready for account setup.\n2026-09-27T17:20:19+10:00 omarchy-m1-pro systemd[1]: omarchy-mac-first-boot.service: Deactivated successfully.\n2026-09-27T17:20:19+10:00 omarchy-m1-pro systemd[1]: Finished Omarchy first boot: finish this Mac's image, then owner setup.\n2026-09-27T17:20:19+10:00 omarchy-m1-pro systemd[1]: omarchy-mac-first-boot.service: Consumed 12.774s CPU time over 14.398s wall clock time, 364.4M memory peak.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-a",
+        "-H",
+        "",
+        "--include=compatible",
+        "--include=status",
+        "/sys/firmware/devicetree/base"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "devicetree-properties.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "grep",
+        "-r",
+        "-H",
+        "-E",
+        "^(OF_FULLNAME|DRIVER)=",
+        "--include=uevent",
+        "/sys/devices"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "uevents.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--dmesg",
+        "--boot=0",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "zcat",
+        "/proc/config.gz"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "kernel-config.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vulkaninfo",
+        "--summary"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "vulkaninfo: command not found\n"
+    },
+    {
+      "argv": [
+        "eglinfo",
+        "-B"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "eglinfo: command not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "mesa-utils"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'mesa-utils' was not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "true"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-S",
+        "--needed",
+        "--noconfirm",
+        "--asdeps",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "resolving dependencies...\nlooking for conflicting packages...\n\nPackage (1)       New Version  Net Change  Download Size\n\nextra/mesa-utils  9.0.0-7        1.91 MiB       0.19 MiB\n\nTotal Download Size:   0.19 MiB\nTotal Installed Size:  1.91 MiB\n\n:: Proceed with installation? [Y/n] \n:: Retrieving packages...\n mesa-utils-9.0.0-7-aarch64 downloading...\nchecking keyring...\nchecking package integrity...\nloading package files...\nchecking for file conflicts...\nchecking available disk space...\n:: Running pre-transaction hooks...\n(1/2) Checking packages against this machine's platform...\n(2/2) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\ninstalling mesa-utils...\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Qq",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "mesa-utils\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-R",
+        "--noconfirm",
+        "mesa-utils"
+      ],
+      "returncode": 0,
+      "stdout": "checking dependencies...\n:: inxi optionally requires mesa-utils: glxinfo: -G (X) glx info\n\nPackage (1)  Old Version  Net Change\n\nmesa-utils   9.0.0-7       -1.91 MiB\n\nTotal Removed Size:  1.91 MiB\n\n:: Do you want to remove these packages? [Y/n] \n:: Running pre-transaction hooks...\n(1/1) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\nremoving mesa-utils...\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "bundled:apple-display-check",
+        "--read-only"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "display-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--list",
+        "--machine-readable"
+      ],
+      "returncode": 0,
+      "stdout": "apple-panel-bl,backlight,140,28%,500\ninput3::kana,leds,0,0%,1\ninput3::numlock,leds,1,100%,1\nkbd_backlight,leds,0,0%,255\ninput3::capslock,leds,0,0%,1\ninput3::compose,leds,0,0%,1\ninput3::scrolllock,leds,0,0%,1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=apple-panel-bl",
+        "set",
+        "215"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Failed to set brightness: Operation not permitted\n"
+    },
+    {
+      "argv": [
+        "bundled:apple-audio-check",
+        "--no-sound"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "audio-check.txt"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-source"
+      ],
+      "returncode": 0,
+      "stdout": "omarchy_asahi_mic\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "timeout 3 parec --raw --format=s16le --channels=1 --rate=48000 --device=\"$2\" | python3 -c \"$1\"",
+        "sh",
+        "import array, math, sys\ndata = sys.stdin.buffer.read()\nsamples = array.array('h', data[: len(data) // 2 * 2])\nif sys.byteorder == 'big':\n    samples.byteswap()\npeak = max(map(abs, samples), default=0)\nrms = math.sqrt(sum(v * v for v in samples) / len(samples)) if samples else 0.0\nprint(f'samples {len(samples)} peak {peak} rms {rms:.1f}')\n",
+        "omarchy_asahi_mic"
+      ],
+      "returncode": 0,
+      "stdout": "samples 65536 peak 276 rms 66.4\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "systemctl",
+        "is-active",
+        "speakersafetyd"
+      ],
+      "returncode": 0,
+      "stdout": "active\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pactl",
+        "get-default-sink"
+      ],
+      "returncode": 0,
+      "stdout": "audio_effect.j314-convolver\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "inspect",
+        "@DEFAULT_AUDIO_SINK@"
+      ],
+      "returncode": 0,
+      "stdout": "id 82, type PipeWire:Interface:Node\n    adapt.follower.spa-node = \"\"\n    audio.allowed-rates = \"[96000, 88200, 48000, 44100]\"\n    audio.channels = \"2\"\n    audio.position = \"[\"FL\", \"FR\"]\"\n  * client.id = \"77\"\n    clock.quantum-limit = \"8192\"\n    device.api = \"dsp\"\n    device.icon-name = \"audio-speakers\"\n  * factory.id = \"10\"\n    library.name = \"audioconvert/libspa-audioconvert\"\n  * media.class = \"Audio/Sink\"\n    media.name = \"MacBook Pro J314 Speakers\"\n    node.autoconnect = \"true\"\n  * node.description = \"MacBook Pro J314 Speakers\"\n    node.driver-id = \"56\"\n    node.group = \"filter-chain-37845-19\"\n    node.link-group = \"filter-chain-37845-19\"\n    node.loop.name = \"data-loop.0\"\n  * node.name = \"audio_effect.j314-convolver\"\n    node.virtual = \"false\"\n    node.want-driver = \"true\"\n    object.register = \"false\"\n  * object.serial = \"89\"\n    port.group = \"stream.0\"\n  * priority.session = \"850\"\n    resample.disable = \"true\"\n    resample.prefill = \"true\"\n    state.default-volume = \"0.343\"\n    stream.is-live = \"true\"\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "get-volume",
+        "82"
+      ],
+      "returncode": 0,
+      "stdout": "Volume: 0.70\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "82",
+        "0.30"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "python3 -c \"$1\" | pacat --raw --format=s16le --channels=2 --rate=48000 --device=\"$2\"",
+        "sh",
+        "import math, struct, sys\nrate = 48000\nn = 2 * rate\nfade = rate // 20\ndef level(i):\n    return min(1.0, i / fade, (n - i) / fade)\nwave = (int(8000 * level(i) * math.sin(2 * math.pi * 440 * i / rate)) for i in range(n))\nsys.stdout.buffer.write(b''.join(struct.pack('<hh', v, v) for v in wave))\n",
+        "audio_effect.j314-convolver"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "wpctl",
+        "set-volume",
+        "82",
+        "0.70"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "brightnessctl",
+        "--machine-readable",
+        "--device=kbd_backlight",
+        "info"
+      ],
+      "returncode": 0,
+      "stdout": "kbd_backlight,leds,0,0%,255\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "out=$(hyprctl devices -j 2>/dev/null) || { echo unavailable; exit 0; }\nprintf '%s\\n' \"$out\" | grep -oE '\"name\": *\"apple-(spi|mtp|internal)-[^\"]*\"' | sed -E 's/^\"name\": *\"(.*)\"$/\\1/' | sort -u"
+      ],
+      "returncode": 0,
+      "stdout": "unavailable\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for d in /sys/class/video4linux/video*; do [ -e \"$d\" ] || continue; drv=$(readlink \"$d/device/driver\"); echo \"${d##*/} ${drv##*/}\"; done"
+      ],
+      "returncode": 0,
+      "stdout": "video0 avd\nvideo1 apple-isp\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "timeout",
+        "20",
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-i",
+        "/dev/video1",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, video4linux2,v4l2, from '/dev/video1':\n  Duration: N/A, start: 1289.704557, bitrate: 746496 kb/s\n  Stream #0:0: Video: rawvideo (NV12 / 0x3231564E), nv12, 1920x1080, 746496 kb/s, 30 fps, 30 tbr, 1000k tbn, start 1289.704557\nStream mapping:\n  Stream #0:0 -> #0:0 (rawvideo (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Metadata:\n    encoder         : Lavf63.1.102\n  Stream #0:0: Video: wrapped_avframe, nv12(progressive), 1920x1080, q=2-31, 200 kb/s, 30 fps, 30 tbn\n    Metadata:\n      encoder         : Lavc63.1.102 wrapped_avframe\nframe=   15 fps=0.0 q=-0.0 size=N/A time=00:00:00.50 bitrate=N/A speed=   1x elapsed=0:00:00.50    \r[out#0/null @ 0xaaabbe993950] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=   30 fps= 29 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.981x elapsed=0:00:01.01    \n"
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for p in /sys/class/typec/port*; do\n  n=${p##*/port}\n  case $n in ''|*[!0-9]*) continue;; esac\n  if [ -e \"/sys/class/typec/port$n-partner\" ]; then partner=yes; else partner=no; fi\n  data=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/data_role\" 2>/dev/null)\n  power=$(sed -n 's/.*\\[\\(.*\\)\\].*/\\1/p' \"$p/power_role\" 2>/dev/null)\n  echo \"typec $n partner=$partner data=$data power=$power\"\ndone\nfor d in /sys/bus/usb/devices/*; do\n  [ -r \"$d/speed\" ] || continue\n  case ${d##*/} in *:*) continue;; usb*) kind=root;; *) kind=device;; esac\n  class=$(cat \"$d/bDeviceClass\" 2>/dev/null)\n  if [ \"$class\" = 00 ]; then class=$(cat \"$d\"/*:*/bInterfaceClass 2>/dev/null | head -n 1); fi\n  echo \"usb $kind speed=$(cat \"$d/speed\") class=$class\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "typec 0 partner=no data=device power=sink\ntypec 1 partner=yes data=device power=sink\ntypec 2 partner=no data=device power=sink\ntypec 3 partner=no data=device power=sink\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "if [ ! -d /sys/bus/thunderbolt/devices ]; then echo nobus; exit 0; fi\nfor d in /sys/bus/thunderbolt/devices/*; do\n  [ -r \"$d/uevent\" ] || continue\n  line=\"thunderbolt ${d##*/} $(sed -n 's/^DEVTYPE=//p' \"$d/uevent\")\"\n  for f in generation rx_speed rx_lanes authorized; do\n    if [ -r \"$d/$f\" ]; then line=\"$line $f=$(tr -d ' \\n' < \"$d/$f\")\"; fi\n  done\n  echo \"$line\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \nconnector card2-eDP-1 connected disabled 3024x1964\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "omarchy-battery-charge-limit"
+      ],
+      "returncode": 0,
+      "stdout": "Charge limit: 100% (restart charging at 100%)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "sh",
+        "-c",
+        "printf '%s\\n' \"$1\" > /sys/class/power_supply/macsmc-battery/charge_control_end_threshold",
+        "sh",
+        "80"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "sh",
+        "-c",
+        "printf '%s\\n' \"$1\" > /sys/class/power_supply/macsmc-battery/charge_control_end_threshold",
+        "sh",
+        "100"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "omarchy-battery-charge-limit",
+        "80"
+      ],
+      "returncode": 0,
+      "stdout": "Charge limit set to 80% (restart charging at 75%).\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "omarchy-battery-charge-limit",
+        "100"
+      ],
+      "returncode": 0,
+      "stdout": "Charge limit set to 100% (restart charging at 100%).\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "sh",
+        "-c",
+        "printf '%s\\n' \"$1\" > /sys/class/power_supply/macsmc-battery/charge_control_end_threshold || exit 1\nsleep 2\nif [ \"$2\" = none ]; then rm -f /etc/udev/macsmc-battery.conf; else printf '%s' \"$3\" > /etc/udev/macsmc-battery.conf; fi",
+        "sh",
+        "100",
+        "none"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "glmark2",
+        "vkmark",
+        "ffmpeg"
+      ],
+      "returncode": 1,
+      "stdout": "ffmpeg 2:9.0.2-1\n",
+      "stderr": "error: package 'glmark2' was not found\nerror: package 'vkmark' was not found\n"
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Sp",
+        "--needed",
+        "--print-format",
+        "%n",
+        "glmark2",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "glmark2\nassimp\nvkmark\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Q",
+        "glmark2",
+        "assimp",
+        "vkmark"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "error: package 'glmark2' was not found\nerror: package 'assimp' was not found\nerror: package 'vkmark' was not found\n"
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-S",
+        "--needed",
+        "--noconfirm",
+        "--asdeps",
+        "glmark2",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "resolving dependencies...\nlooking for conflicting packages...\n\nPackage (3)    New Version  Net Change  Download Size\n\nextra/assimp   6.0.5-1       12.42 MiB       2.86 MiB\nextra/glmark2  2023.01-2     16.21 MiB       6.91 MiB\nextra/vkmark   1:2025.01-2    3.05 MiB       0.71 MiB\n\nTotal Download Size:   10.49 MiB\nTotal Installed Size:  31.68 MiB\n\n:: Proceed with installation? [Y/n] \n:: Retrieving packages...\n glmark2-2023.01-2-aarch64 downloading...\n assimp-6.0.5-1-aarch64 downloading...\n vkmark-1:2025.01-2-aarch64 downloading...\nchecking keyring...\nchecking package integrity...\nloading package files...\nchecking for file conflicts...\nchecking available disk space...\n:: Running pre-transaction hooks...\n(1/2) Checking packages against this machine's platform...\n(2/2) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\ninstalling glmark2...\ninstalling assimp...\ninstalling vkmark...\nOptional dependencies for vkmark\n    xcb-util-wm: for X11 support [installed]\n    wayland: for Wayland support [installed]\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "env",
+        "WAYLAND_DISPLAY=wayland-1",
+        "glmark2-wayland",
+        "--off-screen",
+        "-s",
+        "1920x1080",
+        "-b",
+        ":duration=3",
+        "-b",
+        "build:use-vbo=true",
+        "-b",
+        "texture:texture-filter=linear",
+        "-b",
+        "shading:shading=phong",
+        "-b",
+        "bump:bump-render=high-poly",
+        "-b",
+        "effect2d:kernel=0,1,0;1,-4,1;0,1,0;",
+        "-b",
+        "desktop:blur-radius=5:effect=blur:passes=1:separable=true:windows=4",
+        "-b",
+        "jellyfish",
+        "-b",
+        "terrain"
+      ],
+      "returncode": 0,
+      "stdout": "=======================================================\n    glmark2 2023.01\n=======================================================\n    OpenGL Information\n    GL_VENDOR:      Mesa\n    GL_RENDERER:    Apple M1 Pro (G13S C0)\n    GL_VERSION:     4.6 (Compatibility Profile) Mesa 26.2.3-arch1.1\n    Surface Config: buf=32 r=8 g=8 b=8 a=8 depth=32 stencil=0 samples=0\n    Surface Size:   1920x1080 windowed\n=======================================================\n[build] use-vbo=true: FPS: 2110 FrameTime: 0.474 ms\n[texture] texture-filter=linear: FPS: 2214 FrameTime: 0.452 ms\n[shading] shading=phong: FPS: 1871 FrameTime: 0.535 ms\n[bump] bump-render=high-poly: FPS: 1696 FrameTime: 0.590 ms\n[effect2d] kernel=0,1,0;1,-4,1;0,1,0;: FPS: 1577 FrameTime: 0.634 ms\n[desktop] blur-radius=5:effect=blur:passes=1:separable=true:windows=4: FPS: 897 FrameTime: 1.115 ms\n[jellyfish] <default>: FPS: 1547 FrameTime: 0.646 ms\n[terrain] <default>: FPS: 482 FrameTime: 2.075 ms\n=======================================================\n                                  glmark2 Score: 1548 \n=======================================================\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "vkmark",
+        "--winsys",
+        "headless",
+        "-s",
+        "1920x1080",
+        "-b",
+        ":duration=3",
+        "-b",
+        "vertex:device-local=true",
+        "-b",
+        "texture:anisotropy=16",
+        "-b",
+        "shading:shading=phong",
+        "-b",
+        "shading:shading=cel",
+        "-b",
+        "effect2d:kernel=blur",
+        "-b",
+        "desktop",
+        "-b",
+        "cube"
+      ],
+      "returncode": 0,
+      "stdout": "=======================================================\n    vkmark 2025.01\n=======================================================\n    Vendor ID:      0x10005\n    Device ID:      0x0\n    Device Name:    Apple M1 Pro (G13S C0)\n    Driver Version: 109060099\n    Device UUID:    d4c2a8f1e6b3907a5c1d\n=======================================================\n[vertex] device-local=true: FPS: 3681 FrameTime: 0.272 ms\n[texture] anisotropy=16: FPS: 4310 FrameTime: 0.232 ms\n[shading] shading=phong: FPS: 3034 FrameTime: 0.330 ms\n[shading] shading=cel: FPS: 3038 FrameTime: 0.329 ms\n[effect2d] kernel=blur: FPS: 1971 FrameTime: 0.507 ms\n[desktop] <default>: FPS: 3815 FrameTime: 0.262 ms\n[cube] <default>: FPS: 4039 FrameTime: 0.248 ms\n=======================================================\n                                   vkmark Score: 3412\n=======================================================\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "mktemp",
+        "-d",
+        "/tmp/omarchy-m-test-bench.XXXXXXXX"
+      ],
+      "returncode": 0,
+      "stdout": "/tmp/omarchy-m-test-bench.PrbRfe4w\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc2=size=1920x1080:rate=30",
+        "-t",
+        "5",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-pix_fmt",
+        "yuv420p",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-h264.mp4"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-hide_banner",
+        "-benchmark",
+        "-stream_loop",
+        "3",
+        "-i",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-h264.mp4",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/tmp/omarchy-m-test-bench.PrbRfe4w/clip-h264.mp4':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2avc1mp41\n    encoder         : Lavf63.1.102\n  Duration: 00:00:05.00, start: 0.000000, bitrate: 5635 kb/s\n  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080 [SAR 1:1 DAR 16:9], 5631 kb/s, 30 fps, 30 tbr, 15360 tbn (default)\n    Metadata:\n      handler_name    : VideoHandler\n      encoder         : Lavc63.1.102 libx264\nStream mapping:\n  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2avc1mp41\n    encoder         : Lavf63.1.102\n  Stream #0:0(und): Video: wrapped_avframe, yuv420p(progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)\n    Metadata:\n      encoder         : Lavc63.1.102 wrapped_avframe\n      handler_name    : VideoHandler\n[out#0/null @ 0xaaab2c6ff4e0] video:248KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=  600 fps=0.0 q=-0.0 Lsize=N/A time=00:00:20.00 bitrate=N/A speed=50.1x elapsed=0:00:00.39    \nbench: utime=2.442s stime=0.044s rtime=0.399s\nbench: maxrss=150032KiB\n"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-benchmark",
+        "-stream_loop",
+        "3",
+        "-hwaccel",
+        "vaapi",
+        "-hwaccel_output_format",
+        "vaapi",
+        "-i",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-h264.mp4",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "ffmpeg version n9.0.2 Copyright (c) 2000-2026 the FFmpeg developers\n  built with gcc 16.1.1 (GCC) 20260430\n  configuration: --prefix=/usr --disable-debug --disable-static --disable-stripping --enable-amf --enable-avisynth --enable-cuda-llvm --enable-fontconfig --enable-frei0r --enable-gmp --enable-gnutls --enable-gpl --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libdav1d --enable-libdrm --enable-libdvdnav --enable-libdvdread --enable-libfreetype --enable-lcms2 --enable-libfribidi --enable-libgsm --enable-libharfbuzz --enable-libiec61883 --enable-libjack --enable-libjxl --enable-libmodplug --enable-libmp3lame --enable-libopencore_amrnb --enable-libopencore_amrwb --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libplacebo --enable-libpulse --enable-librsvg --enable-librubberband --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libtheora --enable-libv4l2 --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxcb --enable-libxml2 --enable-libxvid --enable-libzimg --enable-libzmq --enable-opencl --enable-opengl --enable-shared --enable-vapoursynth --enable-version3 --enable-vulkan --disable-decoder=magicyuv\n  libavutil      61.  1.102 / 61.  1.102\n  libavcodec     63.  1.102 / 63.  1.102\n  libavformat    63.  1.102 / 63.  1.102\n  libavdevice    63.  1.102 / 63.  1.102\n  libavfilter    12.  1.102 / 12.  1.102\n  libswscale     10.  1.102 / 10.  1.102\n  libswresample   7.  1.102 /  7.  1.102\nInput #0, mov,mp4,m4a,3gp,3g2,mj2, from '/tmp/omarchy-m-test-bench.PrbRfe4w/clip-h264.mp4':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2avc1mp41\n    encoder         : Lavf63.1.102\n  Duration: 00:00:05.00, start: 0.000000, bitrate: 5635 kb/s\n  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080 [SAR 1:1 DAR 16:9], 5631 kb/s, 30 fps, 30 tbr, 15360 tbn (default)\n    Metadata:\n      handler_name    : VideoHandler\n      encoder         : Lavc63.1.102 libx264\nlibva-v4l2request: detected 1 Request API decoder\nStream mapping:\n  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))\nlibva-v4l2request: decoding h264 via /dev/video0 [avd] (media /dev/media0)\nlibva-v4l2request: using CAPTURE format NV12 (1920x1088)\nOutput #0, null, to 'pipe:':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2avc1mp41\n    encoder         : Lavf63.1.102\n  Stream #0:0(und): Video: wrapped_avframe, vaapi(progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)\n    Metadata:\n      encoder         : Lavc63.1.102 wrapped_avframe\n      handler_name    : VideoHandler\nframe=  212 fps=0.0 q=-0.0 size=N/A time=00:00:07.06 bitrate=N/A speed=14.1x elapsed=0:00:00.50    \rframe=  428 fps=428 q=-0.0 size=N/A time=00:00:14.26 bitrate=N/A speed=14.3x elapsed=0:00:01.00    \r[out#0/null @ 0xaaaaee37f5c0] video:248KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=  600 fps=435 q=-0.0 Lsize=N/A time=00:00:20.00 bitrate=N/A speed=14.5x elapsed=0:00:01.37    \nbench: utime=0.119s stime=0.144s rtime=1.379s\nbench: maxrss=96400KiB\n"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc2=size=1920x1080:rate=30",
+        "-t",
+        "5",
+        "-c:v",
+        "libx265",
+        "-preset",
+        "ultrafast",
+        "-x265-params",
+        "log-level=error",
+        "-pix_fmt",
+        "yuv420p",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-hevc.mp4"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-hide_banner",
+        "-benchmark",
+        "-stream_loop",
+        "3",
+        "-i",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-hevc.mp4",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/tmp/omarchy-m-test-bench.PrbRfe4w/clip-hevc.mp4':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2mp41\n    encoder         : Lavf63.1.102\n  Duration: 00:00:05.00, start: 0.000000, bitrate: 3608 kb/s\n  Stream #0:0[0x1](und): Video: hevc (Main) (hev1 / 0x31766568), yuv420p(tv, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 3600 kb/s, 30 fps, 30 tbr, 15360 tbn (default)\n    Metadata:\n      handler_name    : VideoHandler\n      encoder         : Lavc63.1.102 libx265\nStream mapping:\n  Stream #0:0 -> #0:0 (hevc (native) -> wrapped_avframe (native))\nOutput #0, null, to 'pipe:':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2mp41\n    encoder         : Lavf63.1.102\n  Stream #0:0(und): Video: wrapped_avframe, yuv420p(tv, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)\n    Metadata:\n      encoder         : Lavc63.1.102 wrapped_avframe\n      handler_name    : VideoHandler\n[out#0/null @ 0xaaaad9a24880] video:248KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=  600 fps=0.0 q=-0.0 Lsize=N/A time=00:00:20.00 bitrate=N/A speed=46.1x elapsed=0:00:00.43    \nbench: utime=2.516s stime=0.050s rtime=0.434s\nbench: maxrss=156304KiB\n"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-nostdin",
+        "-benchmark",
+        "-stream_loop",
+        "3",
+        "-hwaccel",
+        "vaapi",
+        "-hwaccel_output_format",
+        "vaapi",
+        "-i",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w/clip-hevc.mp4",
+        "-f",
+        "null",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "ffmpeg version n9.0.2 Copyright (c) 2000-2026 the FFmpeg developers\n  built with gcc 16.1.1 (GCC) 20260430\n  configuration: --prefix=/usr --disable-debug --disable-static --disable-stripping --enable-amf --enable-avisynth --enable-cuda-llvm --enable-fontconfig --enable-frei0r --enable-gmp --enable-gnutls --enable-gpl --enable-ladspa --enable-libass --enable-libbluray --enable-libbs2b --enable-libdav1d --enable-libdrm --enable-libdvdnav --enable-libdvdread --enable-libfreetype --enable-lcms2 --enable-libfribidi --enable-libgsm --enable-libharfbuzz --enable-libiec61883 --enable-libjack --enable-libjxl --enable-libmodplug --enable-libmp3lame --enable-libopencore_amrnb --enable-libopencore_amrwb --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libplacebo --enable-libpulse --enable-librsvg --enable-librubberband --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libtheora --enable-libv4l2 --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxcb --enable-libxml2 --enable-libxvid --enable-libzimg --enable-libzmq --enable-opencl --enable-opengl --enable-shared --enable-vapoursynth --enable-version3 --enable-vulkan --disable-decoder=magicyuv\n  libavutil      61.  1.102 / 61.  1.102\n  libavcodec     63.  1.102 / 63.  1.102\n  libavformat    63.  1.102 / 63.  1.102\n  libavdevice    63.  1.102 / 63.  1.102\n  libavfilter    12.  1.102 / 12.  1.102\n  libswscale     10.  1.102 / 10.  1.102\n  libswresample   7.  1.102 /  7.  1.102\nInput #0, mov,mp4,m4a,3gp,3g2,mj2, from '/tmp/omarchy-m-test-bench.PrbRfe4w/clip-hevc.mp4':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2mp41\n    encoder         : Lavf63.1.102\n  Duration: 00:00:05.00, start: 0.000000, bitrate: 3608 kb/s\n  Stream #0:0[0x1](und): Video: hevc (Main) (hev1 / 0x31766568), yuv420p(tv, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 3600 kb/s, 30 fps, 30 tbr, 15360 tbn (default)\n    Metadata:\n      handler_name    : VideoHandler\n      encoder         : Lavc63.1.102 libx265\nlibva-v4l2request: detected 1 Request API decoder\nStream mapping:\n  Stream #0:0 -> #0:0 (hevc (native) -> wrapped_avframe (native))\nlibva-v4l2request: decoding hevc via /dev/video0 [avd] (media /dev/media0)\nlibva-v4l2request: using CAPTURE format NV12 (1920x1088)\nOutput #0, null, to 'pipe:':\n  Metadata:\n    major_brand     : isom\n    minor_version   : 512\n    compatible_brands: isomiso2mp41\n    encoder         : Lavf63.1.102\n  Stream #0:0(und): Video: wrapped_avframe, vaapi(tv, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)\n    Metadata:\n      encoder         : Lavc63.1.102 wrapped_avframe\n      handler_name    : VideoHandler\nframe=  365 fps=0.0 q=-0.0 size=N/A time=00:00:12.16 bitrate=N/A speed=24.3x elapsed=0:00:00.50    \r[out#0/null @ 0xaaab9e8ac960] video:248KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nframe=  600 fps=0.0 q=-0.0 Lsize=N/A time=00:00:20.00 bitrate=N/A speed=24.7x elapsed=0:00:00.81    \nbench: utime=0.109s stime=0.128s rtime=0.811s\nbench: maxrss=96624KiB\n"
+    },
+    {
+      "argv": [
+        "rm",
+        "-rf",
+        "--",
+        "/tmp/omarchy-m-test-bench.PrbRfe4w"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "pacman",
+        "-Qq",
+        "glmark2",
+        "assimp",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "glmark2\nassimp\nvkmark\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "pacman",
+        "-R",
+        "--noconfirm",
+        "glmark2",
+        "assimp",
+        "vkmark"
+      ],
+      "returncode": 0,
+      "stdout": "checking dependencies...\n\nPackage (3)  Old Version  Net Change\n\nassimp       6.0.5-1      -12.42 MiB\nglmark2      2023.01-2    -16.21 MiB\nvkmark       1:2025.01-2   -3.05 MiB\n\nTotal Removed Size:  31.68 MiB\n\n:: Do you want to remove these packages? [Y/n] \n:: Running pre-transaction hooks...\n(1/1) Waiting for limine-snapper-sync to finish...\n:: Processing package changes...\nremoving vkmark...\nremoving assimp...\nremoving glmark2...\n:: Running post-transaction hooks...\n(1/1) Arming ConditionNeedsUpdate...\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "dtc",
+        "-I",
+        "fs",
+        "-O",
+        "dts",
+        "/proc/device-tree"
+      ],
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "dtc: command not found\n"
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=NetworkManager.service",
+        "--unit=iwd.service",
+        "--output=short-precise",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "wifi.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "journalctl",
+        "--boot=0",
+        "--unit=systemd-logind.service",
+        "--no-pager"
+      ],
+      "returncode": 0,
+      "stdout": {
+        "corpus": "logind.log"
+      },
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": "Linux omarchy-m1-pro 7.1.12-2-11-ARCH #1 SMP PREEMPT_DYNAMIC Sat, 26 Sep 2026 17:47:02 +0000 aarch64 GNU/Linux\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "lspci",
+        "-nn"
+      ],
+      "returncode": 0,
+      "stdout": "00:00.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n00:01.0 PCI bridge [0604]: Apple Inc. Apple Silicon PCI Express Root Port [106b:100c] (rev 01)\n01:00.0 Network controller [0280]: Broadcom Inc. and subsidiaries BCM4387 802.11ax Dual Band Wireless LAN Controller [14e4:4433] (rev 07)\n01:00.1 Network controller [0280]: Broadcom Inc. and subsidiaries BRCM4387 Bluetooth Controller [14e4:5f71] (rev 07)\n02:00.0 SD Host controller [0805]: Genesys Logic, Inc GL9755 SD Host Controller [17a0:9755] (rev 01)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "ip",
+        "-brief",
+        "address"
+      ],
+      "returncode": 0,
+      "stdout": "lo               UNKNOWN        10.200.4.9/8 10.88.0.12/128 \nwlan0            UP             10.61.23.147/24 10.61.23.1/64 \ntailscale0       UNKNOWN        10.200.4.9/32 10.88.0.12/128 10.61.23.147/64 \ndocker0          DOWN           10.61.23.1/16 \n",
+      "stderr": ""
+    }
+  ],
+  "files": {
+    "/proc/device-tree/compatible": {
+      "text": "apple,j314s\u0000apple,t6000\u0000apple,arm-platform\u0000"
+    },
+    "/proc/device-tree/model": {
+      "text": "Apple MacBook Pro (14-inch, M1 Pro, 2021)\u0000"
+    },
+    "/proc/sys/kernel/hostname": {
+      "text": "omarchy-m1-pro\n"
+    },
+    "/etc/os-release": {
+      "text": "NAME=\"Arch Linux ARM\"\nPRETTY_NAME=\"Arch Linux ARM\"\nID=archarm\nID_LIKE=arch\nBUILD_ID=rolling\nANSI_COLOR=\"38;2;23;147;209\"\nHOME_URL=\"https://archlinuxarm.org/\"\nDOCUMENTATION_URL=\"https://archlinuxarm.org/wiki\"\nSUPPORT_URL=\"https://archlinuxarm.org/forum\"\nBUG_REPORT_URL=\"https://github.com/archlinuxarm/PKGBUILDs/issues\"\nLOGO=archlinux-logo\n"
+    },
+    "/var/lib/omarchy/image/target": null,
+    "/var/lib/omarchy/image/target.booted": {
+      "text": "format=1\nplatform=apple-silicon\n"
+    },
+    "/var/lib/omarchy/factory-sealed": null,
+    "/usr/lib/systemd/system/omarchy-provision-hardware.service.d/20-mac-first-boot.conf": {
+      "text": "# Deferred hardware setup waits for first boot, which creates the package\n# keyring its steps need and runs the queue itself, and never starts while\n# first boot is still pending. What first boot left queued is usually a step\n# that needs the network (one that installs a package the image does not\n# carry). network-online.target waits for nothing on\n# Omarchy (NetworkManager-wait-online.service is masked), so the retry waits\n# for NetworkManager to bring up its saved connections itself; with nothing to\n# connect it goes on at once.\n[Unit]\nAfter=omarchy-mac-first-boot.service NetworkManager.service\nConditionPathExists=!/var/lib/omarchy/mac-first-boot/pending\n\n[Service]\nExecStartPre=-/usr/bin/nm-online -q -s -t 30\n"
+    },
+    "/var/lib/omarchy/image/deferred-steps": null,
+    "/var/lib/omarchy/mac-first-boot/pending": null,
+    "/sys/bus/iio/devices/iio:device0/in_illuminance_input": null,
+    "/sys/bus/iio/devices/iio:device1/in_illuminance_input": {
+      "text": "44\n"
+    },
+    "/sys/module/hid_apple/parameters/fnmode": {
+      "text": "3\n"
+    },
+    "/sys/class/power_supply/macsmc-ac/type": {
+      "text": "Mains\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/type": {
+      "text": "Battery\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/status": {
+      "text": "Charging\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/capacity": {
+      "text": "98\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_end_threshold": {
+      "text": "100\n"
+    },
+    "/sys/class/power_supply/macsmc-battery/charge_control_start_threshold": {
+      "text": "100\n"
+    },
+    "/etc/udev/macsmc-battery.conf": null,
+    "/usr/lib/udev/rules.d/94-omarchy-mac-battery-charge-limit.rules": {
+      "text": "# Reapply the charge limit saved by omarchy-battery-charge-limit when the Apple SMC battery appears.\nACTION==\"add\", SUBSYSTEM==\"power_supply\", KERNEL==\"macsmc-battery\", RUN+=\"/usr/lib/omarchy-mac/battery-charge-limit-restore\"\n"
+    },
+    "/usr/lib/omarchy-mac/battery-charge-limit-restore": {
+      "text": "#!/bin/bash\n# udev runs this as the SMC battery appears, so a saved charge limit survives\n# reboots. It never fails the event: anything unexpected leaves the SMC alone.\nset -euo pipefail\n\nsaved_file=\"/etc/udev/macsmc-battery.conf\"\nend_file=\"/sys/class/power_supply/macsmc-battery/charge_control_end_threshold\"\n\n[[ $(omarchy-hw-platform 2>/dev/null) == \"apple-silicon\" ]] || exit 0\n[[ -r $saved_file && -w $end_file ]] || exit 0\n\nlimit=\"\"\nwhile IFS= read -r line || [[ -n $line ]]; do\n  if [[ $line == CHARGE_CONTROL_END_THRESHOLD=* ]]; then\n    limit=${line#*=}\n  fi\ndone <\"$saved_file\"\n\nif [[ $limit == \"80\" || $limit == \"100\" ]]; then\n  printf '%s\\n' \"$limit\" >\"$end_file\" || true\nfi\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq": {
+      "text": "2064000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/related_cpus": {
+      "text": "0 1\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/cpuinfo_max_freq": {
+      "text": "3036000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy2/related_cpus": {
+      "text": "2 3 4 5\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_driver": {
+      "text": "apple-cpufreq\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_min_freq": {
+      "text": "600000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/cpuinfo_max_freq": {
+      "text": "3036000\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": {
+      "text": "schedutil\n"
+    },
+    "/sys/devices/system/cpu/cpufreq/policy6/related_cpus": {
+      "text": "6 7 8 9\n"
+    }
+  },
+  "dirs": {
+    "/home": [
+      "kestrel"
+    ],
+    "/sys/bus/platform/drivers/asahi": [
+      "406400000.gpu",
+      "bind",
+      "uevent",
+      "unbind"
+    ],
+    "/usr/share/vulkan/icd.d": [
+      "asahi_icd.json"
+    ],
+    "/sys/bus/iio/devices": [
+      "iio:device0",
+      "iio:device1"
+    ],
+    "/sys/class/power_supply": [
+      "macsmc-ac",
+      "macsmc-battery",
+      "tps6598x-source-psy-0-0038",
+      "tps6598x-source-psy-0-003a",
+      "tps6598x-source-psy-0-003b",
+      "tps6598x-source-psy-0-003f"
+    ],
+    "/sys/devices/system/cpu/cpufreq": [
+      "boost",
+      "policy0",
+      "policy2",
+      "policy6"
+    ],
+    "/run/user/1000": [
+      "at-spi",
+      "brightnessctl",
+      "bus",
+      "dconf",
+      "doc",
+      "gnupg",
+      "gvfs",
+      "gvfsd",
+      "hypr",
+      "keyring",
+      "omarchy-asahi-mic.lock",
+      "omarchy-monitor-clamshell.lock",
+      "omarchy-monitor-modeless.lock",
+      "p11-kit",
+      "pipewire-0",
+      "pipewire-0-manager",
+      "pipewire-0-manager.lock",
+      "pipewire-0.lock",
+      "pulse",
+      "quickshell",
+      "systemd",
+      "uwsm",
+      "uwsm-app-daemon-in",
+      "uwsm-app-daemon-out",
+      "uwsm-app.lock",
+      "varlink",
+      "wayland-1",
+      "wayland-1.lock"
+    ]
+  }
+}

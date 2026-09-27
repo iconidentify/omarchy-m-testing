@@ -1,0 +1,16 @@
+PASS audio stack installed
+PASS speakersafetyd enabled and active
+speakersafetyd presets: /usr/lib/systemd/system-preset/80-omarchy-mac-audio.preset 
+speakersafetyd enable links: /etc/systemd/system/multi-user.target.wants/speakersafetyd.service 
+PASS only omarchy-mac presets speakersafetyd
+PASS speakersafetyd enabled by exactly one link
+PASS speaker amps unlocked this boot
+PASS speaker DSP sink present
+PASS speaker and headphone sinks never suspend
+PASS mic mapper running
+default source: omarchy_asahi_mic
+Sep 27 17:23:25 omarchy-m1-pro systemd[16268]: Stopping Reconcile the Asahi microphone stereo mapping...
+Sep 27 17:23:25 omarchy-m1-pro systemd[16268]: Stopped Reconcile the Asahi microphone stereo mapping.
+Sep 27 17:24:18 omarchy-m1-pro systemd[37806]: Starting Reconcile the Asahi microphone stereo mapping...
+Sep 27 17:24:18 omarchy-m1-pro systemd[37806]: Started Reconcile the Asahi microphone stereo mapping.
+Sep 27 17:24:19 omarchy-m1-pro omarchy-audio-asahi-mic-map[37864]: No Asahi DSP microphone is present; user service will retry if an array appears

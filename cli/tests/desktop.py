@@ -45,12 +45,12 @@ UNANSWERED_AT_A_TERMINAL = OPENGL_OFFER + [EOF] * 11 + SUDO_PROMPT + BENCHMARK_O
 # How many human checks each corpus machine's run asks (the mx-mac M1's stand-ins skip three without asking;
 # the converged M1 and M2 ran over SSH, where brightness can't be set, so that one isn't asked; the M1s have
 # nothing plugged into their USB-C ports, so the two ports questions aren't asked).
-HUMAN_QUESTIONS = {"m2-max-image2": 11, "m1-pro-mx-mac": 6, "m1-pro-converged": 8, "m2-max-converged": 10}
+HUMAN_QUESTIONS = {"m2-max-image2": 11, "m1-pro-mx-mac": 6, "m1-pro-converged": 8, "m2-max-converged": 10, "m1-pro-converged-fresh": 8}
 GUM_UNANSWERED = [CommandResult(1, "", "")] * 14  # the sudo prompt (sudo -v) exits 1 like gum
 # Which corpus machines have no eglinfo, so the Graphics section offers mesa-utils first.
-OPENGL_OFFERED = {"m2-max-image2": 1, "m1-pro-mx-mac": 1, "m1-pro-converged": 0, "m2-max-converged": 1}
+OPENGL_OFFERED = {"m2-max-image2": 1, "m1-pro-mx-mac": 1, "m1-pro-converged": 0, "m2-max-converged": 1, "m1-pro-converged-fresh": 1}
 # How many of them come before the Wi-Fi first-join check asks to reload the driver (at a local seat only).
-BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6}
+BEFORE_RELOAD = {"m2-max-image2": 6, "m1-pro-mx-mac": 4, "m1-pro-converged": 6, "m2-max-converged": 6, "m1-pro-converged-fresh": 4}
 # What only a run at a local seat asks besides: the Ports section's "plug in what you have" (after the reload).
 AT_THE_SEAT_ONLY = 1
 
