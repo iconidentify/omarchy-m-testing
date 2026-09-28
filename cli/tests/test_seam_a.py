@@ -83,7 +83,7 @@ class FullRunTest(unittest.TestCase):
         main(["--dry-run"], mac)
 
         self.assertEqual(json.loads(mac.written[REPORT_FILE])["consent_version"], CONSENT_VERSION)
-        self.assertEqual(CONSENT_VERSION, 5)  # the disclaimer covers temporary test packages without asking again
+        self.assertEqual(CONSENT_VERSION, 6)  # the disclaimer says a run offers the tester sign-in once
 
     def test_output_option_chooses_where_the_report_is_written(self):
         mac = host("m2-max-image2", answers=[ENTER, ENDED])

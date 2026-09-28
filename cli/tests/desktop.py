@@ -20,6 +20,9 @@ from omarchy_m_test.session import Context, Section
 RECORDINGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "recordings")
 HOME = "/home/tester"
 CHECKPOINT = f"{HOME}/.local/state/omarchy-m-test/checkpoint.json"
+TESTER_LINK = f"{HOME}/.local/state/omarchy-m-test/tester.json"
+# This Mac already answered the start-of-run sign-in offer (no): runs aren't offered it again (tests/test_tester.py covers it).
+DECLINED = {"text": '{"declined": true, "link_version": 1}\n'}
 THEME = f"{HOME}/.local/state/omarchy/current/theme"
 OLD_THEME = f"{HOME}/.config/omarchy/current/theme"
 TITLES = "\n".join(section.title for section in APPLE) + "\n"
@@ -30,8 +33,8 @@ TERMINAL = Terminal(120, 40)
 
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
 # tone, headphone jack, Bluetooth pairing, keyboard light, function keys,
-# the trackpad's click, two-finger click and two-finger scroll (tap-to-click and
-# the three-finger swipe are off in Omarchy's config, so not asked), USB-C devices,
+# the trackpad's click, two-finger click and two-finger scroll (the three-finger
+# swipe is off in Omarchy's config, so not asked; taps never are), USB-C devices,
 # USB-C display): 13 questions, left unanswered as in its golden
 # report, then the Power section's sudo password prompt for the charge limit (the recorded
 # runs have no cached sudo; only at a terminal), unanswered and so skipped. Temporary test
@@ -98,6 +101,7 @@ def with_home(rec: dict[str, Any], env: dict[str, str] | None = None, checkpoint
     rec = copy.deepcopy(rec)
     rec.setdefault("env", {}).update({"HOME": HOME, **(env or {})})
     rec["files"][CHECKPOINT] = None if checkpoint is None else {"text": checkpoint}
+    rec["files"].setdefault(TESTER_LINK, DECLINED)
     return rec
 
 

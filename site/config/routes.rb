@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :reports, only: %i[index create]
       resources :tester_bindings, only: :create
+      resources :tester_requests, only: :create
       get "checks" => "exports#checks", as: :checks
       get "matrix" => "exports#matrix", as: :matrix
       get "benchmarks" => "exports#benchmarks", as: :benchmarks

@@ -31,10 +31,10 @@ module TestMachines
   def self.machine_id(name) = MachineSignature.machine_id_for(key_blob(name))
 
   # The report with the signature `name`'s key makes over it (any old one replaced).
-  def self.sign(report, name = "a")
+  def self.sign(report, name = "a", namespace: MachineSignature::NAMESPACE)
     report = report.except("signature")
     pack = MachineSignature::SshReader.method(:pack)
-    namespace, hash = MachineSignature::NAMESPACE, "sha512"
+    hash = "sha512"
     signed = "SSHSIG" + [ namespace, "", hash, OpenSSL::Digest::SHA512.digest(MachineSignature.canonical(report)) ].map(&pack).join
     raw = key(name).sign(nil, signed)
     blob = "SSHSIG" + [ 1 ].pack("N") + [ key_blob(name), namespace, "", hash, pack.call(MachineSignature::KEY_TYPE) + pack.call(raw) ].map(&pack).join
@@ -107,6 +107,14 @@ module GoldenSignIn
   def self.json = JSON.parse(text)
 end
 
+# The CLI's signed --status and --sign-out requests (cli/tests/test_tester.py writes them), dated AT.
+module GoldenTesterRequests
+  AT = Time.at(1790553600).utc # 2026-09-28 00:00:00 UTC, the CLI's recorded clock
+
+  def self.text(name) = ReportSchema.dir.join("golden", "sign-in", "tester-#{name}.json").read
+  def self.json(name) = JSON.parse(text(name))
+end
+
 module TesterSignIns
   def github = Github.client
 
@@ -119,6 +127,13 @@ module TesterSignIns
   def sign_in_tester(body = GoldenSignIn.text, ip: "10.0.0.1")
     body = body.to_json unless body.is_a?(String)
     post "/api/v1/tester_bindings", params: body, headers: { "Content-Type" => "application/json", "Accept" => "application/json" },
+                                     env: { "REMOTE_ADDR" => ip }
+    response.parsed_body
+  end
+
+  def tester_request(body, ip: "10.0.0.1")
+    body = body.to_json unless body.is_a?(String)
+    post "/api/v1/tester_requests", params: body, headers: { "Content-Type" => "application/json", "Accept" => "application/json" },
                                      env: { "REMOTE_ADDR" => ip }
     response.parsed_body
   end
