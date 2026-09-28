@@ -20,7 +20,7 @@ import unittest
 from omarchy_m_test import tester
 from omarchy_m_test.app import main
 from omarchy_m_test.host import HttpResponse, NetworkError
-from omarchy_m_test.recording import INTERRUPT, RecordedHost
+from omarchy_m_test.recording import INTERRUPT, RECORDED_CLOCK, RecordedHost
 from tests.test_seam_a import SCHEMA_DIR, SITE, read
 from tests.test_signing import signing_mac, with_fixture_key
 
@@ -57,8 +57,12 @@ def answer(status: int = 200, **body) -> HttpResponse:
 NOT_SIGNED_IN = answer(signed_in=False)
 
 
+# The site's id for the golden sign-in (TesterBinding#sign_in_id): made 5 minutes before the golden requests.
+SIGN_IN_ID = str((RECORDED_CLOCK - 300) * 1_000_000)
+
+
 def signed_in(login: str = "maralcbr", allowlisted: bool = True) -> HttpResponse:
-    return answer(signed_in=True, login=login, tester=allowlisted)
+    return answer(signed_in=True, login=login, tester=allowlisted, sign_in=SIGN_IN_ID)
 
 
 def link_of(mac: RecordedHost, state: str) -> dict | None:
@@ -402,11 +406,13 @@ class StatusAndSignOutTest(unittest.TestCase):
         self.assertIn("This Mac was signed in as @maralcbr when it last checked; couldn't check with the site now: The site is down.", mac.output)
 
     def test_sign_out_unbinds_on_the_site_and_the_next_run_offers_again(self):
-        status, mac = self.run_cli("--sign-out", [answer(signed_in=False, signed_out="maralcbr")],
+        status, mac = self.run_cli("--sign-out", [signed_in(), answer(signed_in=False, signed_out="maralcbr")],
                                    link={"text": '{"link_version": 1, "login": "maralcbr", "tester": true}\n'})
 
         self.assertEqual(status, 0)
-        sent = json.loads(mac.posts[0].body)
+        self.assertEqual([json.loads(p.body)["request"] for p in mac.posts], ["status", "sign-out"])
+        sent = json.loads(mac.posts[1].body)
+        self.assertEqual(sent["sign_in"], SIGN_IN_ID)  # the sign-in the status named
         self.assertEqual(sent, json.loads(read(GOLDEN_SIGN_OUT)))
         self.assertTrue(verifies(sent, tester.NAMESPACE))
         self.assertIn(self.link, mac.removed)
@@ -414,7 +420,7 @@ class StatusAndSignOutTest(unittest.TestCase):
         self.assertIsNone(tester.read_link(mac))
 
     def test_sign_out_the_site_refuses_changes_nothing(self):
-        status, mac = self.run_cli("--sign-out", [answer(422, error="The request is too old.")],
+        status, mac = self.run_cli("--sign-out", [signed_in(), answer(422, error="The request is too old.")],
                                    link={"text": '{"link_version": 1, "login": "maralcbr", "tester": true}\n'})
 
         self.assertEqual(status, tester.EXIT_FAILED)
@@ -422,9 +428,10 @@ class StatusAndSignOutTest(unittest.TestCase):
         self.assertNotIn(self.link, mac.removed)
 
     def test_sign_out_when_not_signed_in(self):
-        _, mac = self.run_cli("--sign-out", [answer(signed_in=False, signed_out=None)])
+        _, mac = self.run_cli("--sign-out", [NOT_SIGNED_IN])
 
         self.assertIn("This Mac wasn't signed in.", mac.output)
+        self.assertEqual(len(mac.posts), 1)
 
 
 class TesterRunTest(unittest.TestCase):
@@ -457,12 +464,13 @@ def regenerate() -> None:
         main(["--sign-in", "--site", SITE], mac)
         with open(GOLDEN_SIGN_IN, "w", encoding="utf-8") as f:
             f.write(json.dumps(json.loads(mac.posts[0].body), indent=2) + "\n")
-        for flag, response, path in (("--status", signed_in(), GOLDEN_STATUS), ("--sign-out", answer(signed_in=False, signed_out="maralcbr"), GOLDEN_SIGN_OUT)):
-            mac = signing_mac(state, answers=[], responses=[response])
+        for flag, responses, path in (("--status", [signed_in()], GOLDEN_STATUS),
+                                      ("--sign-out", [signed_in(), answer(signed_in=False, signed_out="maralcbr")], GOLDEN_SIGN_OUT)):
+            mac = signing_mac(state, answers=[], responses=responses)
             mac.recording["files"][f"{state}/{tester.LINK_NAME}"] = None
             main([flag, "--site", SITE], mac)
             with open(path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(json.loads(mac.posts[0].body), indent=2) + "\n")
+                f.write(json.dumps(json.loads(mac.posts[-1].body), indent=2) + "\n")
     finally:
         shutil.rmtree(state)
 

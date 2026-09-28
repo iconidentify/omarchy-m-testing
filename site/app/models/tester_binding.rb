@@ -15,6 +15,10 @@ class TesterBinding < ApplicationRecord
     binding
   end
 
+  # Which sign-in this is (its time, in microseconds): a sign-out names it, so a copy of one made before
+  # the machine signed in again unbinds nothing.
+  def sign_in_id = (updated_at.to_r * 1_000_000).to_i.to_s
+
   def self.login_for(machine_id) = machine_id && find_by(machine_id:)&.github_login
 
   def tester? = Tester.allowlisted?(github_login)

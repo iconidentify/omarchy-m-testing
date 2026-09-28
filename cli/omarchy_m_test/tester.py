@@ -22,8 +22,8 @@ still works any time. While the offer waits for the code, a countdown runs
 for up to OFFER_WAIT_SECONDS and any key skips it: the run goes on unsigned.
 
 `--status` and `--sign-out` send the site a small request signed with the
-machine key (namespace NAMESPACE, dated requested_at so a copy of it can't be
-replayed later, and a sign-out only unbinds a sign-in older than itself): the site says whose handle the key is bound to, or unbinds
+machine key (namespace NAMESPACE, dated requested_at; a sign-out names the
+sign-in it ends, which the status gives, so a copy of it can't end a later one): the site says whose handle the key is bound to, or unbinds
 it. Signing out removes the record, so the next run offers the sign-in again.
 Runs already uploaded keep the handle they were uploaded under.
 """
@@ -206,9 +206,9 @@ def _forget(host: Host) -> None:
         host.remove_file(path)
 
 
-def _request(host: Host, site: str, request: str) -> dict:
-    """The site's answer to a signed status or sign-out request: {"signed_in", "login", "tester", ...}."""
-    document = {"request_version": REQUEST_VERSION, "request": request, "requested_at": host.now()}
+def _request(host: Host, site: str, request: str, **fields: str) -> dict:
+    """The site's answer to a signed status or sign-out request: {"signed_in", "login", "tester", "sign_in", ...}."""
+    document = {"request_version": REQUEST_VERSION, "request": request, "requested_at": host.now(), **fields}
     signed, unsigned_because = sign_document(host, document, NAMESPACE)
     if unsigned_because:
         raise SignInFailed(f"this Mac's key can't sign the request: {unsigned_because}")
@@ -317,17 +317,22 @@ def status(host: Host, site: str) -> int:
 
 
 def sign_out(host: Host, site: str) -> int:
-    """omarchy-m-test --sign-out: unbind this Mac's key from its handle on the site and forget the sign-in."""
+    """omarchy-m-test --sign-out: unbind this Mac's key from its handle on the site and forget the sign-in.
+    The sign-out names the sign-in it ends (the status says which), so a copy of it can't end a later one."""
     try:
-        answer = _request(host, site, SIGN_OUT)
+        known = _request(host, site, STATUS)
+        if not known["signed_in"]:
+            _forget(host)
+            host.show("This Mac wasn't signed in. The next run offers to sign in.")
+            return EXIT_OK
+        if not isinstance(known.get("sign_in"), str):
+            raise SignInFailed(f"{site}'s answer didn't say which sign-in to end")
+        answer = _request(host, site, SIGN_OUT, sign_in=known["sign_in"])
     except SignInFailed as failed:
         host.show(f"Sign-out failed: {_reason(failed)}. Nothing changed; run omarchy-m-test --sign-out to try again.")
         return EXIT_FAILED
     _forget(host)
-    login = answer.get("signed_out")
-    if isinstance(login, str):
-        host.show(f"Signed out @{login}: this Mac's runs no longer count as tester runs (runs already uploaded keep theirs). "
-                  "The next run offers to sign in again.")
-    else:
-        host.show("This Mac wasn't signed in. The next run offers to sign in.")
+    login = answer.get("signed_out") or known["login"]
+    host.show(f"Signed out @{login}: this Mac's runs no longer count as tester runs (runs already uploaded keep theirs). "
+              "The next run offers to sign in again.")
     return EXIT_OK
