@@ -96,6 +96,24 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
     assert_equal "maralcbr", TesterBinding.sole.github_login
   end
 
+  test "a copy of a sign-out, after the same handle signed in again on the machine, unbinds nothing" do
+    sign_in_before
+    travel_to(GoldenTesterRequests::AT - 1.minute) { sign_in_tester } # the same row, signed in again
+
+    request_at("sign-out")
+    assert_response :conflict
+    assert_equal 1, TesterBinding.count
+  end
+
+  test "a sign-in racing a sign-out is never lost" do
+    sign_in_before
+    binding = TesterBinding.sole
+    # The sign-in lands between the sign-out's lookup and its delete: the delete is conditional on the looked-up sign-in.
+    travel_to(GoldenTesterRequests::AT - 1.minute) { sign_in_tester }
+    assert_equal 0, TesterBinding.where(id: binding.id, updated_at: binding.updated_at).delete_all
+    assert_equal 1, TesterBinding.count
+  end
+
   test "a request changed after it was signed, or signed as a report, is refused" do
     sign_in_before
     changed = GoldenTesterRequests.json("sign-out").merge("sign_in" => "1")

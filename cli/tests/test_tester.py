@@ -427,6 +427,13 @@ class StatusAndSignOutTest(unittest.TestCase):
         self.assertIn("Sign-out failed: The request is too old. Nothing changed", mac.output)
         self.assertNotIn(self.link, mac.removed)
 
+    def test_sign_out_needs_the_status_to_name_the_sign_in(self):
+        status, mac = self.run_cli("--sign-out", [answer(signed_in=True, login="maralcbr", tester=True)])
+
+        self.assertEqual(status, tester.EXIT_FAILED)
+        self.assertIn("didn't say which sign-in to end", mac.output)
+        self.assertEqual(len(mac.posts), 1)
+
     def test_sign_out_when_not_signed_in(self):
         _, mac = self.run_cli("--sign-out", [NOT_SIGNED_IN])
 
