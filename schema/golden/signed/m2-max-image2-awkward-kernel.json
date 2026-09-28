@@ -1599,10 +1599,9 @@
       "status": "skip",
       "evidence": [
         "Hyprland couldn't list the input devices (run from the desktop to see them)",
-        "Hyprland config: tap-to-click off, three-finger workspace swipe off",
+        "Hyprland config: three-finger workspace swipe off",
         "click: asked: On the built-in trackpad, press down to click: did it click?",
         "click: answer: none (counted as skipped)",
-        "tap-to-click: skipped: off in your config",
         "two-finger click: asked: Click with two fingers: did it right-click (a menu, where there is one)?",
         "two-finger click: answer: none (counted as skipped)",
         "two-finger scroll: asked: Scroll with two fingers, up and down: did it scroll smoothly both ways?",
@@ -1952,6 +1951,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQKFgTo/4JGxl7F/oLhZNUeAZxkaSleMmoAcTRwLr+V\n8g/mBvf92WEmap0RxLC8gkLG3ziwMlL2W+BVxRGPI3Tw0=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQLcOdclMiR71syEppCTB+bWXKfAZ9yGUH10SLbk6E/\nhpJyIb1oKUQqxdz8Fyot8Ct9GlfA72bxCS1MPYTkou7g8=\n-----END SSH SIGNATURE-----"
   }
 }

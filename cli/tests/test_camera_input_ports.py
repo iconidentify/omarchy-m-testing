@@ -32,10 +32,10 @@ NO_CONTROLLER = ("typec 0 partner=no data=device power=sink\ntypec 1 partner=yes
 STICK_IN = NO_CONTROLLER + "usb root speed=480 class=09\nusb root speed=10000 class=09\nusb device speed=5000 class=08\n"
 IMAGE_PROMPT = camera.IMAGE_QUESTION + " [Y/n/s] "
 KEYS_PROMPT = inputs.FUNCTION_KEYS_QUESTION + " [Y/n/s] "
-# Omarchy's default config (as the recordings hold it): tap-to-click and the three-finger swipe are off, so not asked.
+# Omarchy's default config (as the recordings hold it): the three-finger swipe is off, so not asked; taps never are.
 ASKED_GESTURES = (inputs.CLICK, inputs.TWO_FINGER_CLICK, inputs.SCROLL)
 GESTURE_PROMPTS = [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in ASKED_GESTURES]
-ALL_ON = "tap-global 1\ntap-device apple-spi-trackpad true\ngesture 3 horizontal workspace\nfiles 2\n"
+ALL_ON = "gesture 3 horizontal workspace\nfiles 2\n"
 DEVICES_PROMPT = ports.DEVICES_QUESTION + " [Y/n/s] "
 PICTURE_PROMPT = ports.PICTURE_QUESTION + " [Y/n/s] "
 PREVIEW = camera.preview_argv("video0")
@@ -178,9 +178,8 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertEqual((gestures["status"], gestures["classification"]["feature"], gestures["classification"]["outcome"]),
                          ("fail", "touchpad", "fails"))
         self.assertEqual(gestures["evidence"][0], "built-in trackpad (Hyprland): apple-spi-trackpad")
-        self.assertEqual(gestures["evidence"][1], "Hyprland config: tap-to-click off, three-finger workspace swipe off")
+        self.assertEqual(gestures["evidence"][1], "Hyprland config: three-finger workspace swipe off")
         self.assertIn("two-finger scroll: answer: no; note: two-finger scroll jumps", gestures["evidence"])
-        self.assertIn("tap-to-click: skipped: off in your config", gestures["evidence"])
         self.assertIn("three-finger swipe: skipped: off in your config", gestures["evidence"])
         self.assertEqual(prompts(host)[-4:], [KEYS_PROMPT, *GESTURE_PROMPTS])
         self.assertEqual(host.commands_run.count(inputs.DEVICES), 1)  # read once for both
@@ -217,12 +216,11 @@ class KeysAndTrackpadTest(unittest.TestCase):
 
     def test_gestures_the_config_turns_on_are_asked_one_by_one(self):
         rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout=ALL_ON)
-        host = self.run_input(["y", "y", "n taps don't click", "y", "y", "n"], rec=rec)
+        host = self.run_input(["y", "y", "y", "y", "n"], rec=rec)
 
         gestures = check(host, "input.trackpad-gestures")
-        self.assertEqual(prompts(host)[-5:], [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in inputs.GESTURE_QUESTIONS])
-        self.assertEqual(gestures["evidence"][1], "Hyprland config: tap-to-click on, three-finger workspace swipe on")
-        self.assertIn("tap-to-click: answer: no; note: taps don't click", gestures["evidence"])
+        self.assertEqual(prompts(host)[-4:], [inputs.GESTURE_QUESTIONS[name] + " [Y/n/s] " for name in inputs.GESTURE_QUESTIONS])
+        self.assertEqual(gestures["evidence"][1], "Hyprland config: three-finger workspace swipe on")
         self.assertIn("three-finger swipe: answer: no", gestures["evidence"])
         self.assertEqual(gestures["status"], "fail")
 
@@ -232,37 +230,44 @@ class KeysAndTrackpadTest(unittest.TestCase):
         gestures = check(host, "input.trackpad-gestures")
         self.assertEqual(gestures["status"], "pass")
         self.assertNotIn(human.DEFAULTED, gestures)
-        self.assertNotIn(inputs.GESTURE_QUESTIONS[inputs.TAP] + " [Y/n/s] ", prompts(host))
+        self.assertNotIn(inputs.GESTURE_QUESTIONS[inputs.SWIPE] + " [Y/n/s] ", prompts(host))
+
+    def test_tapping_is_never_asked_or_read(self):
+        # Tap-to-click, two-finger tap and tap-and-drag aren't features: no question, no config reading, no evidence.
+        rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout=ALL_ON)
+        host = self.run_input(["y", "y", "y", "y", "y"], rec=rec)
+
+        self.assertEqual(list(inputs.GESTURE_QUESTIONS), [inputs.CLICK, inputs.TWO_FINGER_CLICK, inputs.SCROLL, inputs.SWIPE])
+        self.assertFalse([p for p in prompts(host) if "tap" in p.lower()])
+        self.assertNotIn("tap", inputs.GESTURE_CONFIG_SCRIPT.lower())
+        self.assertNotIn("tap", json.dumps(check(host, "input.trackpad-gestures")).lower())
 
     def test_a_config_it_cant_read_asks_every_gesture(self):
-        rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout="tap-global unavailable\nfiles 0\n")
-        host = self.run_input(["y", "y", "y", "y", "y", "y"], rec=rec)
+        rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout="files 0\n")
+        host = self.run_input(["y", "y", "y", "y", "y"], rec=rec)
 
         self.assertEqual(check(host, "input.trackpad-gestures")["evidence"][1],
-                         "Hyprland config: tap-to-click unknown, three-finger workspace swipe unknown")
-        self.assertEqual(len([p for p in prompts(host) if p.removesuffix(" [Y/n/s] ") in inputs.GESTURE_QUESTIONS.values()]), 5)
+                         "Hyprland config: three-finger workspace swipe unknown")
+        self.assertEqual(len([p for p in prompts(host) if p.removesuffix(" [Y/n/s] ") in inputs.GESTURE_QUESTIONS.values()]), 4)
 
     def test_one_enter_among_the_gestures_leaves_the_pass_unconfirmed(self):
         host = self.run_input(["y", "y", ENTER, "y"])
 
         self.assertIs(check(host, "input.trackpad-gestures")[human.DEFAULTED], True)
 
-    def test_the_gesture_script_reads_only_on_off_facts_for_built_in_trackpads(self):
-        self.assertIn("case $name in apple-spi-*|apple-mtp-*|apple-internal-*) ;; *) continue;; esac", inputs.GESTURE_CONFIG_SCRIPT)
-        config = inputs.parse_gesture_config("tap-global 1\ntap-device apple-mtp-multi-touch false\ntap-device apple-spi-trackpad true\nfiles 1\n",
-                                             ["apple-mtp-multi-touch"])
-        self.assertEqual((config.tap, config.swipe), (False, False))
+    def test_the_gesture_script_reads_only_on_off_facts(self):
+        self.assertNotIn("name", inputs.GESTURE_CONFIG_SCRIPT)  # no device names, only gesture lines
+        self.assertIs(inputs.parse_gesture_config("files 1\n").swipe, False)
 
     def test_a_later_statement_turns_a_gesture_back_off_and_a_live_option_wins(self):
-        later_off = "tap-global unavailable\ngesture 3 horizontal workspace\ngesture 3 horizontal unset\nfiles 2\n"
+        later_off = "gesture 3 horizontal workspace\ngesture 3 horizontal unset\nfiles 2\n"
         self.assertIs(inputs.parse_gesture_config(later_off).swipe, False)
         # Hyprland's unset matches a gesture's direction: unsetting another one leaves the workspace swipe on.
         other_unset = "gesture 3 horizontal workspace\ngesture 3 vertical other\ngesture 3 vertical unset\nfiles 1\n"
         self.assertIs(inputs.parse_gesture_config(other_unset).swipe, True)
         self.assertIs(inputs.parse_gesture_config("workspace-swipe 1\nworkspace-swipe 0\nfiles 1\n").swipe, False)
         self.assertIs(inputs.parse_gesture_config("swipe-live 1\nworkspace-swipe 0\nfiles 1\n").swipe, True)
-        self.assertIs(inputs.parse_gesture_config("tap-global 0\nfiles 0\n").tap, False)
-        self.assertIsNone(inputs.parse_gesture_config("tap-global unavailable\nfiles 0\n").swipe)
+        self.assertIsNone(inputs.parse_gesture_config("files 0\n").swipe)
 
     def test_a_mac_without_a_built_in_keyboard_or_trackpad_doesnt_ask(self):
         host = over_ssh("input", [EOF], rec=studio(recording()))

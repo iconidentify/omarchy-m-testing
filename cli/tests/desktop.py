@@ -30,8 +30,8 @@ TERMINAL = Terminal(120, 40)
 
 # The recorded M2's human checks (notch bar, brightness steps, cursor, speaker
 # tone, headphone jack, Bluetooth pairing, keyboard light, function keys,
-# the trackpad's click, two-finger click and two-finger scroll (tap-to-click and
-# the three-finger swipe are off in Omarchy's config, so not asked), USB-C devices,
+# the trackpad's click, two-finger click and two-finger scroll (the three-finger
+# swipe is off in Omarchy's config, so not asked; taps never are), USB-C devices,
 # USB-C display): 13 questions, left unanswered as in its golden
 # report, then the Power section's sudo password prompt for the charge limit (the recorded
 # runs have no cached sudo; only at a terminal), unanswered and so skipped. Temporary test

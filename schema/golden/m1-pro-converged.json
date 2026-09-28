@@ -1585,10 +1585,9 @@
       "status": "skip",
       "evidence": [
         "Hyprland couldn't list the input devices (run from the desktop to see them)",
-        "Hyprland config: tap-to-click off, three-finger workspace swipe off",
+        "Hyprland config: three-finger workspace swipe off",
         "click: asked: On the built-in trackpad, press down to click: did it click?",
         "click: answer: none (counted as skipped)",
-        "tap-to-click: skipped: off in your config",
         "two-finger click: asked: Click with two fingers: did it right-click (a menu, where there is one)?",
         "two-finger click: answer: none (counted as skipped)",
         "two-finger scroll: asked: Scroll with two fingers, up and down: did it scroll smoothly both ways?",
