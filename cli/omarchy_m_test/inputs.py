@@ -14,7 +14,8 @@ The trackpad is asked one gesture at a time: a click, a two-finger click
 workspaces. The swipe is only asked when the Hyprland config turns it on
 (GESTURE_CONFIG_SCRIPT: Hyprland's live workspace_swipe option when it has
 it, then the uncommented gesture lines of Omarchy's defaults and the
-user's ~/.config/hypr, the later file winning). Omarchy leaves the
+user's ~/.config/hypr, the later file winning), and skipped when no config
+can be read. Omarchy leaves the
 three-finger swipe commented out, so on a default install it is "skipped:
 off in your config", never a failure. Tapping (tap-to-click, two-finger
 tap, tap-and-drag) isn't a feature Omarchy offers on the Mac and is never
@@ -58,6 +59,7 @@ GESTURE_QUESTIONS = {
     SWIPE: "Swipe three fingers left and right: did it switch workspaces?",
 }
 OFF_IN_CONFIG = "off in your config"
+UNKNOWN_CONFIG = "your Hyprland config couldn't be read, so it isn't known to be on"
 # Run as `sh -c SCRIPT`: "swipe-live N" (older Hyprland's live gestures:workspace_swipe, when it has it), then
 # from each config file in order, uncommented statements only (a file is flattened and split at each hl. call
 # and gesture/workspace_swipe line, so multi-line blocks count): "gesture 3 DIRECTION ACTION" for a
@@ -178,8 +180,9 @@ def gestures(ctx: Context) -> dict:
     evidence = [_seen(ctx, "trackpad", ("trackpad", "touch"))]
     config = gesture_config(ctx)
     evidence.append("Hyprland config: three-finger workspace swipe " + {True: "on", False: "off", None: "unknown"}[config.swipe])
-    enabled = {CLICK: True, TWO_FINGER_CLICK: True, SCROLL: True, SWIPE: config.swipe is not False}
-    parts = [(name, GESTURE_QUESTIONS[name] if enabled[name] else None, OFF_IN_CONFIG) for name in GESTURE_QUESTIONS]
+    enabled = {CLICK: True, TWO_FINGER_CLICK: True, SCROLL: True, SWIPE: config.swipe is True}
+    off = OFF_IN_CONFIG if config.swipe is False else UNKNOWN_CONFIG
+    parts = [(name, GESTURE_QUESTIONS[name] if enabled[name] else None, off) for name in GESTURE_QUESTIONS]
     return human.check_each(ctx, GESTURES, parts, evidence)
 
 

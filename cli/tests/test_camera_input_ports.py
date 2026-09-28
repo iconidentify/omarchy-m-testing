@@ -242,13 +242,15 @@ class KeysAndTrackpadTest(unittest.TestCase):
         self.assertNotIn("tap", inputs.GESTURE_CONFIG_SCRIPT.lower())
         self.assertNotIn("tap", json.dumps(check(host, "input.trackpad-gestures")).lower())
 
-    def test_a_config_it_cant_read_asks_every_gesture(self):
+    def test_a_config_it_cant_read_skips_the_swipe(self):
         rec = with_command(live_recording(base=recording(M1)), inputs.GESTURE_CONFIG, stdout="files 0\n")
-        host = self.run_input(["y", "y", "y", "y", "y"], rec=rec)
+        host = self.run_input(["y", "y", "y", "y"], rec=rec)
 
-        self.assertEqual(check(host, "input.trackpad-gestures")["evidence"][1],
-                         "Hyprland config: three-finger workspace swipe unknown")
-        self.assertEqual(len([p for p in prompts(host) if p.removesuffix(" [Y/n/s] ") in inputs.GESTURE_QUESTIONS.values()]), 4)
+        gestures = check(host, "input.trackpad-gestures")
+        self.assertEqual(gestures["evidence"][1], "Hyprland config: three-finger workspace swipe unknown")
+        self.assertIn("three-finger swipe: skipped: " + inputs.UNKNOWN_CONFIG, gestures["evidence"])
+        self.assertEqual(prompts(host)[-4:], [KEYS_PROMPT, *GESTURE_PROMPTS])
+        self.assertEqual(gestures["status"], "pass")
 
     def test_one_enter_among_the_gestures_leaves_the_pass_unconfirmed(self):
         host = self.run_input(["y", "y", ENTER, "y"])
