@@ -21,6 +21,10 @@ Operations:
   post_form(url, fields)     POST form fields, asking for JSON back (GitHub's device flow); returns
                              the HTTP response
   sleep(seconds)             wait (between polls of GitHub's device flow)
+  wait_key(seconds, status)  wait up to `seconds` for a key the human presses; the key, or None. At a
+                             terminal `status` is shown on one line meanwhile (a countdown) and cleared
+                             after; off a terminal it just waits
+  now()                      the time, in whole seconds since the epoch (a signed tester request's date)
   get(url)                   GET a small text (the latest release's version); NetworkError if unreachable
   env(name)                  an environment variable's value; None when unset
   terminal()                 the terminal's size when the human is at one (stdin and stdout
@@ -62,8 +66,11 @@ import shutil
 import signal
 import subprocess
 import sys
+import select
 import tempfile
+import termios
 import time
+import tty
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -194,6 +201,10 @@ class Host(Protocol):
     def post_form(self, url: str, fields: dict[str, str]) -> HttpResponse: ...
 
     def sleep(self, seconds: float) -> None: ...
+
+    def wait_key(self, seconds: float, status: str = "") -> str | None: ...
+
+    def now(self) -> int: ...
 
     def get(self, url: str) -> HttpResponse: ...
 
@@ -431,6 +442,29 @@ class RealHost:
 
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
+
+    def wait_key(self, seconds: float, status: str = "") -> str | None:
+        if not (sys.stdin.isatty() and sys.stdout.isatty()):
+            time.sleep(seconds)
+            return None
+        fd = sys.stdin.fileno()
+        saved = termios.tcgetattr(fd)
+        try:
+            if status:
+                sys.stdout.write("\r\x1b[K" + status)
+                sys.stdout.flush()
+            tty.setcbreak(fd)  # a key without Enter, not echoed; Ctrl-C still interrupts
+            ready, _, _ = select.select([fd], [], [], seconds)
+            # Up to 32 bytes: an arrow or function key's whole escape sequence is one key.
+            return os.read(fd, 32).decode("utf-8", "replace") if ready else None
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+            if status:
+                sys.stdout.write("\r\x1b[K")
+                sys.stdout.flush()
+
+    def now(self) -> int:
+        return int(time.time())
 
     def _post(self, url: str, data: bytes, content_type: str) -> HttpResponse:
         request = urllib.request.Request(

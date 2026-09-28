@@ -24,7 +24,7 @@ from omarchy_m_test import signing
 from omarchy_m_test.app import main
 from omarchy_m_test.host import RealHost
 from omarchy_m_test.recording import ENDED, RecordedHost
-from tests.desktop import UNANSWERED
+from tests.desktop import DECLINED, UNANSWERED
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, RECORDINGS, REPORT_FILE, SCHEMA, SCHEMA_DIR, SITE, created, golden, read
 
@@ -49,7 +49,7 @@ def signing_mac(state: str, rec: dict | None = None, answers=(ENTER, ENDED), res
     """The recorded Mac, with its state directory at `state` and a real machine key there."""
     rec = copy.deepcopy(rec or recording())
     rec["env"] = {**rec.get("env", {}), "XDG_STATE_HOME": state}
-    rec["files"] = {**rec["files"], f"{state}/omarchy-m-test/checkpoint.json": None}
+    rec["files"] = {**rec["files"], f"{state}/omarchy-m-test/checkpoint.json": None, f"{state}/omarchy-m-test/tester.json": DECLINED}
     return RecordedHost(rec, answers=list(answers), responses=list(responses), signer=RealHost().machine_sign)
 
 
@@ -218,7 +218,8 @@ class UnsignedTest(unittest.TestCase):
     def test_without_ssh_keygen_the_report_is_written_unsigned_and_the_run_says_so(self):
         rec = recording()
         rec["env"] = {"HOME": "/home/<user>"}
-        rec["files"] = {**rec["files"], "/home/<user>/.local/state/omarchy-m-test/checkpoint.json": None}
+        rec["files"] = {**rec["files"], "/home/<user>/.local/state/omarchy-m-test/checkpoint.json": None,
+                        "/home/<user>/.local/state/omarchy-m-test/tester.json": DECLINED}
         mac = RecordedHost(rec, answers=[ENTER, ENDED])
 
         status = main(["--dry-run"], mac)

@@ -69,6 +69,8 @@ def _parse(argv: Sequence[str], host: Host) -> argparse.Namespace:
     parser.add_argument("--record", metavar="FILE", help="also save what this Mac answered, scrubbed, as a test recording")
     parser.add_argument("--skip", metavar="SECTION", action="append", default=[], help="skip a section (repeat, or separate with commas); the run lists them")
     parser.add_argument("--sign-in", action="store_true", help="testers: sign this Mac in with GitHub, once; its runs then count as tester runs. Runs no checks")
+    parser.add_argument("--sign-out", action="store_true", help="testers: unlink this Mac from its GitHub handle; its later runs are community runs. Runs no checks")
+    parser.add_argument("--status", action="store_true", help="show whether this Mac is signed in as a tester, and as whom. Runs no checks")
     parser.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
     return parser.parse_args(list(argv))
 
@@ -82,6 +84,10 @@ def main(argv: Sequence[str], host: Host, sections: Sequence[Section] = APPLE) -
 
     if args.sign_in:
         return tester.sign_in(Guarded(host), args.site.rstrip("/"))
+    if args.sign_out:
+        return tester.sign_out(Guarded(host), args.site.rstrip("/"))
+    if args.status:
+        return tester.status(Guarded(host), args.site.rstrip("/"))
 
     if not args.record:
         return _interruptible(args, Guarded(host), sections)
@@ -172,6 +178,9 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
             checkpoint.clear()  # declining ends any earlier run too
         host.show("Cancelled. Nothing was run.")
         return EXIT_CANCELLED
+
+    if not (args.dry_run or args.record):
+        tester.offer(host, ui.text, ui.confirm, args.site.rstrip("/"))
 
     # The Scrubber learns this Mac's hostname, accounts and networks: nothing
     # a check found reaches the checkpoint or the report unscrubbed.

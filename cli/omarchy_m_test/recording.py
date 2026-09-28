@@ -43,7 +43,8 @@ are returned by prompt() in order (EOF ends input like Ctrl-D; ENDED, left
 last, is input that stays closed: every later prompt gets end of input and
 every later interactive command exits 1, as gum does with no answer). Uploads get
 the scripted `responses` in order; form POSTs (GitHub's device flow) get the
-scripted `forms` in order, and sleeps return at once (kept in `slept`). GETs (the latest-release lookup) get
+scripted `forms` in order, and sleeps return at once (kept in `slept`); waits for a key
+(wait_key) return the scripted `keys` in order, at once, and the clock (now) is `clock`. GETs (the latest-release lookup) get
 the scripted `fetches` by URL; a URL that isn't scripted behaves like a
 machine with no network (NetworkError). The answer INTERRUPT at a prompt or an
 interactive command is Ctrl-C there (KeyboardInterrupt). Interactive commands
@@ -70,6 +71,8 @@ from .host import CommandResult, Host, HttpResponse, MachineSignature, NetworkEr
 from .privacy import HOME_DIR, HOSTNAME_PATH, SERIAL_FILES, Scrubber
 
 RECORDING_VERSION = 1
+# A RecordedHost's clock (Host.now): 2026-09-28 00:00:00 UTC, the golden tester requests' date.
+RECORDED_CLOCK = 1790553600
 
 # What record mode captures beyond what the CLI itself asks for, so that
 # recordings from real Macs carry the evidence later checks read.
@@ -140,6 +143,11 @@ class RecordedHost:
     # (url, fields) per post_form call
     form_posts: list[tuple[str, dict[str, str]]] = field(default_factory=list)
     slept: list[float] = field(default_factory=list)
+    # Keys the human presses while the CLI waits for one (wait_key), in order: a key, None (no key in
+    # that wait) or INTERRUPT (Ctrl-C). With none left, no key comes. Each wait is kept in `waited`.
+    keys: list[Any] = field(default_factory=list)
+    waited: list[tuple[float, str]] = field(default_factory=list)
+    clock: int = RECORDED_CLOCK
     gets: list[str] = field(default_factory=list)
     removed: set[str] = field(default_factory=set)
     private: set[str] = field(default_factory=set)
@@ -274,6 +282,16 @@ class RecordedHost:
     def sleep(self, seconds: float) -> None:
         self.slept.append(seconds)
 
+    def wait_key(self, seconds: float, status: str = "") -> str | None:
+        self.waited.append((seconds, status))
+        key = self.keys.pop(0) if self.keys else None
+        if key is INTERRUPT:
+            raise KeyboardInterrupt
+        return key
+
+    def now(self) -> int:
+        return self.clock
+
     def get(self, url: str) -> HttpResponse:
         self.gets.append(url)
         if url not in self.fetches:
@@ -376,6 +394,12 @@ class RecordingHost:
 
     def sleep(self, seconds: float) -> None:
         self.inner.sleep(seconds)
+
+    def wait_key(self, seconds: float, status: str = "") -> str | None:
+        return self.inner.wait_key(seconds, status)
+
+    def now(self) -> int:
+        return self.inner.now()
 
     def get(self, url: str) -> HttpResponse:
         return self.inner.get(url)

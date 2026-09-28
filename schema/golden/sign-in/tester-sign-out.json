@@ -1,0 +1,9 @@
+{
+  "request_version": 1,
+  "request": "sign-out",
+  "requested_at": 1790553600,
+  "signature": {
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtdGVzdGVyAAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQPgE37df+pKk1Lbn0kjwG3GanPUCbi5LXkfBuiDiH8\nblp9m18pDRVxogzi7Z6WXQOeUGZ6x/o3hRQ3KJboo/fA8=\n-----END SSH SIGNATURE-----"
+  }
+}

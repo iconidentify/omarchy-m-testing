@@ -1,0 +1,101 @@
+require "test_helper"
+
+# Seam B: omarchy-m-test --status and --sign-out. The CLI sends the golden
+# requests (signed by its fixture machine key, dated at its recorded clock);
+# the site says whom the machine is bound to, or unbinds it.
+class TesterRequestsTest < ActionDispatch::IntegrationTest
+  FIXTURE_MACHINE_REPORT = -> { File.read(GoldenReports.signed_paths.find { |path| path.end_with?("/m2-max-image2.json") }) }
+
+  setup do
+    configure_github
+    Tester.create!(login: "maralcbr")
+    github.issue(GoldenSignIn::TOKEN, "MaralcBR", id: 4242)
+  end
+
+  def request_at(name, at = GoldenTesterRequests::AT, body = GoldenTesterRequests.text(name))
+    travel_to(at) { tester_request(body) }
+  end
+
+  def signed(request, name: "a", at: GoldenTesterRequests::AT.to_i)
+    TestMachines.sign({ "request_version" => 1, "request" => request, "requested_at" => at }, name, namespace: MachineSignature::TESTER_NAMESPACE)
+  end
+
+  test "status: a machine that never signed in isn't signed in" do
+    assert_equal({ "signed_in" => false }, request_at("status"))
+    assert_response :ok
+  end
+
+  test "status: after the golden sign-in, the machine is signed in as its handle, a tester while it's on the allowlist" do
+    sign_in_tester
+    assert_equal({ "signed_in" => true, "login" => "maralcbr", "tester" => true }, request_at("status"))
+
+    Tester.delete_all
+    assert_equal({ "signed_in" => true, "login" => "maralcbr", "tester" => false }, request_at("status"))
+  end
+
+  test "sign-out unbinds the machine: its later runs are community runs, earlier ones keep their handle" do
+    sign_in_tester
+    upload_report FIXTURE_MACHINE_REPORT.call
+    assert_equal "maralcbr", Report.sole.tester_login
+
+    assert_equal({ "signed_in" => false, "signed_out" => "maralcbr" }, request_at("sign-out"))
+    assert_equal 0, TesterBinding.count
+    assert_equal({ "signed_in" => false }, request_at("status"))
+
+    uploaded = upload_report FIXTURE_MACHINE_REPORT.call
+    assert_equal false, uploaded["tester"]
+    assert_equal [ "maralcbr", nil ], Report.order(:id).pluck(:tester_login)
+  end
+
+  test "sign-out of a machine that isn't bound says so and changes nothing else" do
+    bind_machine("b", "someone")
+    assert_equal({ "signed_in" => false, "signed_out" => nil }, request_at("sign-out"))
+    assert_equal 1, TesterBinding.count
+  end
+
+  test "a machine only ever signs itself out" do
+    bind_machine("a", "maralcbr")
+    bind_machine("b", "someone")
+    travel_to(GoldenTesterRequests::AT) { tester_request signed("sign-out", name: "b") }
+    assert_equal [ TestMachines.machine_id("a") ], TesterBinding.pluck(:machine_id)
+  end
+
+  test "a request dated more than an hour away, a copy replayed later, is refused" do
+    sign_in_tester
+    body = request_at("sign-out", GoldenTesterRequests::AT + 61.minutes)
+    assert_response :unprocessable_content
+    assert_match "dated more than an hour from the site's clock", body["error"]
+    assert_equal 1, TesterBinding.count
+
+    request_at("sign-out", GoldenTesterRequests::AT - 61.minutes)
+    assert_response :unprocessable_content
+    request_at("sign-out", GoldenTesterRequests::AT + 59.minutes)
+    assert_response :ok
+    assert_equal 0, TesterBinding.count
+  end
+
+  test "a request changed after it was signed, or signed as a report, is refused" do
+    sign_in_tester
+    changed = GoldenTesterRequests.json("status").merge("request" => "sign-out")
+    request_at("sign-out", GoldenTesterRequests::AT, changed.to_json)
+    assert_response :unprocessable_content
+    assert_match "changed after it was signed", response.parsed_body["error"]
+
+    as_report = TestMachines.sign({ "request_version" => 1, "request" => "sign-out", "requested_at" => GoldenTesterRequests::AT.to_i })
+    request_at("sign-out", GoldenTesterRequests::AT, as_report.to_json)
+    assert_response :unprocessable_content
+    assert_match "namespace", response.parsed_body["error"]
+    assert_equal 1, TesterBinding.count
+  end
+
+  test "a sign-in can't pass for a request, nor anything else" do
+    [ GoldenSignIn.json, GoldenTesterRequests.json("status").except("signature"), GoldenTesterRequests.json("status").merge("extra" => 1),
+      GoldenTesterRequests.json("status").merge("request" => "delete-everything"), GoldenTesterRequests.json("status").merge("requested_at" => "now"),
+      GoldenTesterRequests.json("status").merge("request_version" => 2), [ 1 ] ].each do |body|
+      request_at("status", GoldenTesterRequests::AT, body.to_json)
+      assert_response :unprocessable_content, body.inspect
+    end
+    request_at("status", GoldenTesterRequests::AT, "{")
+    assert_response :bad_request
+  end
+end
