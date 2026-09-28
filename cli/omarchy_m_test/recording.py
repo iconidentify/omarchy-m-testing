@@ -44,7 +44,8 @@ last, is input that stays closed: every later prompt gets end of input and
 every later interactive command exits 1, as gum does with no answer). Uploads get
 the scripted `responses` in order; form POSTs (GitHub's device flow) get the
 scripted `forms` in order, and sleeps return at once (kept in `slept`); waits for a key
-(wait_key) return the scripted `keys` in order, at once, and the clock (now) is `clock`. GETs (the latest-release lookup) get
+(wait_key) return the scripted `keys` in order, at once. The clock (now) starts at `clock` and
+moves on by each sleep and each wait no key ended. GETs (the latest-release lookup) get
 the scripted `fetches` by URL; a URL that isn't scripted behaves like a
 machine with no network (NetworkError). The answer INTERRUPT at a prompt or an
 interactive command is Ctrl-C there (KeyboardInterrupt). Interactive commands
@@ -281,10 +282,13 @@ class RecordedHost:
 
     def sleep(self, seconds: float) -> None:
         self.slept.append(seconds)
+        self.clock += int(seconds)
 
     def wait_key(self, seconds: float, status: str = "") -> str | None:
         self.waited.append((seconds, status))
         key = self.keys.pop(0) if self.keys else None
+        if key is None:
+            self.clock += int(seconds)  # the whole wait went by
         if key is INTERRUPT:
             raise KeyboardInterrupt
         return key

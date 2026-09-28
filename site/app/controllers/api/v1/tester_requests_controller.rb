@@ -7,9 +7,10 @@ module Api
     #
     #   { "request_version": 1, "request": "status" | "sign-out", "requested_at": <unix seconds>, "signature": {...} }
     #
-    # A request dated more than MAX_AGE from now is refused, so a copy of a
-    # sign-out can't unbind the machine later. Both answer where the machine
-    # stands afterwards:
+    # A request dated more than MAX_AGE from now is refused, and a sign-out
+    # only unbinds a sign-in made before the sign-out was dated, so a copy of
+    # one can't unbind the machine after it signs in again. Both answer where
+    # the machine stands afterwards:
     #
     #   { "signed_in": true, "login": "handle", "tester": true } or { "signed_in": false }
     #
@@ -41,6 +42,10 @@ module Api
 
         binding = TesterBinding.find_by(machine_id: signature.machine_id)
         if payload["request"] == "sign-out"
+          if binding && binding.updated_at.to_i > payload["requested_at"]
+            return refuse("This Mac signed in again after this sign-out was made, so it was refused. Run omarchy-m-test --sign-out again " \
+                          "(and check this Mac's date and time if this keeps happening).", :conflict)
+          end
           binding&.destroy!
           render json: { signed_in: false, signed_out: binding&.github_login }
         elsif binding

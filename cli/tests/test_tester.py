@@ -319,10 +319,33 @@ class OfferTest(unittest.TestCase):
         self.assertIn("Couldn't sign in (couldn't reach GitHub (name resolution failed)): carrying on as a community run", mac.output)
         self.assertIn("Checking ", mac.output)
 
-    def test_the_site_unreachable_still_offers(self):
-        _, mac = self.run_offer(["n"], responses=[answer(503, error="down")])
+    def test_when_the_site_cant_say_whether_the_mac_is_signed_in_the_offer_waits_for_a_later_run(self):
+        # It may be signed in with an older omarchy-m-test, which kept no record: never ask it then.
+        status, mac = self.run_offer([], responses=[answer(503, error="down")])
 
-        self.assertIn(OFFER_PROMPT, mac.output)
+        self.assertEqual(status, 0)
+        self.assertNotIn(OFFER_PROMPT, mac.output)
+        self.assertIsNone(link_of(mac, self.state))
+        self.assertIn("Checking ", mac.output)
+
+    def test_the_5_minutes_count_githubs_slow_answers_too(self):
+        from tests.desktop import UNANSWERED
+        from tests.test_seam_a import ENTER
+
+        mac = signing_mac(self.state, answers=[ENTER, "y", *UNANSWERED, "n"], responses=[NOT_SIGNED_IN])
+        mac.recording["files"][self.link] = None
+        mac.forms = [device(), *[PENDING] * 60]
+        answer_form = mac.post_form
+
+        def slow(url, fields):
+            mac.clock += 25  # each answer takes 25 s
+            return answer_form(url, fields)
+
+        mac.post_form = slow
+        main(["--site", SITE], mac)
+
+        self.assertEqual(len(mac.form_posts), 1 + 10)  # every 30 s: 5 s waiting, 25 s answering
+        self.assertIn("no code was entered within 5 minutes", mac.output)
 
     def test_a_dry_run_is_never_offered(self):
         from tests.desktop import UNANSWERED

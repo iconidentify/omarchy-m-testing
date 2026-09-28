@@ -10,7 +10,8 @@ class TesterBinding < ApplicationRecord
 
   def self.bind!(machine_id:, identity:)
     binding = find_or_initialize_by(machine_id:)
-    binding.update!(github_login: identity.login, github_id: identity.id)
+    # updated_at is the sign-in's time even when nothing else changed: a sign-out dated before it leaves it be.
+    binding.update!(github_login: identity.login, github_id: identity.id, updated_at: Time.current)
     binding
   end
 

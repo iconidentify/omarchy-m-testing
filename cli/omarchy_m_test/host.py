@@ -21,9 +21,9 @@ Operations:
   post_form(url, fields)     POST form fields, asking for JSON back (GitHub's device flow); returns
                              the HTTP response
   sleep(seconds)             wait (between polls of GitHub's device flow)
-  wait_key(seconds, status)  wait up to `seconds` for a key the human presses; the key, or None. At a
-                             terminal `status` is shown on one line meanwhile (a countdown) and cleared
-                             after; off a terminal it just waits
+  wait_key(seconds, status)  wait up to `seconds` for a key the human presses on the terminal; the key,
+                             or None. `status` is shown on one line meanwhile (a countdown) and cleared
+                             after, when the output is a terminal; with no terminal to read, it just waits
   now()                      the time, in whole seconds since the epoch (a signed tester request's date)
   get(url)                   GET a small text (the latest release's version); NetworkError if unreachable
   env(name)                  an environment variable's value; None when unset
@@ -444,22 +444,25 @@ class RealHost:
         time.sleep(seconds)
 
     def wait_key(self, seconds: float, status: str = "") -> str | None:
-        if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        if not sys.stdin.isatty():
             time.sleep(seconds)
             return None
+        shown = bool(status) and sys.stdout.isatty()  # keys are read from the terminal even when the output is piped
         fd = sys.stdin.fileno()
         saved = termios.tcgetattr(fd)
         try:
-            if status:
+            if shown:
                 sys.stdout.write("\r\x1b[K" + status)
                 sys.stdout.flush()
-            tty.setcbreak(fd)  # a key without Enter, not echoed; Ctrl-C still interrupts
+            # A key without Enter, not echoed; Ctrl-C still interrupts. TCSANOW: a key pressed before this
+            # wait (while the CLI polled GitHub) stays queued, where the default TCSAFLUSH would drop it.
+            tty.setcbreak(fd, termios.TCSANOW)
             ready, _, _ = select.select([fd], [], [], seconds)
             # Up to 32 bytes: an arrow or function key's whole escape sequence is one key.
             return os.read(fd, 32).decode("utf-8", "replace") if ready else None
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, saved)
-            if status:
+            termios.tcsetattr(fd, termios.TCSANOW, saved)
+            if shown:
                 sys.stdout.write("\r\x1b[K")
                 sys.stdout.flush()
 

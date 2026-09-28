@@ -15,14 +15,15 @@ The Mac remembers the sign-in in the state directory (LINK_NAME: the handle
 and whether it's a tester, never a token). A run (not --dry-run or --record)
 whose Mac has no such record first asks the site whether this machine key is
 signed in already (a Mac signed in before the record existed), and otherwise
-offers, once per Mac, to sign in (OFFER_QUESTION). A "no", a skip, a timeout
+offers, once per Mac, to sign in (OFFER_QUESTION). When the site can't be
+asked, the run isn't offered it; a later run is. A "no", a skip, a timeout
 or a failure is remembered too, so the offer never comes back; --sign-in
 still works any time. While the offer waits for the code, a countdown runs
 for up to OFFER_WAIT_SECONDS and any key skips it: the run goes on unsigned.
 
 `--status` and `--sign-out` send the site a small request signed with the
 machine key (namespace NAMESPACE, dated requested_at so a copy of it can't be
-replayed later): the site says whose handle the key is bound to, or unbinds
+replayed later, and a sign-out only unbinds a sign-in older than itself): the site says whose handle the key is bound to, or unbinds
 it. Signing out removes the record, so the next run offers the sign-in again.
 Runs already uploaded keep the handle they were uploaded under.
 """
@@ -81,22 +82,24 @@ Wait = Callable[[int], None]  # waits `interval` seconds between polls; raises t
 
 
 class Countdown:
-    """The offered sign-in's wait: second by second with the time left shown, up to `budget` seconds in all;
-    any key skips (SignInSkipped), running out stops it (SignInFailed)."""
+    """The offered sign-in's wait: second by second with the time left shown, up to `budget` seconds by the
+    clock from its start (GitHub's answers count too); any key skips (SignInSkipped), running out stops it
+    (SignInFailed)."""
 
     def __init__(self, host: Host, budget: int = OFFER_WAIT_SECONDS):
         self.host = host
-        self.left = budget
         self.budget = budget
+        self.deadline = host.now() + budget
 
     def __call__(self, interval: int) -> None:
-        for _ in range(interval):
-            if self.left <= 0:
+        until = self.host.now() + interval
+        while (now := self.host.now()) < until:
+            left = self.deadline - now
+            if left <= 0:
                 raise SignInFailed(f"no code was entered within {self.budget // 60} minutes")
-            minutes, seconds = divmod(self.left, 60)
+            minutes, seconds = divmod(left, 60)
             if self.host.wait_key(1, f"  Waiting for GitHub: {minutes}:{seconds:02d} left. Press any key to skip.") is not None:
                 raise SignInSkipped
-            self.left -= 1
 
 
 def _json(response: HttpResponse) -> dict:
@@ -269,8 +272,8 @@ def offer(host: Host, say: Callable[[str], None], confirm: Callable[[str], bool]
     try:
         known = _request(host, site, STATUS)
     except SignInFailed:
-        known = {}
-    if known.get("signed_in"):
+        return  # the site can't say whether this Mac is signed in already (an older CLI's sign-in): offer on a later run
+    if known["signed_in"]:
         _remember(host, login=known["login"], tester=bool(known.get("tester")))
         say(signed_in_line(known["login"], bool(known.get("tester"))))
         return

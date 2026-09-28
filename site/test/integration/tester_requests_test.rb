@@ -16,6 +16,9 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
     travel_to(at) { tester_request(body) }
   end
 
+  # The golden sign-in, made a little before the golden requests are dated.
+  def sign_in_before = travel_to(GoldenTesterRequests::AT - 5.minutes) { sign_in_tester }
+
   def signed(request, name: "a", at: GoldenTesterRequests::AT.to_i)
     TestMachines.sign({ "request_version" => 1, "request" => request, "requested_at" => at }, name, namespace: MachineSignature::TESTER_NAMESPACE)
   end
@@ -26,7 +29,7 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
   end
 
   test "status: after the golden sign-in, the machine is signed in as its handle, a tester while it's on the allowlist" do
-    sign_in_tester
+    sign_in_before
     assert_equal({ "signed_in" => true, "login" => "maralcbr", "tester" => true }, request_at("status"))
 
     Tester.delete_all
@@ -34,7 +37,7 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
   end
 
   test "sign-out unbinds the machine: its later runs are community runs, earlier ones keep their handle" do
-    sign_in_tester
+    sign_in_before
     upload_report FIXTURE_MACHINE_REPORT.call
     assert_equal "maralcbr", Report.sole.tester_login
 
@@ -54,14 +57,17 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
   end
 
   test "a machine only ever signs itself out" do
-    bind_machine("a", "maralcbr")
-    bind_machine("b", "someone")
+    travel_to(GoldenTesterRequests::AT - 5.minutes) do
+      bind_machine("a", "maralcbr")
+      bind_machine("b", "someone")
+    end
     travel_to(GoldenTesterRequests::AT) { tester_request signed("sign-out", name: "b") }
+    assert_equal({ "signed_in" => false, "signed_out" => "someone" }, response.parsed_body)
     assert_equal [ TestMachines.machine_id("a") ], TesterBinding.pluck(:machine_id)
   end
 
   test "a request dated more than an hour away, a copy replayed later, is refused" do
-    sign_in_tester
+    sign_in_before
     body = request_at("sign-out", GoldenTesterRequests::AT + 61.minutes)
     assert_response :unprocessable_content
     assert_match "dated more than an hour from the site's clock", body["error"]
@@ -74,8 +80,20 @@ class TesterRequestsTest < ActionDispatch::IntegrationTest
     assert_equal 0, TesterBinding.count
   end
 
+  test "a copy of a sign-out, replayed after the machine signed in again, unbinds nothing" do
+    travel_to(GoldenTesterRequests::AT - 10.minutes) { sign_in_tester }
+    request_at("sign-out")
+    assert_equal 0, TesterBinding.count
+
+    travel_to(GoldenTesterRequests::AT + 2.minutes) { sign_in_tester }
+    body = request_at("sign-out", GoldenTesterRequests::AT + 3.minutes)
+    assert_response :conflict
+    assert_match "signed in again after this sign-out was made", body["error"]
+    assert_equal "maralcbr", TesterBinding.sole.github_login
+  end
+
   test "a request changed after it was signed, or signed as a report, is refused" do
-    sign_in_tester
+    sign_in_before
     changed = GoldenTesterRequests.json("status").merge("request" => "sign-out")
     request_at("sign-out", GoldenTesterRequests::AT, changed.to_json)
     assert_response :unprocessable_content
