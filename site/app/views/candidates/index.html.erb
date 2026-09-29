@@ -32,7 +32,7 @@
       <tbody>
         <% @builds.each do |build, runs| %>
           <tr class="build-row" data-build="<%= build.id %>" data-set="<%= build.set %>" data-set-source="<%= build.set_source %>">
-            <td><%= link_to build.id, reports_path(build: build.id), class: "build-id", title: build.words %></td>
+            <td><%= link_to build.label, reports_path(build: build.words), class: "build-id", title: build.words %><% if build.candidate_set %><span class="dim"> runtime <%= build.id %></span><% end %><% if build.built %><span class="dim"> · built <%= build.built %></span><% end %></td>
             <td class="nowrap"><%= build.kernel || "–" %></td>
             <td class="nowrap"><%= build.boot || "–" %></td>
             <td><% if build.set %><%= candidate_link(build.set) %><%= tag.span(" (matched by package)", class: "dim") if build.set_source == "packages" %><% else %><span class="dim">unknown</span><% end %></td>

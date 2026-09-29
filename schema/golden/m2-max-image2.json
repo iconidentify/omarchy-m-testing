@@ -20,6 +20,7 @@
     "boot_loader": "limine",
     "encryption": "on",
     "image": {
+      "format": "1",
       "platform": "apple-silicon"
     },
     "packages": [

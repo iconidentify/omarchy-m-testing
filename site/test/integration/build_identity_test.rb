@@ -7,7 +7,8 @@ require "test_helper"
 # for each (cli/tests/test_build_identity.py reads the same file).
 class BuildIdentityTest < ActionDispatch::IntegrationTest
   PRODUCTION = JSON.parse(ReportSchema.dir.join("golden", "production", "reports.json").read).fetch("reports")
-  BUILDS = JSON.parse(ReportSchema.dir.join("golden", "production", "builds.json").read).fetch("builds")
+  GOLDEN_BUILDS = JSON.parse(ReportSchema.dir.join("golden", "production", "builds.json").read)
+  BUILDS = GOLDEN_BUILDS.fetch("builds")
   M3 = "xHGd4Toq7io8CSHYYFhTjZBD"
   M3_BUILD = "f60e1ba.2026092602"
   M1_AIR_BUILD = "0052582.362956774610001"
@@ -38,6 +39,13 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
 
     get "/reports", params: { build: M3_BUILD }
     assert_equal [ "report-#{M3}" ], css_select("tr.report-row").map { |row| row["id"] }
+  end
+
+  test "other package sets and image records are worded as the CLI words them" do
+    GOLDEN_BUILDS.fetch("examples").each do |example|
+      build = Build.new(example["packages"], candidate_set: example["candidate_set"], image: example["built"] ? { "built" => example["built"] } : {})
+      assert_equal example["words"], build.words, example["why"]
+    end
   end
 
   test "the report page header names the build, its kernel, boot package and tester, with every package" do
@@ -121,32 +129,62 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
     assert_select "tr.candidate-row", 0
   end
 
-  test "a run whose image names its set and records its build is counted, and shows the image record" do
-    report = golden("m2-max-converged")
-    report["system"]["candidate_set"] = "apple-test-1937418f520b-20260926"
-    report["system"]["image"] = { "platform" => "apple-silicon", "candidate_set" => "apple-test-1937418f520b-20260926",
-                                  "image_profile" => "test", "built" => "2026-09-26T11:14:19Z", "image_version" => "5" }
-    body = upload_report report
-    assert_response :created
+  SET = "apple-test-1937418f520b-20260926"
+  # A new image's target record, every key (omacom/omarchy-mac-installer#35).
+  IMAGE = { "format" => "1", "platform" => "apple-silicon", "candidate_set" => SET,
+            "candidate_source_commit" => "1937418f520b" + "0" * 28, "builder_commit" => "c6fedc32c" + "1" * 31,
+            "builder_tree_clean" => "true", "image_profile" => "test", "package_set_sha256" => "ab" * 32, "built" => "2026-09-28T03:04:05Z" }.freeze
 
-    get path_of(body["report_url"])
-    assert_select "dd#build a[href=?]", "/candidates/apple-test-1937418f520b-20260926"
-    assert_select "dd#image", "platform apple-silicon, candidate_set apple-test-1937418f520b-20260926, image_profile test, built 2026-09-26T11:14:19Z, image_version 5"
-
-    get "/candidates"
-    assert_select %(tr.build-row[data-set-source="image"])
-    assert_select "tr#candidate-apple-test-1937418f520b-20260926"
+  def on_new_image(image = IMAGE)
+    golden("m2-max-converged").tap do |report|
+      report["system"]["candidate_set"] = SET
+      report["system"]["image"] = image
+    end
   end
 
-  test "an image record key a later builder adds is accepted; an unsafe value isn't" do
-    report = golden("m2-max-converged")
-    report["system"]["image"] = { "platform" => "apple-silicon", "image_build_number" => "12" }
-    upload_report report
+  test "a run on an image naming its set is labelled by the set, counted for it, and shows the image record" do
+    body = upload_report on_new_image
     assert_response :created
+    words = "#{SET} (runtime 1937418.362376005140001, linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1, built 2026-09-28T03:04:05Z)"
+    assert_equal words, Report.sole.build.words
 
-    report["system"]["image"] = { "platform" => "apple-silicon", "image_build_number" => "12 marcelo's" }
-    upload_report report, machine: "b"
+    get path_of(body["report_url"])
+    assert_select "dd#build .build-id", SET
+    assert_select "dd#build a[href=?]", "/candidates/#{SET}"
+    assert_select "dd#build", /runtime 1937418\.362376005140001 · linux-aurora 7\.1\.12\.aurora2-10 · omarchy-mac-boot 20260926-1 · built 2026-09-28T03:04:05Z/
+    assert_select "dd#image", "format 1, platform apple-silicon, candidate_set #{SET}, candidate_source_commit 1937418f520b, " \
+                              "builder_commit c6fedc32c111, builder_tree_clean true, image_profile test, package_set_sha256 abababababab, " \
+                              "built 2026-09-28T03:04:05Z"
+
+    get "/candidates"
+    assert_select %(tr.build-row[data-set-source="image"] a.build-id), SET
+    assert_select "tr#candidate-#{SET}"
+
+    get "/matrix"
+    assert_select "#build-filters a[data-build=?]", "1937418.362376005140001", SET
+  end
+
+  test "two images of one set are two builds: the image's package set and build time tell them apart" do
+    upload_report on_new_image, machine: "a"
+    upload_report on_new_image(IMAGE.merge("built" => "2026-09-29T01:00:00Z", "package_set_sha256" => "cd" * 32)), machine: "b"
+
+    get "/candidates"
+    assert_equal 2, css_select(%(tr.build-row[data-set="#{SET}"])).size
+
+    get "/matrix", params: { build: Report.first.build.words }
+    assert_select "tr.matrix-row", 1
+    get "/reports", params: { build: SET }
+    assert_select "tr.report-row", 2
+  end
+
+  test "the image record takes only the builder's keys, each in its shape" do
+    upload_report on_new_image(IMAGE.merge("hostname" => "omarchy-marcelo"))
     assert_response :unprocessable_content
+    upload_report on_new_image(IMAGE.merge("built" => "Sep 28 2026")), machine: "b"
+    assert_response :unprocessable_content
+    upload_report on_new_image(IMAGE.merge("package_set_sha256" => "marcelo")), machine: "c"
+    assert_response :unprocessable_content
+    assert_equal 0, Report.count
   end
 
   test "exports carry the build of every report" do
@@ -155,7 +193,7 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
     get "/api/v1/reports.json"
     exported = response.parsed_body["reports"].to_h { |entry| [ entry["id"], entry ] }
     BUILDS.each { |id, build| assert_equal build["words"], exported.dig(id, "build", "words") }
-    assert_equal({ "id" => M3_BUILD, "commit" => "f60e1ba", "stamp" => "2026092602", "linux_aurora" => "7.1.12.aurora2-11",
+    assert_equal({ "id" => M3_BUILD, "label" => M3_BUILD, "commit" => "f60e1ba", "stamp" => "2026092602", "linux_aurora" => "7.1.12.aurora2-11",
                    "omarchy_mac_boot" => "20260926-1", "tool_version" => "0.1.8" }, exported.dig(M3, "build").except("words"))
     assert_equal "apple-test-0052582276d9-20260927", exported.dig("q8avqMwJH59VSjxM5TxAyF38", "build", "candidate_set")
     # The report itself stays exactly as uploaded.

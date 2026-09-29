@@ -9,8 +9,8 @@
 <nav class="filters" aria-label="Build" id="build-filters">
   <%= link_to "one row per build", matrix_path(stack: @stack), class: ("current" if @by_build && @build.nil?) %>
   <%= link_to "one row per release", matrix_path(stack: @stack, group: "release"), class: ("current" if !@by_build) %>
-  <% @builds.each do |id, words, runs| %>
-    <%= link_to id, matrix_path(stack: @stack, build: id), class: ("current" if @build == id), title: "#{words}: #{pluralize(runs, "run")}", data: { build: id } %>
+  <% @builds.each do |build, runs| %>
+    <%= link_to build.label, matrix_path(stack: @stack, build: build.words), class: ("current" if @build == build.words), title: "#{build.words}: #{pluralize(runs.size, "run")}", data: { build: build.id } %>
   <% end %>
 </nav>
 <%= card(@by_build ? "model × stack/version × build" : "model × stack/version") do %>

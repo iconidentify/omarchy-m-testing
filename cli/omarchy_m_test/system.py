@@ -54,15 +54,22 @@ STACK_WORDS = {
     "reference": "reference run",
 }
 
-# The image target record's keys that reach the report (system.image), read
-# from the image's own build record: what the image is, never who has it.
-# Keys the builder may add later are dropped until they're listed here (the
-# schema already accepts them). format is the record's own version: left out.
-IMAGE_KEYS = (
-    "platform", "candidate_set", "candidate_source_commit", "builder_commit", "builder_tree_clean", "image_profile",
-    "built", "image_version", "image_id", "package_set_sha256",
-)
-_IMAGE_VALUE = re.compile(r"[A-Za-z0-9._:+-]{1,128}")
+# The image target record's keys that reach the report (system.image), each
+# with the only shape its value may have: the image builder's own record of
+# the build (omacom/omarchy-mac-installer's build-mac-image), what the image
+# is, never who has it. Older images have only format and platform. Other
+# keys are ignored; the schema lists exactly these.
+IMAGE_KEYS = {
+    "format": re.compile(r"[0-9]{1,4}"),
+    "platform": re.compile(r"[a-z0-9][a-z0-9-]{0,39}"),
+    "candidate_set": re.compile(r"[A-Za-z0-9._-]{1,128}"),
+    "candidate_source_commit": re.compile(r"[0-9a-f]{7,40}"),
+    "builder_commit": re.compile(r"[0-9a-f]{7,40}"),
+    "builder_tree_clean": re.compile(r"(true|false|yes|no)"),
+    "image_profile": re.compile(r"[a-z]{1,20}"),
+    "package_set_sha256": re.compile(r"[0-9a-f]{64}"),
+    "built": re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"),
+}
 
 _TAG = re.compile(r"[A-Za-z0-9._-]{1,128}")
 # In a package version: the git commit of a VCS build (".g99ace4070354")
@@ -98,8 +105,9 @@ class System:
         return words
 
     def build(self) -> str | None:
-        """The build this run is on, e.g. "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"."""
-        return build_words(self.packages) if self.is_omarchy else None
+        """The build this run is on, e.g. "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+        or, on an image naming its set, "apple-test-f22c43fb7903-20260928 (runtime f22c43f.…, …, built 2026-09-28T03:04:05Z)"."""
+        return build_words(self.packages, self.candidate_set, self.image.get("built")) if self.is_omarchy else None
 
     def report(self, boot_loader: str) -> dict:
         block = {
@@ -132,20 +140,24 @@ def build_id(packages: dict[str, str]) -> str | None:
     return found or next((packages[name] for name in (*RUNTIME_PACKAGES, "omarchy-mac") if name in packages), None)
 
 
-def build_words(packages: dict[str, str]) -> str | None:
-    """build_id with the kernel and boot package it runs, the boot package's version without the build's stamp."""
+def build_words(packages: dict[str, str], candidate_set: str | None = None, built: str | None = None) -> str | None:
+    """The build a run is on, as the site words it (Build#words): the image's candidate set when it names one,
+    else build_id; then the runtime build (under a set), the kernel and boot package, without the build's
+    stamp, and when the image was built."""
     identity = build_id(packages)
     if identity is None:
         return None
     stamp = build_parts(packages)[1]
-    extras = []
+    extras = [f"runtime {identity}"] if candidate_set else []
     for name in ("linux-aurora", "omarchy-mac-boot"):
         version = packages.get(name)
         if version:
             if stamp and version.endswith(f".{stamp}"):
                 version = version[: -len(stamp) - 1]
             extras.append(f"{name} {version}")
-    return identity + (f" ({', '.join(extras)})" if extras else "")
+    if built:
+        extras.append(f"built {built}")
+    return (candidate_set or identity) + (f" ({', '.join(extras)})" if extras else "")
 
 
 def detect(host: Host) -> System:
@@ -215,9 +227,9 @@ def _candidate_set(host: Host) -> str | None:
 
 
 def _image(host: Host) -> dict[str, str]:
-    """The allowlisted keys of the image's target record whose values are plain tokens."""
+    """The allowlisted keys of the image's target record, each only when its value has its key's shape."""
     target = next((values for path in TARGET_RECORDS if (values := _key_values(host, path)) is not None), None) or {}
-    return {key: target[key] for key in IMAGE_KEYS if key in target and _IMAGE_VALUE.fullmatch(target[key])}
+    return {key: target[key] for key, shape in IMAGE_KEYS.items() if key in target and shape.fullmatch(target[key])}
 
 
 def _root_chain(host: Host) -> list[str] | None:

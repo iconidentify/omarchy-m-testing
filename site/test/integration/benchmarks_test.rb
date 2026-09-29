@@ -107,10 +107,10 @@ class BenchmarksTest < ActionDispatch::IntegrationTest
     opengl = body["benchmarks"].find { |benchmark| benchmark["check"] == "benchmark.opengl" }
     assert_equal({ "model" => "MacBook Pro (16-inch, M2 Max, 2023)", "board" => "j416c", "soc" => "t6021", "chip" => "M2 Max",
                    "stack" => "converged", "version" => "4.0.0", "build" => {
-                     "id" => "1937418.362376005140001", "words" => "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1)",
+                     "id" => "1937418.362376005140001", "label" => "1937418.362376005140001", "words" => "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1)",
                      "commit" => "1937418", "stamp" => "362376005140001", "linux_aurora" => "7.1.12.aurora2-10", "omarchy_mac_boot" => "20260926-1",
                      "candidate_set" => "apple-test-1937418f520b-20260926", "candidate_set_source" => "packages",
-                     "image" => { "platform" => "apple-silicon" }, "tool_version" => Report.first.tool_version
+                     "image" => { "format" => "1", "platform" => "apple-silicon" }, "tool_version" => Report.first.tool_version
                    }, "score" => 2987, "low" => 2987, "high" => 2987, "machines" => 1,
                    "runs" => 1, "tools" => [ "glmark2 2023.01" ] }, opengl["rows"].sole)
     assert_not_includes response.body, Report.first.machine_id

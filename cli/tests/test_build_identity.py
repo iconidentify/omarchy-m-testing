@@ -17,11 +17,13 @@ import unittest
 
 from omarchy_m_test.app import main
 from omarchy_m_test.recording import ENDED, RecordedHost
+from omarchy_m_test.system import IMAGE_KEYS
 from tests.schema_validator import errors
 from tests.test_seam_a import ENTER, RECORDINGS, REPORT_FILE, SCHEMA, SCHEMA_DIR, read
 
 PRODUCTION = json.loads(read(os.path.join(SCHEMA_DIR, "golden", "production", "reports.json")))["reports"]
-BUILDS = json.loads(read(os.path.join(SCHEMA_DIR, "golden", "production", "builds.json")))["builds"]
+GOLDEN_BUILDS = json.loads(read(os.path.join(SCHEMA_DIR, "golden", "production", "builds.json")))
+BUILDS = GOLDEN_BUILDS["builds"]
 M2_MAX = json.loads(read(os.path.join(RECORDINGS, "m2-max-image2.json")))
 SAVED = "/reports/saved.json"
 TARGET = "/var/lib/omarchy/image/target"
@@ -67,6 +69,19 @@ class ProductionBuildsTest(unittest.TestCase):
         # The same runtime with a kernel installed by hand is a different build to look at.
         self.assertIn("linux-aurora 7.1.12.aurora2-10.90", BUILDS["GENBn2WpjrF6LYeXjKXCxZDW"]["words"])
 
+    def test_other_package_sets_and_image_records_word_their_build_as_the_site_does(self):
+        for example in GOLDEN_BUILDS["examples"]:
+            with self.subTest(example["why"]):
+                report = copy.deepcopy(production(M3))
+                report["system"]["packages"] = [{"name": name, "version": version} for name, version in example["packages"].items()]
+                if example.get("candidate_set"):
+                    report["system"]["candidate_set"] = example["candidate_set"]
+                    report["system"]["image"] = {"candidate_set": example["candidate_set"], "built": example["built"]}
+
+                _, mac = explain(report)
+
+                self.assertIn(f", build {example['words']}\n", mac.output)
+
     def test_a_reference_run_has_no_build(self):
         report = copy.deepcopy(production(M3))
         report["system"] = {**report["system"], "stack": "reference", "distro": "fedora"}
@@ -86,49 +101,53 @@ class RunShowsItsBuildTest(unittest.TestCase):
         self.assertLess(mac.output.index(f"Build: {words}"), mac.output.index("Build tested:"))
 
 
+SPEC_RECORD = (  # every new image's target record (omacom/omarchy-mac-installer#35)
+    "format=1\nplatform=apple-silicon\ncandidate_set=apple-test-f22c43fb7903-20260928\n"
+    "candidate_source_commit=f22c43fb7903" + "0" * 28 + "\nbuilder_commit=c6fedc32c" + "1" * 31 + "\n"
+    "builder_tree_clean=true\nimage_profile=test\npackage_set_sha256=" + "ab" * 32 + "\nbuilt=2026-09-28T03:04:05Z\n"
+)
+
+
 class ImageRecordTest(unittest.TestCase):
-    def with_target(self, text: str, path: str = TARGET) -> dict:
+    def with_target(self, text: str, path: str = TARGET) -> tuple[RecordedHost, dict]:
         rec = copy.deepcopy(M2_MAX)
         rec["files"][TARGET] = None
         rec["files"][BOOTED] = None
         rec["files"][path] = {"text": text}
-        _, report = run(rec)
+        mac, report = run(rec)
         self.assertEqual(errors(SCHEMA, report), [])
-        return report["system"]
+        return mac, report["system"]
 
-    def test_an_older_image_records_only_its_platform(self):
+    def test_an_older_image_records_only_its_format_and_platform(self):
         _, report = run(M2_MAX)  # image 2: format=1, platform=apple-silicon
 
-        self.assertEqual(report["system"]["image"], {"platform": "apple-silicon"})
+        self.assertEqual(report["system"]["image"], {"format": "1", "platform": "apple-silicon"})
 
-    def test_the_builders_provenance_reaches_the_report(self):
-        record = (
-            "format=1\nplatform=apple-silicon\ncandidate_set=apple-test-9d8c39cd7182-20260928\n"
-            "candidate_source_commit=9d8c39cd7182\nbuilder_commit=6f1b40d0c0ffee\nbuilder_tree_clean=yes\n"
-            "image_profile=test\nbuilt=2026-09-28T05:30:11Z\npackage_set_sha256=" + "a" * 64 + "\n"
-        )
+    def test_every_key_of_a_new_images_record_reaches_the_report(self):
+        mac, system = self.with_target(SPEC_RECORD, BOOTED)  # retired by the first boot, still read
 
-        system = self.with_target(record, BOOTED)  # retired by the first boot, still read
-
-        self.assertEqual(system["candidate_set"], "apple-test-9d8c39cd7182-20260928")
+        self.assertEqual(system["candidate_set"], "apple-test-f22c43fb7903-20260928")
         self.assertEqual(system["image"], {
-            "platform": "apple-silicon", "candidate_set": "apple-test-9d8c39cd7182-20260928",
-            "candidate_source_commit": "9d8c39cd7182", "builder_commit": "6f1b40d0c0ffee", "builder_tree_clean": "yes",
-            "image_profile": "test", "built": "2026-09-28T05:30:11Z", "package_set_sha256": "a" * 64,
+            "format": "1", "platform": "apple-silicon", "candidate_set": "apple-test-f22c43fb7903-20260928",
+            "candidate_source_commit": "f22c43fb7903" + "0" * 28, "builder_commit": "c6fedc32c" + "1" * 31,
+            "builder_tree_clean": "true", "image_profile": "test", "package_set_sha256": "ab" * 32, "built": "2026-09-28T03:04:05Z",
         })
+        # The set names the build first; the runtime build and when the image was built follow.
+        self.assertIn("Build: apple-test-f22c43fb7903-20260928 (runtime 99ace40.361571887310001, linux-aurora 7.1.12.aurora2-2, "
+                      "omarchy-mac-boot 20260925-3, built 2026-09-28T03:04:05Z).", mac.output)
 
-    def test_only_allowlisted_keys_with_plain_values_are_recorded(self):
+    def test_other_keys_and_values_of_the_wrong_shape_are_left_out(self):
         record = (
             "format=1\nplatform=apple-silicon\nhostname=omarchy-marcelo\nowner=marcelo@example.com\n"
-            "image_version=2026.09.28-1\nimage_id=../../etc/passwd\nbuilt=Sep 28 2026 05:30\n"
-            "builder_commit=\n# a comment\nnot a key value line\n"
+            "image_version=2026.09.28-1\nbuilder_commit=../../etc/passwd\nbuilt=Sep 28 2026 05:30\n"
+            "package_set_sha256=" + "AB" * 32 + "\nimage_profile=\n# a comment\nnot a key value line\n"
         )
 
-        system = self.with_target(record)
+        _, system = self.with_target(record)
 
-        self.assertEqual(system["image"], {"platform": "apple-silicon", "image_version": "2026.09.28-1"})
+        self.assertEqual(system["image"], {"format": "1", "platform": "apple-silicon"})
         text = json.dumps(system)
-        for leaked in ("marcelo", "passwd", "Sep 28"):
+        for leaked in ("marcelo", "passwd", "Sep 28", "2026.09.28-1", "ABAB"):
             self.assertNotIn(leaked, text)
 
     def test_without_a_target_record_there_is_no_image_block(self):
@@ -138,6 +157,13 @@ class ImageRecordTest(unittest.TestCase):
         _, report = run(rec)
 
         self.assertNotIn("image", report["system"])
+
+    def test_the_cli_reads_exactly_the_keys_and_shapes_the_schema_allows(self):
+        image = SCHEMA["properties"]["system"]["properties"]["image"]
+
+        self.assertFalse(image["additionalProperties"])
+        self.assertEqual({key: prop["pattern"] for key, prop in image["properties"].items()},
+                         {key: f"^{shape.pattern}$" for key, shape in IMAGE_KEYS.items()})
 
 
 class M3GpuGapsTest(unittest.TestCase):

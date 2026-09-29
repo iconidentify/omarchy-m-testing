@@ -60,12 +60,14 @@ def explain(host: Host, path: str, catalogue: Catalogue) -> bool:
 
 
 def _build(system) -> str | None:
-    """The build a saved report's run was on (system.build_words), and its candidate set; None if it names none."""
+    """The build a saved report's run was on (system.build_words); None if it names none."""
     if not isinstance(system, dict) or not isinstance(system.get("packages"), list):
         return None
     packages = {p["name"]: p["version"] for p in system["packages"] if isinstance(p, dict) and isinstance(p.get("name"), str)
                 and isinstance(p.get("version"), str)}
-    words = build_words(packages) if system.get("stack") != "reference" else None
-    if words and isinstance(system.get("candidate_set"), str):
-        words += f", candidate set {system['candidate_set']}"
-    return words
+    if system.get("stack") == "reference":
+        return None
+    image = system.get("image") if isinstance(system.get("image"), dict) else {}
+    candidate_set = system.get("candidate_set") or image.get("candidate_set")
+    return build_words(packages, candidate_set if isinstance(candidate_set, str) else None,
+                       image.get("built") if isinstance(image.get("built"), str) else None)

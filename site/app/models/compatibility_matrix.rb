@@ -14,15 +14,15 @@ class CompatibilityMatrix
     scope = Report.visible
     scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
     reports = scope.to_a
-    reports = reports.select { |report| report.build&.id == build } if build.present?
+    reports = reports.select { |report| report.build&.matches?(build) } if build.present?
     new(reports, by_build:)
   end
 
-  # The builds of the visible reports, newest run first: [build id, its words, runs].
+  # The builds of the visible reports, newest run first: [[build, runs], ...] (Build.runs).
   def self.builds(stack: nil)
-    scope = Report.visible.newest_first
+    scope = Report.visible
     scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
-    scope.to_a.select(&:build).group_by { |report| report.build.id }.map { |id, runs| [ id, runs.first.build.words, runs.size ] }
+    Build.runs(scope.to_a)
   end
 
   # only_testers: cells from tester runs only (a candidate set's view).

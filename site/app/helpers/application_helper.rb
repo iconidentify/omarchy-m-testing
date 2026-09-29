@@ -99,17 +99,21 @@ module ApplicationHelper
   # A report's build: its id, linked to the reports on it, with the kernel, boot package and candidate set.
   def build_summary(report, long: false)
     build = report.build or return tag.span("–", class: "dim")
-    parts = [ link_to(build.id, reports_path(build: build.id), class: "build-id", title: build.words) ]
-    parts << tag.span(safe_join([ "set ", candidate_link(build.set) ]), title: build.set_source == "packages" ? "matched by its omarchy package" : "named by the image") if build.set
+    parts = [ link_to(build.label, reports_path(build: build.words), class: "build-id", title: build.words) ]
+    parts << link_to("set page", candidate_path(build.candidate_set)) if long && build.candidate_set && CandidateSet.names.include?(build.candidate_set)
+    parts << "runtime #{build.id}" if long && build.candidate_set
+    parts << tag.span(safe_join([ "set ", candidate_link(build.set) ]), title: "matched by its omarchy package") if build.matched_set
     if long
       parts << "linux-aurora #{build.kernel}" if build.kernel
       parts << "omarchy-mac-boot #{build.boot}" if build.boot
+      parts << "built #{build.built}" if build.built
       parts << "tester #{report.tool_version}" if report.tool_version
     end
     tag.span(safe_join(parts, " · "), class: "build")
   end
 
-  def candidate_link(name) = CandidateSet.find(name) ? link_to(name, candidate_path(name)) : name
+  # A candidate set's name, linked when runs name it (CandidateSet.names, once per request).
+  def candidate_link(name) = CandidateSet.names.include?(name) ? link_to(name, candidate_path(name)) : name
 
   # A benchmark score as it reads best: whole points, frames per second to one decimal.
   def score_words(value)

@@ -6,12 +6,15 @@
 #            candidate-set lane gives every package of one build, "-1.2026092602"),
 #            e.g. "f60e1ba.2026092602"; a release package's own version when it
 #            has neither
-#   kernel   the linux-aurora version
+#   kernel   the linux-aurora version, less the build's stamp
 #   boot     the omarchy-mac-boot version, less the build's stamp
 #
-# Two runs are on the same build when all three match: the same runtime with a
-# kernel installed by hand is a different build to look at. Reference runs
-# (another distro) have none. Old reports have everything this needs.
+# An image that names its candidate set is labelled by the set, with the
+# runtime build and when the image was built (system.image built) after it.
+# Two runs are on the same build when all of these match, and the image's
+# package_set_sha256 too (with built, it names the release asset): the same
+# runtime with a kernel installed by hand is a different build to look at.
+# Reference runs (another distro) have none. Old reports have all this needs.
 #
 # The candidate set is the one the image names (system.candidate_set), else a
 # set the site knows was built with exactly this omarchy package
@@ -19,9 +22,11 @@
 # set's promotion.
 class Build
   RUNTIME_PACKAGES = %w[omarchy omarchy-settings omarchy-dev].freeze
-  # system.image's keys in the order the CLI reads them (cli/omarchy_m_test/system.py IMAGE_KEYS); others after, by name.
-  IMAGE_KEYS = %w[platform candidate_set candidate_source_commit builder_commit builder_tree_clean image_profile
-                  built image_version image_id package_set_sha256].freeze
+  # system.image's keys in the order the CLI reads them (cli/omarchy_m_test/system.py IMAGE_KEYS).
+  IMAGE_KEYS = %w[format platform candidate_set candidate_source_commit builder_commit builder_tree_clean image_profile
+                  package_set_sha256 built].freeze
+  # How long a commit or digest reads on a page; the exports keep them whole.
+  SHORT = { "candidate_source_commit" => 12, "builder_commit" => 12, "package_set_sha256" => 12 }.freeze
   COMMIT = /\.g([0-9a-f]{7,40})(?![0-9a-f])/
   STAMP = /-\d+\.(\d+)\z/
 
@@ -50,8 +55,8 @@ class Build
     @stamp = [ *RUNTIME_PACKAGES, "omarchy-mac" ].filter_map { |name| packages[name]&.[](STAMP, 1) }.first
     found = [ @commit, @stamp ].compact.join(".")
     @id = found.presence || [ *RUNTIME_PACKAGES, "omarchy-mac" ].filter_map { |name| packages[name] }.first
-    @kernel = packages["linux-aurora"]
-    @boot = packages["omarchy-mac-boot"]&.then { |version| @stamp && version.end_with?(".#{@stamp}") ? version.delete_suffix(".#{@stamp}") : version }
+    @kernel = unstamped(packages["linux-aurora"])
+    @boot = unstamped(packages["omarchy-mac-boot"])
     @candidate_set = candidate_set
     @image = image
     @tool_version = tool_version
@@ -59,14 +64,30 @@ class Build
 
   def present? = id.present?
 
-  # "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)": the CLI shows the same.
+  # What the build is called: the candidate set the image names, else the runtime build.
+  def label = candidate_set || id
+
+  def built = image["built"]
+
+  # "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)", or on an image naming its
+  # set "apple-test-f22c43fb7903-20260928 (runtime f22c43f.…, linux-aurora …, omarchy-mac-boot …, built …)":
+  # the CLI shows the same (system.build_words).
   def words
-    extras = { "linux-aurora" => kernel, "omarchy-mac-boot" => boot }.filter_map { |name, version| "#{name} #{version}" if version }
-    extras.any? ? "#{id} (#{extras.join(", ")})" : id
+    extras = []
+    extras << "runtime #{id}" if candidate_set
+    extras += { "linux-aurora" => kernel, "omarchy-mac-boot" => boot }.filter_map { |name, version| "#{name} #{version}" if version }
+    extras << "built #{built}" if built
+    extras.any? ? "#{label} (#{extras.join(", ")})" : label
   end
 
   # What two runs share when they're on the same build.
-  def key = [ id, kernel, boot ]
+  def key = [ words, image["package_set_sha256"] ]
+
+  # Whether ?build= names this build: its runtime build id or label (every variant of it), or its words (exactly this one).
+  def matches?(name) = name.present? && [ id, label, words ].include?(name)
+
+  # The image record as it reads on a page, commits and digests shortened.
+  def image_words = image.map { |key, value| "#{key} #{SHORT[key] ? value.first(SHORT[key]) : value}" }.join(", ")
 
   # The known candidate set built with this omarchy package, when the image doesn't name its set.
   def matched_set = candidate_set ? nil : KnownCandidateSets.for_omarchy(@packages["omarchy"])
@@ -81,7 +102,11 @@ class Build
   end
 
   def as_json(*)
-    { id:, words:, commit:, stamp:, linux_aurora: kernel, omarchy_mac_boot: boot, candidate_set: set, candidate_set_source: set_source,
+    { id:, label:, words:, commit:, stamp:, linux_aurora: kernel, omarchy_mac_boot: boot, candidate_set: set, candidate_set_source: set_source,
       image: image.presence, tool_version: }.compact
   end
+
+  private
+
+  def unstamped(version) = version && @stamp && version.end_with?(".#{@stamp}") ? version.delete_suffix(".#{@stamp}") : version
 end

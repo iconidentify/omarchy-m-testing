@@ -1,5 +1,5 @@
 {
-  "description": "The build each production report (reports.json, the site's export of 2026-09-29) was on, as omarchy-m-test (system.build_words) and the site (Build) both derive it.",
+  "description": "The build each production report (reports.json, the site's export of 2026-09-29) was on, and the build of a few other package sets and image records (examples), as omarchy-m-test (system.build_words) and the site (Build#words) both derive it.",
   "builds": {
     "uUbp4i2HJTALyMQ9v5EddCHx": {
       "build": "99ace40.361571887310001",
@@ -45,5 +45,34 @@
       "build": "f60e1ba.2026092602",
       "words": "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
     }
-  }
+  },
+  "examples": [
+    {
+      "why": "an image naming its set: the set first, then the runtime build, kernel, boot package and build time, stamps dropped",
+      "packages": {
+        "omarchy": "4.0.0.alpha.quattro.r1790582400.gf22c43fb7903-1.2026092801",
+        "omarchy-mac": "0.1.0-7.2026092801",
+        "omarchy-mac-boot": "20260927-1.2026092801",
+        "linux-aurora": "7.1.12.aurora2-11.2026092801"
+      },
+      "candidate_set": "apple-test-f22c43fb7903-20260928",
+      "built": "2026-09-28T03:04:05Z",
+      "words": "apple-test-f22c43fb7903-20260928 (runtime f22c43f.2026092801, linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260927-1, built 2026-09-28T03:04:05Z)"
+    },
+    {
+      "why": "a release package without a commit or stamp",
+      "packages": {
+        "omarchy": "4.0.2-1",
+        "linux-aurora": "7.1.12.aurora2-11"
+      },
+      "words": "4.0.2-1 (linux-aurora 7.1.12.aurora2-11)"
+    },
+    {
+      "why": "mx-mac: the commit alone",
+      "packages": {
+        "omarchy-dev": "4.0.2.r6879.gaae2586-1"
+      },
+      "words": "aae2586"
+    }
+  ]
 }

@@ -6,7 +6,7 @@ class ReportsController < ApplicationController
   def index
     @reports = Report.visible.newest_first.to_a
     @build = params[:build].presence
-    @reports = @reports.select { |report| report.build&.id == @build } if @build
+    @reports = @reports.select { |report| report.build&.matches?(@build) } if @build
   end
 
   def show

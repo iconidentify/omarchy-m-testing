@@ -17,7 +17,7 @@
       <dt>stack</dt><dd><%= @report.stack_words %> <%= @report.omarchy_version %><% if @report.candidate_set %>, candidate set <a href="<%= candidate_path(@report.candidate_set) %>"><%= @report.candidate_set %></a><% end %></dd>
       <dt>build</dt><dd id="build"><%= build_summary(@report, long: true) %></dd>
       <% if (image = @report.build&.image).present? %>
-        <dt>image</dt><dd id="image"><%= image.map { |key, value| "#{key} #{value}" }.join(", ") %></dd>
+        <dt>image</dt><dd id="image"><%= @report.build.image_words %></dd>
       <% end %>
       <dt>system</dt><dd><%= @report.system["distro"] %>, <%= @report.system["boot_loader"] %>, encryption <%= @report.system["encryption"] %></dd>
       <dt>tool</dt><dd><%= @report.body.dig("tool", "name") %> <%= @report.body.dig("tool", "version") %></dd>

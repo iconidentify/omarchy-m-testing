@@ -243,8 +243,7 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     checkpoint.clear()
     args.resumable = False
     build = found.build()
-    host.show(f"\nBuild tested: {build}" + (f", candidate set {found.candidate_set}" if found.candidate_set else "")
-              + f"; {TOOL_NAME} {TOOL_VERSION}." if build else f"\nTested with {TOOL_NAME} {TOOL_VERSION}.")
+    host.show(f"\nBuild tested: {build}; {TOOL_NAME} {TOOL_VERSION}." if build else f"\nTested with {TOOL_NAME} {TOOL_VERSION}.")
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)
     if unsigned_because:
