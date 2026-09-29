@@ -58,7 +58,7 @@ FEED_ROWS_PER_LINE = 3  # a long command or output line wraps to at most this ma
 RULE = "─"
 PROGRESS_BAR_WIDTH = 30
 # What a wrapped line hangs under: a list number, a dash or arrow, or a result's status word.
-_HANG = re.compile(r"^(\s*(?:\d+\.\s+(?:skip\s+|\s{4}\s)?|[-*→]\s+|(?:PASS|FAIL|SKIP|INFO)\s+)?)")
+_HANG = re.compile(r"^(\s*(?:\d+\.\s+(?:skip\s+|\s{4}\s)?|[-*→]\s+|(?:PASS|FAIL|SKIP|INFO|GAP|N/A)\s+)?)")
 
 # The site's colour code, per classification outcome.
 OUTCOME_COLOURS = {

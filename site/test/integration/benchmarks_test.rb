@@ -53,7 +53,8 @@ class BenchmarksTest < ActionDispatch::IntegrationTest
     assert_select m2, ".score-bar[style=?]", "--share: 100.0%"
     assert_select m1, ".score-value", "1,792"
     assert_select m1, ".score-bar[style=?]", "--share: 57.1%"
-    assert_select m1, "td", "converged 4.0.0"
+    assert_select m1, "td", "converged 4.0.0 · build 99ace40.361571887310001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1.45)"
+    assert_equal "99ace40.361571887310001", m1["data-build"]
     assert_select "#benchmark-h264-decode-suite-1 tr.score-row .score-value", "691"
     assert_select "#benchmark-vulkan-suite-1 tr.score-row td.dim", "vkmark 2025.01"
     assert_select ".site-nav a.current", "Benchmarks"
@@ -105,7 +106,12 @@ class BenchmarksTest < ActionDispatch::IntegrationTest
     assert_equal "CC0-1.0", body.dig("license", "id")
     opengl = body["benchmarks"].find { |benchmark| benchmark["check"] == "benchmark.opengl" }
     assert_equal({ "model" => "MacBook Pro (16-inch, M2 Max, 2023)", "board" => "j416c", "soc" => "t6021", "chip" => "M2 Max",
-                   "stack" => "converged", "version" => "4.0.0", "score" => 2987, "low" => 2987, "high" => 2987, "machines" => 1,
+                   "stack" => "converged", "version" => "4.0.0", "build" => {
+                     "id" => "1937418.362376005140001", "words" => "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1)",
+                     "commit" => "1937418", "stamp" => "362376005140001", "linux_aurora" => "7.1.12.aurora2-10", "omarchy_mac_boot" => "20260926-1",
+                     "candidate_set" => "apple-test-1937418f520b-20260926", "candidate_set_source" => "packages",
+                     "image" => { "platform" => "apple-silicon" }, "tool_version" => Report.first.tool_version
+                   }, "score" => 2987, "low" => 2987, "high" => 2987, "machines" => 1,
                    "runs" => 1, "tools" => [ "glmark2 2023.01" ] }, opengl["rows"].sole)
     assert_not_includes response.body, Report.first.machine_id
 

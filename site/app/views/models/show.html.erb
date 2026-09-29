@@ -39,9 +39,9 @@
       <tbody>
         <% @benchmarks.each do |benchmark| %>
           <% benchmark.rows_for_board(@latest.board).each do |row| %>
-            <tr class="score-row" data-benchmark="<%= benchmark.id %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>">
+            <tr class="score-row" data-benchmark="<%= benchmark.id %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>" data-build="<%= row.configuration.build_id %>">
               <td><a href="<%= benchmarks_path(anchor: "benchmark-#{benchmark.id}") %>"><%= benchmark.name %></a> <span class="dim">suite <%= benchmark.suite %></span></td>
-              <td class="nowrap"><%= row.configuration.label %></td>
+              <td><%= row.configuration.label %></td>
               <td class="score-cell">
                 <span class="score-bar" style="--share: <%= benchmark.best.positive? ? (100.0 * row.median / benchmark.best).round(1) : 0 %>%"></span>
                 <a class="score-value" href="<%= report_path(row.latest.report) %>"><%= score_words(row.median) %></a> <span class="dim"><%= benchmark.unit_words %></span>

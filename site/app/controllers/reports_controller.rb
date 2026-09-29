@@ -2,8 +2,11 @@ class ReportsController < ApplicationController
   before_action :set_report, except: :index
   before_action :require_deletion_token, only: %i[deletion destroy]
 
+  # ?build= lists the runs on one build (Build#id).
   def index
-    @reports = Report.visible.newest_first
+    @reports = Report.visible.newest_first.to_a
+    @build = params[:build].presence
+    @reports = @reports.select { |report| report.build&.id == @build } if @build
   end
 
   def show

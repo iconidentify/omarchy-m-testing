@@ -19,6 +19,9 @@
     "distro": "archarm",
     "boot_loader": "unknown",
     "encryption": "on",
+    "image": {
+      "platform": "apple-silicon"
+    },
     "packages": [
       {
         "name": "omarchy",

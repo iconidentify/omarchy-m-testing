@@ -1,5 +1,7 @@
-# The compatibility matrix: one row per Mac model and Omarchy stack/version,
+# The compatibility matrix: one row per Mac model, Omarchy stack/version and
+# build (Build: the runtime commit and build stamp, kernel and boot package),
 # one cell per catalogue feature some check tests, from the visible reports.
+# by_build: false merges a release's builds into one row ("converged 4.0.0").
 class CompatibilityMatrix
   STACKS = %w[converged mx-mac legacy-omarchy-mac reference].freeze
 
@@ -7,16 +9,27 @@ class CompatibilityMatrix
     def cell(feature_id) = cells.fetch(feature_id) { MatrixCell.new({}, []) }
   end
 
-  def self.visible(stack: nil)
+  # build: only the runs on that build (Build#id).
+  def self.visible(stack: nil, build: nil, by_build: true)
     scope = Report.visible
     scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
-    new(scope.to_a)
+    reports = scope.to_a
+    reports = reports.select { |report| report.build&.id == build } if build.present?
+    new(reports, by_build:)
+  end
+
+  # The builds of the visible reports, newest run first: [build id, its words, runs].
+  def self.builds(stack: nil)
+    scope = Report.visible.newest_first
+    scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
+    scope.to_a.select(&:build).group_by { |report| report.build.id }.map { |id, runs| [ id, runs.first.build.words, runs.size ] }
   end
 
   # only_testers: cells from tester runs only (a candidate set's view).
-  def initialize(reports, only_testers: false)
+  def initialize(reports, only_testers: false, by_build: true)
     @reports = reports.sort_by { |report| [ report.created_at, report.id ] }
     @only_testers = only_testers
+    @by_build = by_build
   end
 
   def features = Catalogue.tested_features
@@ -24,7 +37,7 @@ class CompatibilityMatrix
   def empty? = @reports.empty?
 
   def rows
-    @rows ||= @reports.group_by(&:configuration).map do |configuration, reports|
+    @rows ||= @reports.group_by { |report| report.configuration(by_build: @by_build) }.map do |configuration, reports|
       latest = reports.last
       Row.new(configuration:, model_name: latest.short_model_name, chip: latest.chip, soc: latest.soc, reports: reports.reverse,
               cells: features.to_h { |feature| [ feature.fetch("id"), MatrixCell.from(reports, feature.fetch("id"), only_testers: @only_testers) ] })
@@ -44,7 +57,8 @@ class CompatibilityMatrix
       rows: rows.map do |row|
         {
           model: row.model_name, board: row.configuration.board, soc: row.soc, chip: row.chip,
-          stack: row.configuration.stack, version: row.configuration.version, reports: row.reports.size,
+          stack: row.configuration.stack, version: row.configuration.version, build: row.reports.first.build&.as_json,
+          reports: row.reports.size,
           cells: row.cells.transform_values { |cell| { state: cell.state, tentative: cell.tentative, machines: cell.tallies, tester_machines: cell.tester_tallies } }
         }
       end
@@ -53,10 +67,11 @@ class CompatibilityMatrix
 
   private
 
-  # By chip generation, model and stack; within those, newest version first.
+  # By chip generation, model and stack; within those, newest version first, then the newest build.
   def compare(a, b)
     order = (sort_key(a) <=> sort_key(b)).to_i
-    order.zero? ? version_key(b) <=> version_key(a) : order
+    order = version_key(b) <=> version_key(a) if order.zero?
+    order.zero? ? b.reports.first.upload_order <=> a.reports.first.upload_order : order
   end
 
   def sort_key(row)

@@ -12,7 +12,7 @@
       <tbody>
         <% @rows.each do |row| %>
           <% cell = row.cell(@feature["id"]) %>
-          <tr class="result-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>">
+          <tr class="result-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-build="<%= row.configuration.build_id %>">
             <td><a href="<%= model_path(row.configuration.board) %>"><%= row.model_name %></a></td>
             <td><%= row.configuration.label %></td>
             <%= matrix_cell(cell, feature_id: @feature["id"], link: report_path(cell.reports.first)) %>

@@ -1,5 +1,4 @@
 <% content_for :title, "#{@report.short_model_name} report" %>
-<% statuses = @report.checks.map { |check| check["status"] }.tally %>
 <article class="report terminal">
   <div class="terminal-bar">
     <span class="terminal-title">omarchy-m-test</span>
@@ -16,19 +15,31 @@
       <dt>chip</dt><dd><%= @report.machine["chip"] %> (<%= @report.machine["soc"] %>, board <%= @report.machine["board"] %>)</dd>
       <dt>kernel</dt><dd><%= @report.machine["kernel"] %></dd>
       <dt>stack</dt><dd><%= @report.stack_words %> <%= @report.omarchy_version %><% if @report.candidate_set %>, candidate set <a href="<%= candidate_path(@report.candidate_set) %>"><%= @report.candidate_set %></a><% end %></dd>
+      <dt>build</dt><dd id="build"><%= build_summary(@report, long: true) %></dd>
+      <% if (image = @report.build&.image).present? %>
+        <dt>image</dt><dd id="image"><%= image.map { |key, value| "#{key} #{value}" }.join(", ") %></dd>
+      <% end %>
       <dt>system</dt><dd><%= @report.system["distro"] %>, <%= @report.system["boot_loader"] %>, encryption <%= @report.system["encryption"] %></dd>
       <dt>tool</dt><dd><%= @report.body.dig("tool", "name") %> <%= @report.body.dig("tool", "version") %></dd>
       <dt>catalogue</dt><dd>feature catalogue v<%= @report.body["catalogue_version"] %></dd>
       <dt>uploaded</dt><dd><%= uploaded_at(@report) %></dd>
-      <dt>results</dt><dd><span class="ok"><%= statuses.fetch("pass", 0) %> pass</span> · <span class="bad"><%= statuses.fetch("fail", 0) %> fail</span> · <span class="dim"><%= statuses.fetch("skip", 0) %> skip</span></dd>
+      <dt>results</dt><dd><%= result_counts(@report, separator: " · ") %></dd>
     </dl>
+    <details class="packages" id="packages" open>
+      <summary>packages (<%= @report.system["packages"].size %>)</summary>
+      <table class="package-table">
+        <% @report.system["packages"].each do |package| %>
+          <tr><td><%= package["name"] %></td><td><%= package["version"] %></td></tr>
+        <% end %>
+      </table>
+    </details>
 
     <% @report.checks.group_by { |check| check_section(check["id"]) }.each do |section, checks| %>
       <h2 class="section-title"><%= section %></h2>
       <ul class="checks">
         <% checks.each do |check| %>
-          <li class="check check-<%= check["status"] %>" id="check-<%= check["id"] %>">
-            <span class="status status-<%= check["status"] %>"><%= check["status"].upcase %></span>
+          <li class="check check-<%= status_class(check) %>" id="check-<%= check["id"] %>">
+            <span class="status status-<%= status_class(check) %>"><%= status_label(check) %></span>
             <span class="check-id"><%= check["id"] %></span>
             <% if (classification = check["classification"]) %>
               <%= check_outcome_badge(check) %>
@@ -52,11 +63,6 @@
 
     <%= render "inventory", inventory: @report.body["inventory"] if @report.body["inventory"].is_a?(Hash) %>
 
-    <details class="packages">
-      <summary>packages (<%= @report.system["packages"].size %>)</summary>
-      <pre><% @report.system["packages"].each do |package| %><%= package["name"].ljust(22) %> <%= package["version"] %>
-<% end %></pre>
-    </details>
   </div>
 </article>
 <p class="credit dim">Asahi hardware states: <a href="https://asahilinux.org/docs/platform/feature-support/overview/">Asahi Linux feature support</a>, CC BY 3.0. <a href="<%= model_path(@report.board) %>">More on this Mac</a>.</p>

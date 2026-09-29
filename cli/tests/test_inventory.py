@@ -89,7 +89,7 @@ class GoldenInventoryTest(unittest.TestCase):
             "avd 287080000.avd: failed to load firmware: -2",
         ])
         self.assertEqual(found["hardware.probe-errors"]["evidence"], ["avd 287080000.avd: probe with driver avd failed with error -2"])
-        self.assertIn("FAIL  hardware.drivers  not yet supported by Aurora (A driver for every hardware node)", mac.output)
+        self.assertIn("GAP   hardware.drivers  not yet supported by Aurora (A driver for every hardware node)", mac.output)
 
     def test_the_m2_maxs_kernel_build_options_against_asahis(self):
         _, _, report = run(M2_MAX)

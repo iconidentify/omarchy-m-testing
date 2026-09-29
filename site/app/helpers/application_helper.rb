@@ -78,6 +78,39 @@ module ApplicationHelper
 
   def check_section(check_id) = check_id.split(".").first
 
+  # A check's status as it reads: PASS, FAIL, SKIP, or GAP / N/A for a failure the catalogue expects on this Mac.
+  def status_label(check)
+    return check["status"].upcase unless Report.expected_gap?(check)
+
+    check.dig("classification", "outcome") == "not-applicable" ? "N/A" : "GAP"
+  end
+
+  def status_class(check) = Report.expected_gap?(check) ? "gap" : check["status"]
+
+  # "12 pass 1 fail 3 gap 2 skip" for a report's checks: a gap is a failure the catalogue expects on this Mac.
+  def result_counts(report, separator: " ")
+    counts = report.result_counts
+    parts = [ tag.span("#{counts["pass"]} pass", class: "ok"), tag.span("#{counts["fail"]} fail", class: "bad") ]
+    parts << tag.span("#{counts["gap"]} gap", class: "gap", title: "Failures the feature catalogue expects on this Mac: not yet supported, or no such hardware") if counts["gap"].positive?
+    parts << tag.span("#{counts["skip"]} skip", class: "dim")
+    safe_join(parts, separator)
+  end
+
+  # A report's build: its id, linked to the reports on it, with the kernel, boot package and candidate set.
+  def build_summary(report, long: false)
+    build = report.build or return tag.span("–", class: "dim")
+    parts = [ link_to(build.id, reports_path(build: build.id), class: "build-id", title: build.words) ]
+    parts << tag.span(safe_join([ "set ", candidate_link(build.set) ]), title: build.set_source == "packages" ? "matched by its omarchy package" : "named by the image") if build.set
+    if long
+      parts << "linux-aurora #{build.kernel}" if build.kernel
+      parts << "omarchy-mac-boot #{build.boot}" if build.boot
+      parts << "tester #{report.tool_version}" if report.tool_version
+    end
+    tag.span(safe_join(parts, " · "), class: "build")
+  end
+
+  def candidate_link(name) = CandidateSet.find(name) ? link_to(name, candidate_path(name)) : name
+
   # A benchmark score as it reads best: whole points, frames per second to one decimal.
   def score_words(value)
     return "–" if value.nil?

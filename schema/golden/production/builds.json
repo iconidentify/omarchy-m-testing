@@ -1,0 +1,49 @@
+{
+  "description": "The build each production report (reports.json, the site's export of 2026-09-29) was on, as omarchy-m-test (system.build_words) and the site (Build) both derive it.",
+  "builds": {
+    "uUbp4i2HJTALyMQ9v5EddCHx": {
+      "build": "99ace40.361571887310001",
+      "words": "99ace40.361571887310001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1.45)"
+    },
+    "ehkyUxczpv9z754mdpbL1Yer": {
+      "build": "99ace40.361571887310001",
+      "words": "99ace40.361571887310001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1.45)"
+    },
+    "A4tBuTZ2V1NfSwqwSA4x65sk": {
+      "build": "1937418.362376005140001",
+      "words": "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1)"
+    },
+    "GENBn2WpjrF6LYeXjKXCxZDW": {
+      "build": "1937418.362376005140001",
+      "words": "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-10.90, omarchy-mac-boot 20260926-1)"
+    },
+    "tRsM85qDfZS7sQYUMPeHgzd8": {
+      "build": "0052582.362956774610001",
+      "words": "0052582.362956774610001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "os6jmYkmxqw5QWN6FnndDV2L": {
+      "build": "0052582.362956774610001",
+      "words": "0052582.362956774610001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "GPApxosEQQ9ouwseKMDM1wV7": {
+      "build": "1937418.362376005140001",
+      "words": "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "q8avqMwJH59VSjxM5TxAyF38": {
+      "build": "0052582.362956774610001",
+      "words": "0052582.362956774610001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "ssh9n7zCL5dpuCwnBMM8SLUq": {
+      "build": "0052582.362956774610001",
+      "words": "0052582.362956774610001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "Gbu7hcFnEZUGFZZWP4Sk11RM": {
+      "build": "1937418.362376005140001",
+      "words": "1937418.362376005140001 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    },
+    "xHGd4Toq7io8CSHYYFhTjZBD": {
+      "build": "f60e1ba.2026092602",
+      "words": "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"
+    }
+  }
+}

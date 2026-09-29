@@ -139,11 +139,19 @@ def hardware_packages(system: System) -> dict:
 # -- GPU ---------------------------------------------------------------------
 
 
+def _bound_gpus(names: list[str]) -> list[str]:
+    return [name for name in names if re.fullmatch(r"[0-9a-f]+\.gpu", name)]
+
+
+def _gpu_bound(host: Host) -> bool:
+    return bool(_bound_gpus(_list(host, ASAHI_GPU_DRIVER) or []))
+
+
 def gpu_driver(host: Host) -> dict:
     names = _list(host, ASAHI_GPU_DRIVER)
     if names is None:
         return _result("gpu.driver", "fail", ["the asahi GPU driver isn't loaded"])
-    bound = [name for name in names if re.fullmatch(r"[0-9a-f]+\.gpu", name)]
+    bound = _bound_gpus(names)
     if not bound:
         return _result("gpu.driver", "fail", ["the asahi GPU driver is loaded but bound to no GPU"])
     return _result("gpu.driver", "pass", [f"asahi driver bound to {', '.join(bound)}"])
@@ -170,7 +178,11 @@ def gpu_vulkan(host: Host, system: System) -> dict:
         return _result("gpu.vulkan", "fail", evidence)
     info = host.run(VULKANINFO)
     if info.returncode == 127:
-        return _result("gpu.vulkan", "pass", [f"Asahi Vulkan driver installed ({asahi[0]})", "vulkaninfo (vulkan-tools) isn't installed, so the Vulkan version wasn't read"])
+        installed = [f"Asahi Vulkan driver installed ({asahi[0]})", "vulkaninfo (vulkan-tools) isn't installed, so the Vulkan version wasn't read"]
+        # The driver file alone isn't a GPU: on a Mac whose GPU the asahi driver doesn't bind (the M3), it has nothing to drive.
+        if not _gpu_bound(host):
+            return _result("gpu.vulkan", "fail", [*installed, "no GPU is bound to the asahi GPU driver, so it has no Apple GPU to use"])
+        return _result("gpu.vulkan", "pass", installed)
     devices = _vulkan_devices(info.stdout)
     apple = [d for d in devices if "HONEYKRISP" in d.get("driverID", "").upper()]
     if not apple:

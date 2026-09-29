@@ -1,5 +1,5 @@
 # Benchmark scores from the visible reports (checks[].score on passed
-# benchmark.* checks), compared per Mac model and Omarchy stack/version.
+# benchmark.* checks), compared per Mac model, Omarchy stack/version and build.
 #
 # Scores are compared only within one benchmark: the same check id, suite
 # (the CLI's fixed scenes, clip and settings) and unit. Each machine counts
@@ -75,7 +75,7 @@ class BenchmarkScores
           rows: benchmark.rows.map do |row|
             {
               model: row.model_name, board: row.configuration.board, soc: row.soc, chip: row.chip,
-              stack: row.configuration.stack, version: row.configuration.version,
+              stack: row.configuration.stack, version: row.configuration.version, build: row.latest.report.build&.as_json,
               score: row.median, low: row.low, high: row.high, machines: row.machines, runs: row.runs, tools: row.tools
             }
           end

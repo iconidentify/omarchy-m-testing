@@ -22,3 +22,28 @@
     </table>
   <% end %>
 <% end %>
+<%= card "builds", id: "builds" do %>
+  <p class="dim">Every build a run was on: the Omarchy runtime's commit and build stamp, with its kernel and boot package. Its candidate set is the one the image names, or a known set built with exactly its omarchy package (matched: shown, not counted towards promotion).</p>
+  <% if @builds.empty? %>
+    <p class="dim">No runs on an Omarchy build yet.</p>
+  <% else %>
+    <table class="list">
+      <thead><tr><th>Build</th><th>Linux Aurora</th><th>Boot package</th><th>Candidate set</th><th>Latest run</th><th>Runs</th><th>Tester runs</th><th>Models</th><th>Tester versions</th></tr></thead>
+      <tbody>
+        <% @builds.each do |build, runs| %>
+          <tr class="build-row" data-build="<%= build.id %>" data-set="<%= build.set %>" data-set-source="<%= build.set_source %>">
+            <td><%= link_to build.id, reports_path(build: build.id), class: "build-id", title: build.words %></td>
+            <td class="nowrap"><%= build.kernel || "–" %></td>
+            <td class="nowrap"><%= build.boot || "–" %></td>
+            <td><% if build.set %><%= candidate_link(build.set) %><%= tag.span(" (matched by package)", class: "dim") if build.set_source == "packages" %><% else %><span class="dim">unknown</span><% end %></td>
+            <td class="nowrap"><%= uploaded_at(runs.first) %></td>
+            <td><%= runs.size %></td>
+            <td><%= runs.count(&:tester?) %></td>
+            <td><%= runs.map(&:short_model_name).uniq.sort.join(", ") %></td>
+            <td class="dim"><%= runs.map(&:tool_version).compact.uniq.sort.join(", ") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>

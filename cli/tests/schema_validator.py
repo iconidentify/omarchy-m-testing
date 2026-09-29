@@ -15,6 +15,7 @@ ANNOTATIONS = {"$schema", "$id", "title", "description"}
 KEYWORDS = ANNOTATIONS | {
     "type", "properties", "required", "additionalProperties", "const", "enum",
     "pattern", "minLength", "maxLength", "minimum", "maximum", "items", "minItems", "maxItems",
+    "propertyNames", "maxProperties",
 }
 
 
@@ -81,13 +82,19 @@ def errors(schema: dict, value: Any, path: str = "$") -> list[str]:
             if name not in value:
                 found.append(f"{path}: missing {name}")
         extra = schema.get("additionalProperties", True)
-        if extra not in (True, False):
-            raise UnsupportedSchema(f"{path}: additionalProperties must be true or false")
+        if extra not in (True, False) and not isinstance(extra, dict):
+            raise UnsupportedSchema(f"{path}: additionalProperties must be true, false or a schema")
+        if "maxProperties" in schema and len(value) > schema["maxProperties"]:
+            found.append(f"{path}: more than {schema['maxProperties']} properties")
         for name, item in value.items():
+            if "propertyNames" in schema:
+                found += [f"{path}: property name {name!r}: {e.split(': ', 1)[1]}" for e in errors(schema["propertyNames"], name, path)]
             if name in properties:
                 found += errors(properties[name], item, f"{path}.{name}")
             elif extra is False:
                 found.append(f"{path}: unexpected property {name}")
+            elif isinstance(extra, dict):
+                found += errors(extra, item, f"{path}.{name}")
 
     if isinstance(value, list):
         if "minItems" in schema and len(value) < schema["minItems"]:

@@ -55,6 +55,25 @@
         "boot_loader": { "enum": ["limine", "grub", "unknown"] },
         "encryption": { "description": "Whether the root filesystem is on an encrypted volume.", "enum": ["on", "off", "unknown"] },
         "candidate_set": { "description": "The candidate set a candidate image was built from: the candidate_set of the image's target record (image/target or, after first boot, image/target.booted), else of the factory seal. Absent without a target record.", "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+        "image": {
+          "description": "The image's own build record: allowlisted keys of its target record (/var/lib/omarchy/image/target, or image/target.booted after the first boot), each a plain token. Absent without a target record; an older image has only platform. Keys a later image builder adds are accepted here and recorded once omarchy-m-test lists them.",
+          "type": "object",
+          "maxProperties": 24,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+          "properties": {
+            "platform": { "description": "The platform the image was built for, e.g. apple-silicon.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "candidate_set": { "description": "The candidate set the image was built from.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "candidate_source_commit": { "description": "The omarchy-mac commit the candidate set was built from.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "builder_commit": { "description": "The image builder's commit.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "builder_tree_clean": { "description": "Whether the builder's tree was clean, as the builder writes it.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "image_profile": { "description": "lab, test or release.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "built": { "description": "When the image was built (UTC).", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "image_version": { "description": "The image's version, when the builder records one.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "image_id": { "description": "The image's identity, when the builder records one.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" },
+            "package_set_sha256": { "description": "The digest of the image's installed package set.", "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" }
+          },
+          "additionalProperties": { "type": "string", "pattern": "^[A-Za-z0-9._:+-]{1,128}$" }
+        },
         "packages": {
           "description": "Installed versions of the stack, boot and hardware packages omarchy-m-test asks pacman about.",
           "type": "array",

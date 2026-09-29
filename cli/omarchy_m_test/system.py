@@ -11,8 +11,12 @@ Stacks, decided in this order:
   reference           another distro on the Mac (Fedora Asahi Remix, Asahi ALARM, ...)
 
 Only package names and versions, the os-release ID, the kinds of block devices
-under the root filesystem and the image's candidate-set tag are read: never
-device names, UUIDs or key slots.
+under the root filesystem and the image's own build records (allowlisted keys
+of its target record) are read: never device names, UUIDs or key slots.
+
+The build a run is on (build_identity) is derived from those: the Omarchy
+runtime commit and the candidate-set stamp its packages carry, plus the boot
+package and Aurora kernel versions. The site derives the same (Build).
 """
 
 from __future__ import annotations
@@ -25,9 +29,10 @@ from .host import Host
 OS_RELEASE = "/etc/os-release"
 # The image-target manifest a converged image's builder writes; the first
 # boot retires it to target.booted (omarchy-mac's install/helpers/image-target.sh).
-# Its format ignores unknown keys, so a candidate image can name its set there
-# (candidate_set=); the image builder doesn't yet, but it does write the set
-# into the factory seal, which is on the root after a factory reset.
+# Its format ignores unknown keys, so the image builder records its provenance
+# there (candidate_set=, builder_commit=, image_profile=, ...); older images
+# only have format= and platform=. The factory seal, on the root after a
+# factory reset, names the set too.
 TARGET_RECORDS = ("/var/lib/omarchy/image/target", "/var/lib/omarchy/image/target.booted")
 FACTORY_SEAL = "/var/lib/omarchy/factory-sealed"
 
@@ -49,7 +54,23 @@ STACK_WORDS = {
     "reference": "reference run",
 }
 
+# The image target record's keys that reach the report (system.image), read
+# from the image's own build record: what the image is, never who has it.
+# Keys the builder may add later are dropped until they're listed here (the
+# schema already accepts them). format is the record's own version: left out.
+IMAGE_KEYS = (
+    "platform", "candidate_set", "candidate_source_commit", "builder_commit", "builder_tree_clean", "image_profile",
+    "built", "image_version", "image_id", "package_set_sha256",
+)
+_IMAGE_VALUE = re.compile(r"[A-Za-z0-9._:+-]{1,128}")
+
 _TAG = re.compile(r"[A-Za-z0-9._-]{1,128}")
+# In a package version: the git commit of a VCS build (".g99ace4070354")
+# and the pkgrel's build stamp ("-1.2026092602": what the candidate-set lane
+# appends to every package it builds, the same across one build's packages).
+_COMMIT = re.compile(r"\.g([0-9a-f]{7,40})(?![0-9a-f])")
+_STAMP = re.compile(r"-\d+\.(\d+)$")
+RUNTIME_PACKAGES = ("omarchy", "omarchy-settings", "omarchy-dev")
 _DISTRO = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 
 
@@ -60,6 +81,7 @@ class System:
     packages: dict[str, str]  # installed package -> version, in PACKAGES order
     has_pacman: bool
     candidate_set: str | None
+    image: dict[str, str]  # allowlisted keys of the image's target record; empty without one
     encryption: str  # on, off or unknown
     root_chain: tuple[str, ...]  # "TYPE FSTYPE" from the root filesystem down to its disk
 
@@ -75,6 +97,10 @@ class System:
             words += f", candidate set {self.candidate_set}"
         return words
 
+    def build(self) -> str | None:
+        """The build this run is on, e.g. "f60e1ba.2026092602 (linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260926-1)"."""
+        return build_words(self.packages) if self.is_omarchy else None
+
     def report(self, boot_loader: str) -> dict:
         block = {
             "stack": self.stack,
@@ -85,7 +111,41 @@ class System:
         }
         if self.candidate_set:
             block["candidate_set"] = self.candidate_set
+        if self.image:
+            block["image"] = dict(self.image)
         return block
+
+
+def build_parts(packages: dict[str, str]) -> tuple[str | None, str | None]:
+    """The runtime's commit (7 characters) and build stamp, from its package versions; either may be None."""
+    runtime = next((packages[name] for name in RUNTIME_PACKAGES if name in packages), None)
+    commit = _COMMIT.search(runtime) if runtime else None
+    stamp = next((m.group(1) for name in (*RUNTIME_PACKAGES, "omarchy-mac")
+                  if name in packages and (m := _STAMP.search(packages[name]))), None)
+    return (commit.group(1)[:7] if commit else None), stamp
+
+
+def build_id(packages: dict[str, str]) -> str | None:
+    """The runtime build, e.g. "f60e1ba.2026092602"; a release package's own version ("4.0.2-1") when it
+    carries neither a commit nor a stamp; None without an Omarchy package."""
+    found = ".".join(part for part in build_parts(packages) if part)
+    return found or next((packages[name] for name in (*RUNTIME_PACKAGES, "omarchy-mac") if name in packages), None)
+
+
+def build_words(packages: dict[str, str]) -> str | None:
+    """build_id with the kernel and boot package it runs, the boot package's version without the build's stamp."""
+    identity = build_id(packages)
+    if identity is None:
+        return None
+    stamp = build_parts(packages)[1]
+    extras = []
+    for name in ("linux-aurora", "omarchy-mac-boot"):
+        version = packages.get(name)
+        if version:
+            if stamp and version.endswith(f".{stamp}"):
+                version = version[: -len(stamp) - 1]
+            extras.append(f"{name} {version}")
+    return identity + (f" ({', '.join(extras)})" if extras else "")
 
 
 def detect(host: Host) -> System:
@@ -121,6 +181,7 @@ def detect(host: Host) -> System:
         packages=packages,
         has_pacman=has_pacman,
         candidate_set=_candidate_set(host),
+        image=_image(host),
         encryption=encryption,
         root_chain=tuple(chain or ()),
     )
@@ -151,6 +212,12 @@ def _candidate_set(host: Host) -> str | None:
         return None
     tag = target.get("candidate_set") or (_key_values(host, FACTORY_SEAL) or {}).get("candidate_set")
     return tag if tag and _TAG.fullmatch(tag) else None
+
+
+def _image(host: Host) -> dict[str, str]:
+    """The allowlisted keys of the image's target record whose values are plain tokens."""
+    target = next((values for path in TARGET_RECORDS if (values := _key_values(host, path)) is not None), None) or {}
+    return {key: target[key] for key in IMAGE_KEYS if key in target and _IMAGE_VALUE.fullmatch(target[key])}
 
 
 def _root_chain(host: Host) -> list[str] | None:

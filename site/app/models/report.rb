@@ -57,6 +57,21 @@ class Report < ApplicationRecord
   def tool_version = body.dig("tool", "version")
   def candidate_set = system["candidate_set"]
 
+  # The build the run is on (Build), or nil for a reference run.
+  def build = defined?(@build) ? @build : (@build = Build.for(self))
+  def build_words = build&.words
+
+  # Failures the catalogue expects on this Mac: support not there yet, or no such hardware.
+  EXPECTED_GAP_OUTCOMES = %w[not-in-aurora not-in-asahi not-in-omarchy not-applicable].freeze
+  def self.expected_gap?(check) = check["status"] == "fail" && EXPECTED_GAP_OUTCOMES.include?(check.dig("classification", "outcome"))
+
+  # pass, fail (not expected), gap (expected failures) and skip counts.
+  def result_counts
+    @result_counts ||= checks.each_with_object(Hash.new(0)) do |check, counts|
+      counts[Report.expected_gap?(check) ? "gap" : check["status"]] += 1
+    end
+  end
+
   def package_version(name)
     system.fetch("packages").find { |package| package["name"] == name }&.fetch("version")
   end
@@ -74,8 +89,9 @@ class Report < ApplicationRecord
     "unknown"
   end
 
-  # Model x stack/version: one row of the compatibility matrix.
-  def configuration = Configuration.new(board:, stack:, version: omarchy_version)
+  # Model x stack/version x build: one row of the compatibility matrix.
+  # by_build: false merges the builds of one release ("converged 4.0.0").
+  def configuration(by_build: true) = Configuration.new(board:, stack:, version: omarchy_version, build: (build_words if by_build))
 
   # The machine this report counts as for agreement between machines.
   def machine_key = machine_id || "unknown"

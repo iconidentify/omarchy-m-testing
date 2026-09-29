@@ -3,16 +3,16 @@
   <p class="dim">No reports yet.</p>
 <% else %>
   <table class="list">
-    <thead><tr><th>Uploaded</th><th>Mac</th><th>Stack / version</th><th>Kernel</th><th>Results</th><th></th></tr></thead>
+    <thead><tr><th>Uploaded</th><th>Mac</th><th>Stack / version</th><th>Build</th><th>Kernel</th><th>Results</th><th></th></tr></thead>
     <tbody>
       <% reports.each do |report| %>
-        <% statuses = report.checks.map { |check| check["status"] }.tally %>
         <tr class="report-row" id="report-<%= report.public_id %>">
           <td class="nowrap"><%= uploaded_at(report) %></td>
           <td><a href="<%= report_path(report) %>"><%= report.short_model_name %></a></td>
-          <td><%= report.configuration.label %></td>
+          <td><%= report.configuration(by_build: false).label %></td>
+          <td class="build-cell" data-build="<%= report.build&.id %>"><%= build_summary(report) %></td>
           <td class="dim"><%= report.kernel %></td>
-          <td class="nowrap"><span class="ok"><%= statuses.fetch("pass", 0) %> pass</span> <span class="bad"><%= statuses.fetch("fail", 0) %> fail</span> <span class="dim"><%= statuses.fetch("skip", 0) %> skip</span></td>
+          <td class="nowrap"><%= result_counts(report) %></td>
           <td><%= run_badge(report) %></td>
         </tr>
       <% end %>

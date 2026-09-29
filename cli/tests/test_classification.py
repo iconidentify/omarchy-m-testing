@@ -150,7 +150,9 @@ class FailureClassificationTest(unittest.TestCase):
                 self.assertEqual(errors(SCHEMA, report), [])
                 self.assertEqual(report["checks"][0]["status"], "fail")
                 self.assertEqual(report["checks"][0]["classification"]["outcome"], outcome)
-                self.assertIn(f"FAIL  system.identity  {words} (", mac.output)
+                # A failure the catalogue expects reads GAP (not yet supported) or N/A, not FAIL.
+                label = {"not-applicable": "N/A "}.get(outcome, "GAP " if outcome.startswith("not-in-") else "FAIL")
+                self.assertIn(f"{label}  system.identity  {words} (", mac.output)
 
     def test_the_report_names_the_layer_and_the_expected_states(self):
         _, mac = run(recording(kernel_fails=True), catalogue=draft(identity_checks("notch-bar")))
@@ -213,7 +215,7 @@ class ExplainTest(unittest.TestCase):
         _, mac = self.explain(report, draft(devicetree_on_m2_max(aurora={"status": "unsupported"}), version=2))
 
         self.assertIn("explained with feature catalogue v2 (the report was made with v1)", mac.output)
-        self.assertIn("FAIL  system.identity  not yet supported by Aurora", mac.output)
+        self.assertIn("GAP   system.identity  not yet supported by Aurora", mac.output)
 
     def test_explain_runs_no_checks_asks_nothing_and_writes_nothing(self):
         status, mac = self.explain(saved_report([{"id": "made.up", "status": "fail"}]))

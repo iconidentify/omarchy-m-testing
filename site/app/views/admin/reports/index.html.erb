@@ -10,7 +10,7 @@
           <td class="nowrap"><%= uploaded_at(report) %></td>
           <td><a href="<%= report_path(report) %>"><%= report.public_id.first(8) %></a></td>
           <td><%= report.short_model_name %></td>
-          <td><%= report.configuration.label %></td>
+          <td><%= report.configuration(by_build: false).label %> <%= build_summary(report) %></td>
           <td><%= report.tester? ? tag.span("tester @#{report.tester_login}", class: "badge badge-tester") : tag.span("community", class: "badge badge-community") %></td>
           <td><%= report.hidden? ? tag.span("hidden", class: "badge badge-regression") : tag.span("visible", class: "badge badge-works") %></td>
           <td class="actions">

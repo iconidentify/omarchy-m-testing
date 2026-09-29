@@ -77,7 +77,7 @@ class AnsweredByDefaultTest < ActionDispatch::IntegrationTest
 
     get "/api/v1/checks.csv"
     rows = response.body.split("\r\n").map { |line| line.scan(/"((?:[^"]|"")*)"/).flatten }
-    assert_equal "answered_by_default", rows[0].last
+    assert_includes rows[0], "answered_by_default"
     trackpad = rows.drop(1).map { |row| rows[0].zip(row).to_h }.select { |row| row["check_id"] == CHECK }
     assert_equal %w[false true], trackpad.map { |row| row["answered_by_default"] }.sort
   end

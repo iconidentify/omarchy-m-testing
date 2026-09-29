@@ -19,6 +19,9 @@
     "distro": "omarchy",
     "boot_loader": "limine",
     "encryption": "on",
+    "image": {
+      "platform": "apple-silicon"
+    },
     "packages": [
       {
         "name": "omarchy",

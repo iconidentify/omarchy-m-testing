@@ -202,6 +202,8 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
 
     found = system.detect(host)
     ui.text(f"Checking {machine.model} ({found.describe()})...")
+    if found.build():
+        ui.text(f"Build: {found.build()}.")
     ui.text("Checks that need root use passwordless sudo when it's set up, and are skipped otherwise.")
     shared = state.shared
     running = [section for section in sections if section.id in state.selected and section.id not in blocked]
@@ -240,6 +242,9 @@ def _run(args: argparse.Namespace, host: Host, sections: Sequence[Section]) -> i
     host.write_file(args.output, text)
     checkpoint.clear()
     args.resumable = False
+    build = found.build()
+    host.show(f"\nBuild tested: {build}" + (f", candidate set {found.candidate_set}" if found.candidate_set else "")
+              + f"; {TOOL_NAME} {TOOL_VERSION}." if build else f"\nTested with {TOOL_NAME} {TOOL_VERSION}.")
     host.show(f"\nReport written to {args.output}. This is exactly what would be uploaded:\n")
     host.show(text)
     if unsigned_because:

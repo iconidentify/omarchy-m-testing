@@ -1,14 +1,21 @@
 <% content_for :title, "Compatibility matrix" %>
 <h1>Compatibility matrix</h1>
 <nav class="filters" aria-label="Stack">
-  <%= link_to "all stacks", matrix_path, class: ("current" if @stack.nil?) %>
+  <%= link_to "all stacks", matrix_path(build: @build, group: (@by_build ? nil : "release")), class: ("current" if @stack.nil?) %>
   <% CompatibilityMatrix::STACKS.each do |stack| %>
-    <%= link_to Report::STACK_WORDS[stack], matrix_path(stack:), class: ("current" if @stack == stack) %>
+    <%= link_to Report::STACK_WORDS[stack], matrix_path(stack:, build: @build, group: (@by_build ? nil : "release")), class: ("current" if @stack == stack) %>
   <% end %>
 </nav>
-<%= card "model × stack/version" do %>
+<nav class="filters" aria-label="Build" id="build-filters">
+  <%= link_to "one row per build", matrix_path(stack: @stack), class: ("current" if @by_build && @build.nil?) %>
+  <%= link_to "one row per release", matrix_path(stack: @stack, group: "release"), class: ("current" if !@by_build) %>
+  <% @builds.each do |id, words, runs| %>
+    <%= link_to id, matrix_path(stack: @stack, build: id), class: ("current" if @build == id), title: "#{words}: #{pluralize(runs, "run")}", data: { build: id } %>
+  <% end %>
+</nav>
+<%= card(@by_build ? "model × stack/version × build" : "model × stack/version") do %>
   <% if @matrix.empty? %>
-    <p class="dim">No reports<%= " on #{Report::STACK_WORDS[@stack]}" if @stack %> yet.</p>
+    <p class="dim">No reports<%= " on #{Report::STACK_WORDS[@stack]}" if @stack %><%= " on build #{@build}" if @build %> yet.</p>
   <% else %>
     <%= render "shared/matrix", rows: @matrix.rows, features: @matrix.features %>
   <% end %>
