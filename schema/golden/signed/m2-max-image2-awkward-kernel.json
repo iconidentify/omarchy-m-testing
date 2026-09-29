@@ -19,6 +19,10 @@
     "distro": "omarchy",
     "boot_loader": "limine",
     "encryption": "on",
+    "image": {
+      "format": "1",
+      "platform": "apple-silicon"
+    },
     "packages": [
       {
         "name": "omarchy",
@@ -1951,6 +1955,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQD4vFWAUX+6kLmpuiW5BUCmGi+V0LZgrUa2dlAHVhJ\ndXbWYdgq7ars5joAVYLiOtAkxa/ENOBjOMBTlegZUASgs=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQAjg4/6CTIclXbpLMB9geGkN4Rsc1HVYQC21Ko7qF2\ncPoynAoph4O5/LdNEiqNQCOVTEpbQyij0QavptZCa9Yww=\n-----END SSH SIGNATURE-----"
   }
 }

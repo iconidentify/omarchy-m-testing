@@ -1,0 +1,46 @@
+# Candidate sets the site knows by their packages, so a run on a set's
+# packages maps to its set even when the image didn't name it
+# (system.candidate_set). From each set's manifest.json in omarchy-mac's
+# tools/release/candidates/: the set's name, its source commit, and the
+# version of the omarchy package it was built with (unique to one build).
+# Add a set here when it's made; runs naming their set need no entry.
+apple-test-0052582276d9-20260927:
+  source_commit: 0052582276d9
+  created: "2026-09-27T15:08:06+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790484851.g0052582276d9-1.362956774610001"
+apple-test-073e489b5b85-20260925:
+  source_commit: 073e489b5b85
+  created: "2026-09-25T19:50:33+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790328152.g073e489b5b85-1.361203357120001"
+apple-test-1937418f520b-20260926:
+  source_commit: 1937418f520b
+  created: "2026-09-26T21:14:19+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790420202.g1937418f520b-1.362376005140001"
+apple-test-4b1081f8b6e0-20260927:
+  source_commit: 4b1081f8b6e0
+  created: "2026-09-27T11:51:39+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790472930.g4b1081f8b6e0-1.362860088170001"
+apple-test-5c09dc82c1c1-20260928:
+  source_commit: 5c09dc82c1c1
+  created: "2026-09-28T12:27:40+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790550201.g5c09dc82c1c1-1.1790559912"
+apple-test-99ace4070354-20260926:
+  source_commit: 99ace4070354
+  created: "2026-09-26T01:56:49+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790350165.g99ace4070354-1.361571887310001"
+apple-test-9d8c39cd7182-20260928:
+  source_commit: 9d8c39cd7182
+  created: "2026-09-28T15:30:11+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790571936.g9d8c39cd7182-1.1790572518"
+apple-test-a0877ee897e6-20260927:
+  source_commit: a0877ee897e6
+  created: "2026-09-27T13:35:57+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790479237.ga0877ee897e6-1.362911839910001"
+apple-test-b15975d62f83-20260928:
+  source_commit: b15975d62f83
+  created: "2026-09-28T13:01:46+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790563381.gb15975d62f83-1.1790563595"
+apple-test-b2ba91785ed8-20260926:
+  source_commit: b2ba91785ed8
+  created: "2026-09-26T13:50:50+1000"
+  omarchy: "4.0.0.alpha.quattro.r1790393635.gb2ba91785ed8-1.362154818740001"

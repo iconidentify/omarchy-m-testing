@@ -3,7 +3,7 @@
   <table class="matrix">
     <thead>
       <tr>
-        <th class="row-head" scope="col">Mac · stack / version</th>
+        <th class="row-head" scope="col">Mac · stack / version · build</th>
         <% features.each do |feature| %>
           <th class="feature-head layer-<%= feature["layer"] %>" scope="col">
             <a href="<%= feature_path(feature["id"]) %>" title="<%= feature["name"] %> (<%= Catalogue::LAYER_WORDS[feature["layer"]] %>)"><span><%= feature["name"] %></span></a>
@@ -13,10 +13,11 @@
     </thead>
     <tbody>
       <% rows.each do |row| %>
-        <tr class="matrix-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>">
+        <tr class="matrix-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>" data-build="<%= row.configuration.build_id %>">
           <th class="row-head" scope="row">
             <a href="<%= model_path(row.configuration.board) %>"><%= row.model_name %></a>
-            <span class="row-meta"><%= row.configuration.label %> · <%= pluralize(row.reports.size, "report") %></span>
+            <span class="row-meta"><%= row.configuration.release_label %> · <%= pluralize(row.reports.size, "report") %></span>
+            <% if row.configuration.build %><span class="row-meta row-build">build <%= row.configuration.build %></span><% end %>
           </th>
           <% features.each do |feature| %>
             <% cell = row.cell(feature["id"]) %>

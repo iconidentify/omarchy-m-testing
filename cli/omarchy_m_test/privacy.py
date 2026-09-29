@@ -29,6 +29,7 @@ import re
 from typing import Any, Iterable
 
 from .host import Host
+from .system import IMAGE_KEYS
 
 EVIDENCE_BUDGET_BYTES = 64 * 1024
 EVIDENCE_LINE_MAX_CHARS = 500
@@ -77,6 +78,8 @@ _SYSTEM = {
     "boot_loader": True,
     "encryption": True,
     "candidate_set": True,
+    # The image's build record: only the keys system.IMAGE_KEYS reads (the schema lists the same).
+    "image": {key: True for key in IMAGE_KEYS},
     "packages": [{"name": True, "version": True}],
 }
 # The hardware inventory: node types, statuses, driver-bound states and

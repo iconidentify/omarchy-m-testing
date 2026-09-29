@@ -5,9 +5,9 @@
     <thead><tr><% if models %><th>Mac</th><% end %><th>Stack / version</th><th class="score-head"><%= benchmark.unit_words %></th><th>Machines</th><th>Tool</th></tr></thead>
     <tbody>
       <% benchmark.rows.each do |row| %>
-        <tr class="score-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>">
+        <tr class="score-row" data-board="<%= row.configuration.board %>" data-stack="<%= row.configuration.stack %>" data-version="<%= row.configuration.version %>" data-build="<%= row.configuration.build_id %>">
           <% if models %><td><a href="<%= model_path(row.configuration.board) %>"><%= row.model_name %></a> <span class="dim"><%= row.chip %></span></td><% end %>
-          <td class="nowrap"><%= row.configuration.label %></td>
+          <td><%= row.configuration.label %></td>
           <td class="score-cell">
             <span class="score-bar" style="--share: <%= benchmark.best.positive? ? (100.0 * row.median / benchmark.best).round(1) : 0 %>%"></span>
             <a class="score-value" href="<%= report_path(row.latest.report) %>" title="Latest run"><%= score_words(row.median) %></a>

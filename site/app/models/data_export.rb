@@ -1,5 +1,6 @@
 # Everything public, for download: visible reports as JSON (each report exactly
-# as uploaded), and as CSV one row per report or one row per check result.
+# as uploaded, with the build the site derives from it beside it), and as CSV
+# one row per report or one row per check result.
 # Published under CC0. Deleted and hidden reports are never included, nor is
 # the machine grouping key.
 module DataExport
@@ -9,12 +10,14 @@ module DataExport
   REPORT_COLUMNS = %w[
     id url uploaded_at model board soc chip kernel stack omarchy_version distro boot_loader encryption candidate_set
     tool_version schema_version catalogue_version checks pass fail skip
+    build build_words build_commit build_stamp linux_aurora omarchy_mac_boot build_candidate_set build_candidate_set_source
+    image_profile image_built expected_gaps
   ].freeze
 
   CHECK_COLUMNS = %w[
     report_id uploaded_at model board soc chip kernel stack omarchy_version
     check_id kind status outcome feature layer expected_asahi expected_aurora expected_omarchy
-    score score_unit score_tool score_suite answered_by_default
+    score score_unit score_tool score_suite answered_by_default build
   ].freeze
 
   def self.reports = Report.visible.order(:created_at, :id)
@@ -26,7 +29,8 @@ module DataExport
       generated_at: Time.current.utc.iso8601,
       catalogue_version: Catalogue.version,
       reports: reports.map do |report|
-        { id: report.public_id, url: url_for.call(report), uploaded_at: report.created_at.utc.iso8601, report: report.body }
+        { id: report.public_id, url: url_for.call(report), uploaded_at: report.created_at.utc.iso8601, build: report.build&.as_json,
+          report: report.body }.compact
       end
     }
   end
@@ -34,10 +38,13 @@ module DataExport
   def self.reports_csv(url_for)
     csv(REPORT_COLUMNS, reports.map do |report|
       statuses = report.checks.map { |check| check["status"] }.tally
+      build = report.build
       [ report.public_id, url_for.call(report), report.created_at.utc.iso8601, report.model_name, report.board, report.soc, report.chip,
         report.kernel, report.stack, report.omarchy_version, report.system["distro"], report.system["boot_loader"],
         report.system["encryption"], report.candidate_set, report.tool_version, report.schema_version, report.body["catalogue_version"],
-        report.checks.size, statuses.fetch("pass", 0), statuses.fetch("fail", 0), statuses.fetch("skip", 0) ]
+        report.checks.size, statuses.fetch("pass", 0), statuses.fetch("fail", 0), statuses.fetch("skip", 0),
+        build&.id, build&.words, build&.commit, build&.stamp, build&.kernel, build&.boot, build&.set, build&.set_source,
+        build&.image&.dig("image_profile"), build&.image&.dig("built"), report.result_counts["gap"] ]
     end)
   end
 
@@ -48,7 +55,7 @@ module DataExport
         [ report.public_id, report.created_at.utc.iso8601, report.model_name, report.board, report.soc, report.chip, report.kernel,
           report.stack, report.omarchy_version, check["id"], check["kind"], check["status"], classification["outcome"],
           classification["feature"], classification["layer"], *Catalogue::LAYERS.map { |layer| classification.dig("expected", layer) },
-          *%w[value unit tool suite].map { |field| check.dig("score", field) }, Report.answered_by_default?(check) ]
+          *%w[value unit tool suite].map { |field| check.dig("score", field) }, Report.answered_by_default?(check), report.build&.id ]
       end
     end)
   end

@@ -21,6 +21,12 @@ class CandidateSet
           .sort_by { |set| [ -set.latest.created_at.to_i, set.name ] }
   end
 
+  # The sets visible runs name, once per request.
+  def self.names
+    Current.candidate_set_names ||= Report.visible.where("(body -> 'system' ->> 'candidate_set') IS NOT NULL")
+                                          .distinct.pluck(Arel.sql("body -> 'system' ->> 'candidate_set'")).to_set
+  end
+
   def self.find(name)
     reports = Report.visible.where("body -> 'system' ->> 'candidate_set' = ?", name.to_s).to_a
     new(name, reports) if reports.any?

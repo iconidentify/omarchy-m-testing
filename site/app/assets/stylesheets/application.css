@@ -527,6 +527,12 @@ a.badge-regression { text-decoration: none; }
 .status-pass { background: var(--green); }
 .status-fail { background: var(--red); }
 .status-skip { background: var(--terminal-black); color: var(--white); }
+.status-gap { background: var(--blue); }
+.build { color: var(--fg-dim); font-size: 0.9em; }
+.build-id { color: var(--white); }
+.gap { color: var(--blue); }
+.package-table { color: var(--fg-dim); font-size: 0.85em; margin: 0.5rem 0 0; }
+.package-table td { padding: 0 1rem 0 0; }
 .check-id { color: var(--white); min-width: 16rem; }
 .feature { color: var(--comment); font-size: 0.9em; }
 
@@ -544,7 +550,7 @@ a.badge-regression { text-decoration: none; }
 
 .check-fail .evidence { border-left-color: var(--red); }
 
-.packages { margin-top: 1.5rem; }
+.packages { margin: 0.8rem 0 1.5rem; }
 .packages summary { color: var(--green); cursor: pointer; }
 .packages pre { color: var(--fg-dim); font-size: 0.85em; margin: 0.5rem 0 0; overflow-x: auto; }
 

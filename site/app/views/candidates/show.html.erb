@@ -33,3 +33,9 @@
 <%= card "runs" do %>
   <%= render "shared/report_list", reports: @set.reports.sort_by { |report| [ report.created_at, report.id ] }.reverse %>
 <% end %>
+<% if @matched.any? %>
+  <%= card "runs matched by package", id: "matched" do %>
+    <p class="dim">These runs' images don't name a set, but their omarchy package is this set's. They're listed, not counted towards promotion.</p>
+    <%= render "shared/report_list", reports: @matched.sort_by(&:upload_order).reverse %>
+  <% end %>
+<% end %>

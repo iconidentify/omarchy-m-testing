@@ -39,6 +39,19 @@ OUTCOMES = (
     "works", "fails", "not-in-aurora", "not-in-asahi", "not-in-omarchy",
     "not-applicable", "unknown-hardware", "not-tested",
 )
+# Failures the catalogue expects on this Mac: support that isn't there yet
+# (GAP), or hardware the Mac doesn't have (N/A). The report keeps the check's
+# "fail" status; only what the human sees, and the site, say it this way.
+EXPECTED_GAPS = ("not-in-aurora", "not-in-asahi", "not-in-omarchy")
+
+
+def status_label(status: str, outcome: str) -> str:
+    """PASS, FAIL or SKIP, or for an expected failure GAP (not yet supported) or N/A (no such hardware)."""
+    if status == "fail" and outcome in EXPECTED_GAPS:
+        return "GAP"
+    if status == "fail" and outcome == "not-applicable":
+        return "N/A"
+    return status.upper()
 
 
 class CatalogueError(Exception):
