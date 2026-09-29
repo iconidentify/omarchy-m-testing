@@ -8,7 +8,9 @@ module ReportSchema
   end
 
   def self.schemer
-    @schemer ||= JSONSchemer.schema(dir.join("report-v#{VERSION}.schema.json"))
+    # ECMA-262 patterns, as the schema's dialect means them: "$" ends the string, so a
+    # pattern-checked field can't carry a second line (Ruby's "$" would end the first).
+    @schemer ||= JSONSchemer.schema(dir.join("report-v#{VERSION}.schema.json"), regexp_resolver: "ecma")
   end
 
   # Human-readable problems with the report; empty when it is valid.

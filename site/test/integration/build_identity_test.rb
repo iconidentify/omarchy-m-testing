@@ -43,7 +43,8 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
 
   test "other package sets and image records are worded as the CLI words them" do
     GOLDEN_BUILDS.fetch("examples").each do |example|
-      build = Build.new(example["packages"], candidate_set: example["candidate_set"], image: example["built"] ? { "built" => example["built"] } : {})
+      image = example.slice("built", "package_set_sha256")
+      build = Build.new(example["packages"], candidate_set: example["candidate_set"], image:)
       assert_equal example["words"], build.words, example["why"]
     end
   end
@@ -145,7 +146,8 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
   test "a run on an image naming its set is labelled by the set, counted for it, and shows the image record" do
     body = upload_report on_new_image
     assert_response :created
-    words = "#{SET} (runtime 1937418.362376005140001, linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1, built 2026-09-28T03:04:05Z)"
+    words = "#{SET} (runtime 1937418.362376005140001, linux-aurora 7.1.12.aurora2-10, omarchy-mac-boot 20260926-1, " \
+            "built 2026-09-28T03:04:05Z, package set abababababab)"
     assert_equal words, Report.sole.build.words
 
     get path_of(body["report_url"])
@@ -155,6 +157,7 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
     assert_select "dd#image", "format 1, platform apple-silicon, candidate_set #{SET}, candidate_source_commit 1937418f520b, " \
                               "builder_commit c6fedc32c111, builder_tree_clean true, image_profile test, package_set_sha256 abababababab, " \
                               "built 2026-09-28T03:04:05Z"
+    assert_select "dd#build", /built 2026-09-28T03:04:05Z · tester/
 
     get "/candidates"
     assert_select %(tr.build-row[data-set-source="image"] a.build-id), SET
@@ -166,15 +169,22 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
 
   test "two images of one set are two builds: the image's package set and build time tell them apart" do
     upload_report on_new_image, machine: "a"
-    upload_report on_new_image(IMAGE.merge("built" => "2026-09-29T01:00:00Z", "package_set_sha256" => "cd" * 32)), machine: "b"
+    upload_report on_new_image(IMAGE.merge("built" => "2026-09-29T01:00:00Z")), machine: "b"
+    upload_report on_new_image(IMAGE.merge("package_set_sha256" => "cd" * 32)), machine: "c"
 
     get "/candidates"
-    assert_equal 2, css_select(%(tr.build-row[data-set="#{SET}"])).size
+    assert_equal 3, css_select(%(tr.build-row[data-set="#{SET}"])).size
 
-    get "/matrix", params: { build: Report.first.build.words }
-    assert_select "tr.matrix-row", 1
+    get "/matrix"
+    assert_equal 3, css_select(%(tr.matrix-row[data-board="j416c"])).size
+    Report.all.each do |report|
+      get "/matrix", params: { build: report.build.words }
+      assert_select "tr.matrix-row", 1
+      get "/reports", params: { build: report.build.words }
+      assert_equal [ "report-#{report.public_id}" ], css_select("tr.report-row").map { |row| row["id"] }
+    end
     get "/reports", params: { build: SET }
-    assert_select "tr.report-row", 2
+    assert_select "tr.report-row", 3
   end
 
   test "the image record takes only the builder's keys, each in its shape" do
@@ -183,6 +193,9 @@ class BuildIdentityTest < ActionDispatch::IntegrationTest
     upload_report on_new_image(IMAGE.merge("built" => "Sep 28 2026")), machine: "b"
     assert_response :unprocessable_content
     upload_report on_new_image(IMAGE.merge("package_set_sha256" => "marcelo")), machine: "c"
+    assert_response :unprocessable_content
+    # A second line can't ride on a field's pattern.
+    upload_report on_new_image(IMAGE.merge("image_profile" => "test\nhostname=omarchy-marcelo")), machine: "d"
     assert_response :unprocessable_content
     assert_equal 0, Report.count
   end

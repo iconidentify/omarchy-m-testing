@@ -48,7 +48,7 @@
   },
   "examples": [
     {
-      "why": "an image naming its set: the set first, then the runtime build, kernel, boot package and build time, stamps dropped",
+      "why": "an image naming its set: the set first, then the runtime build, kernel, boot package, build time and package set digest, stamps dropped",
       "packages": {
         "omarchy": "4.0.0.alpha.quattro.r1790582400.gf22c43fb7903-1.2026092801",
         "omarchy-mac": "0.1.0-7.2026092801",
@@ -57,7 +57,8 @@
       },
       "candidate_set": "apple-test-f22c43fb7903-20260928",
       "built": "2026-09-28T03:04:05Z",
-      "words": "apple-test-f22c43fb7903-20260928 (runtime f22c43f.2026092801, linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260927-1, built 2026-09-28T03:04:05Z)"
+      "words": "apple-test-f22c43fb7903-20260928 (runtime f22c43f.2026092801, linux-aurora 7.1.12.aurora2-11, omarchy-mac-boot 20260927-1, built 2026-09-28T03:04:05Z, package set 4d0dd5deda6f)",
+      "package_set_sha256": "4d0dd5deda6f0e30685d41a545d0d0f6603687a2f2d816fe4f2dbcb8be4d91e3"
     },
     {
       "why": "a release package without a commit or stamp",

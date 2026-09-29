@@ -76,7 +76,8 @@ class ProductionBuildsTest(unittest.TestCase):
                 report["system"]["packages"] = [{"name": name, "version": version} for name, version in example["packages"].items()]
                 if example.get("candidate_set"):
                     report["system"]["candidate_set"] = example["candidate_set"]
-                    report["system"]["image"] = {"candidate_set": example["candidate_set"], "built": example["built"]}
+                    report["system"]["image"] = {"candidate_set": example["candidate_set"], "built": example["built"],
+                                                 "package_set_sha256": example["package_set_sha256"]}
 
                 _, mac = explain(report)
 
@@ -134,7 +135,7 @@ class ImageRecordTest(unittest.TestCase):
         })
         # The set names the build first; the runtime build and when the image was built follow.
         self.assertIn("Build: apple-test-f22c43fb7903-20260928 (runtime 99ace40.361571887310001, linux-aurora 7.1.12.aurora2-2, "
-                      "omarchy-mac-boot 20260925-3, built 2026-09-28T03:04:05Z).", mac.output)
+                      "omarchy-mac-boot 20260925-3, built 2026-09-28T03:04:05Z, package set abababababab).", mac.output)
 
     def test_other_keys_and_values_of_the_wrong_shape_are_left_out(self):
         record = (

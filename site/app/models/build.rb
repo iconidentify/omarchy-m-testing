@@ -10,9 +10,9 @@
 #   boot     the omarchy-mac-boot version, less the build's stamp
 #
 # An image that names its candidate set is labelled by the set, with the
-# runtime build and when the image was built (system.image built) after it.
-# Two runs are on the same build when all of these match, and the image's
-# package_set_sha256 too (with built, it names the release asset): the same
+# runtime build, when the image was built and its package set digest after it
+# (together those name the image's release asset). Two runs are on the same
+# build when all of these match: the same
 # runtime with a kernel installed by hand is a different build to look at.
 # Reference runs (another distro) have none. Old reports have all this needs.
 #
@@ -77,11 +77,12 @@ class Build
     extras << "runtime #{id}" if candidate_set
     extras += { "linux-aurora" => kernel, "omarchy-mac-boot" => boot }.filter_map { |name, version| "#{name} #{version}" if version }
     extras << "built #{built}" if built
+    extras << "package set #{image["package_set_sha256"].first(12)}" if image["package_set_sha256"]
     extras.any? ? "#{label} (#{extras.join(", ")})" : label
   end
 
-  # What two runs share when they're on the same build.
-  def key = [ words, image["package_set_sha256"] ]
+  # What two runs share when they're on the same build (the words hold all of it).
+  def key = words
 
   # Whether ?build= names this build: its runtime build id or label (every variant of it), or its words (exactly this one).
   def matches?(name) = name.present? && [ id, label, words ].include?(name)
