@@ -27,11 +27,18 @@ class MatrixCell
     new(latest.values.map(&:first).tally, tested.reverse, latest.values.select(&:last).map(&:first).tally)
   end
 
-  def initialize(tallies, reports, tester_tallies = {})
+  def initialize(tallies, reports, tester_tallies = {}, hidden: false)
     @tallies = tallies
     @reports = reports
     @tester_tallies = tester_tallies
+    @hidden = hidden
   end
+
+  # Hidden by the confirmed-only filter (ReportFilter): what community machines don't agree on yet.
+  def hidden? = @hidden
+
+  # This cell with confirmed results only: an unconfirmed one is hidden.
+  def confirmed_only = unconfirmed? ? MatrixCell.new({}, [], hidden: true) : self
 
   def machines = tallies.values.sum
   def tester_machines = tester_tallies.values.sum
@@ -39,6 +46,7 @@ class MatrixCell
 
   # The colour state, or nil while the community reports don't agree yet.
   def state
+    return if hidden?
     return "not-tested" if tallies.empty?
     return (tester_tallies.one? ? tester_tallies.keys.first : "partial") if tester?
 
@@ -62,14 +70,17 @@ class MatrixCell
   def display_state = state || tentative
 
   def css_class
-    if unconfirmed? then "cell cell-unconfirmed cell-hint-#{tentative}"
+    if hidden? then "cell cell-not-tested cell-hidden"
+    elsif unconfirmed? then "cell cell-unconfirmed cell-hint-#{tentative}"
     elsif tester? then "cell cell-#{state} cell-tester"
     else "cell cell-#{state}"
     end
   end
 
   def summary
-    if tallies.empty?
+    if hidden?
+      "unconfirmed community results, hidden (confirmed only)"
+    elsif tallies.empty?
       "not tested"
     elsif tester?
       "#{ResultState.words(state)}: tester-verified, #{describe(tester_tallies, "tester machine")}" +

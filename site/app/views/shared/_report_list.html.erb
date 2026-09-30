@@ -1,6 +1,6 @@
-<%# locals: (reports:) %>
+<%# locals: (reports:, confirmed: false, filtered: false) %>
 <% if reports.empty? %>
-  <p class="dim">No reports yet.</p>
+  <p class="dim">No reports<%= " match these filters" if filtered %> yet.</p>
 <% else %>
   <table class="list">
     <thead><tr><th>Uploaded</th><th>Mac</th><th>Stack / version</th><th>Build</th><th>Kernel</th><th>Results</th><th></th></tr></thead>
@@ -12,7 +12,7 @@
           <td><%= report.configuration(by_build: false).label %></td>
           <td class="build-cell" data-build="<%= report.build&.id %>"><%= build_summary(report) %></td>
           <td class="dim"><%= report.kernel %></td>
-          <td class="nowrap"><%= result_counts(report) %></td>
+          <td class="nowrap"><%= result_counts(report, confirmed:) %></td>
           <td><%= run_badge(report) %></td>
         </tr>
       <% end %>

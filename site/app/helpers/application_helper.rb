@@ -32,7 +32,7 @@ module ApplicationHelper
   def matrix_cell(cell, feature_id:, link: nil)
     glyph = ResultState.glyph(cell.display_state)
     content = link && cell.reports.any? ? link_to(glyph, link, "aria-label": cell.summary) : glyph
-    tag.td(content, class: cell.css_class, title: cell.summary, data: { feature: feature_id, state: cell.state || "unconfirmed", verified: ("tester" if cell.tester?) })
+    tag.td(content, class: cell.css_class, title: cell.summary, data: { feature: feature_id, state: cell.hidden? ? "hidden" : cell.state || "unconfirmed", verified: ("tester" if cell.tester?) })
   end
 
   # A catalogue state ("upstream 6.2", "linux-asahi", "supported 7.1.12") for one layer.
@@ -88,8 +88,9 @@ module ApplicationHelper
   def status_class(check) = Report.expected_gap?(check) ? "gap" : check["status"]
 
   # "12 pass 1 fail 3 gap 2 skip" for a report's checks: a gap is a failure the catalogue expects on this Mac.
-  def result_counts(report, separator: " ")
-    counts = report.result_counts
+  # confirmed: leaving out the answers given by a bare Enter (ReportFilter).
+  def result_counts(report, separator: " ", confirmed: false)
+    counts = report.result_counts(confirmed:)
     parts = [ tag.span("#{counts["pass"]} pass", class: "ok"), tag.span("#{counts["fail"]} fail", class: "bad") ]
     parts << tag.span("#{counts["gap"]} gap", class: "gap", title: "Failures the feature catalogue expects on this Mac: not yet supported, or no such hardware") if counts["gap"].positive?
     parts << tag.span("#{counts["skip"]} skip", class: "dim")
@@ -121,4 +122,7 @@ module ApplicationHelper
 
     value.to_f == value.to_i ? number_with_delimiter(value.to_i) : number_with_delimiter(value.to_f.round(1))
   end
+
+  # "?a=1&b=2", or "" for no parameters: a filtered view's link (ReportFilter#to_params).
+  def query(params) = params.empty? ? "" : "?#{params.to_query}"
 end

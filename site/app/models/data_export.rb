@@ -20,37 +20,43 @@ module DataExport
     score score_unit score_tool score_suite answered_by_default build
   ].freeze
 
-  def self.reports = Report.visible.order(:created_at, :id)
+  # The visible reports, oldest first, that the filter's run filters pass (ReportFilter).
+  def self.reports(filter = ReportFilter.new) = filter.runs(Report.visible.order(:created_at, :id).to_a)
 
-  def self.json(url_for)
+  # filters: the filter's parameters, when any (each report's body stays exactly as uploaded).
+  def self.json(url_for, filter = ReportFilter.new)
     {
       license: LICENSE,
       note: ASAHI_NOTE,
       generated_at: Time.current.utc.iso8601,
       catalogue_version: Catalogue.version,
-      reports: reports.map do |report|
+      filters: filter.values.presence,
+      reports: reports(filter).map do |report|
         { id: report.public_id, url: url_for.call(report), uploaded_at: report.created_at.utc.iso8601, build: report.build&.as_json,
           report: report.body }.compact
       end
-    }
+    }.compact
   end
 
-  def self.reports_csv(url_for)
-    csv(REPORT_COLUMNS, reports.map do |report|
-      statuses = report.checks.map { |check| check["status"] }.tally
+  # With confirmed only, the check counts leave out the answers given by a bare Enter.
+  def self.reports_csv(url_for, filter = ReportFilter.new)
+    csv(REPORT_COLUMNS, reports(filter).map do |report|
+      checks = filter.confirmed? ? report.counted_checks : report.checks
+      statuses = checks.map { |check| check["status"] }.tally
       build = report.build
       [ report.public_id, url_for.call(report), report.created_at.utc.iso8601, report.model_name, report.board, report.soc, report.chip,
         report.kernel, report.stack, report.omarchy_version, report.system["distro"], report.system["boot_loader"],
         report.system["encryption"], report.candidate_set, report.tool_version, report.schema_version, report.body["catalogue_version"],
-        report.checks.size, statuses.fetch("pass", 0), statuses.fetch("fail", 0), statuses.fetch("skip", 0),
+        checks.size, statuses.fetch("pass", 0), statuses.fetch("fail", 0), statuses.fetch("skip", 0),
         build&.id, build&.words, build&.commit, build&.stamp, build&.kernel, build&.boot, build&.set, build&.set_source,
-        build&.image&.dig("image_profile"), build&.image&.dig("built"), report.result_counts["gap"] ]
+        build&.image&.dig("image_profile"), build&.image&.dig("built"), report.result_counts(confirmed: filter.confirmed?)["gap"] ]
     end)
   end
 
-  def self.checks_csv
-    csv(CHECK_COLUMNS, reports.flat_map do |report|
-      report.checks.map do |check|
+  # The filter's result filters pick the check rows too (ReportFilter#checks).
+  def self.checks_csv(filter = ReportFilter.new)
+    csv(CHECK_COLUMNS, reports(filter).flat_map do |report|
+      filter.checks(report).map do |check|
         classification = check["classification"]
         [ report.public_id, report.created_at.utc.iso8601, report.model_name, report.board, report.soc, report.chip, report.kernel,
           report.stack, report.omarchy_version, check["id"], check["kind"], check["status"], classification["outcome"],

@@ -118,7 +118,8 @@ class MatrixTest < ActionDispatch::IntegrationTest
     get "/matrix", params: { stack: "mx-mac" }
     assert_select "tr.matrix-row", 1
     assert_select %(tr.matrix-row[data-board="j314s"][data-stack="mx-mac"])
-    assert_select ".filters a.current", "mx-mac"
+    assert_select %(select[name="stack"] option[selected]), "mx-mac"
+    assert_select %(.filter-chip[data-filter="stack"]), /stack: mx-mac/
   end
 
   test "the home page shows the matrix, or says there are no reports yet" do

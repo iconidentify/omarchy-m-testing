@@ -1,10 +1,13 @@
 class MatrixController < ApplicationController
-  # ?stack= filters by stack, ?build= to the runs on one build, ?group=release merges each release's builds.
+  # The filters (ReportFilter) take ?stack=, ?build= and the rest; ?group=release merges each release's builds.
   def show
-    @stack = params[:stack].presence_in(CompatibilityMatrix::STACKS)
-    @build = params[:build].presence
+    @filter = ReportFilter.new(params)
+    @stack = @filter["stack"]
+    @build = @filter["build"]
     @by_build = params[:group] != "release"
-    @matrix = CompatibilityMatrix.visible(stack: @stack, build: @build, by_build: @by_build)
-    @builds = CompatibilityMatrix.builds(stack: @stack)
+    reports = Report.visible.to_a
+    @matrix = CompatibilityMatrix.visible(by_build: @by_build, filter: @filter, reports:)
+    @builds = CompatibilityMatrix.builds(filter: @filter, reports:)
+    @options = FilterOptions.new(reports)
   end
 end

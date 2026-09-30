@@ -1,7 +1,9 @@
 <% content_for :title, "Reports" %>
 <h1>Reports</h1>
 <p class="subtitle">Every run, newest first. Community reports show up right away; they colour the matrix once another machine agrees. Tester runs colour it on their own.</p>
-<% if @build %><p class="filters">Runs on build <strong><%= @build %></strong> · <%= link_to "every build", reports_path %></p><% end %>
+<%= render "shared/filter_bar", filter: @filter, options: @options, path: reports_path, keys: ReportFilter::LIST_KEYS, count: @reports.size,
+                                exports: %i[json csv].map { |format| [ "reports.#{format}", api_v1_reports_path(format:) + query(@filter.to_params) ] } +
+                                         [ [ "checks.csv", api_v1_checks_path(format: :csv) + query(@filter.to_params) ] ] %>
 <%= card "#{@reports.size} reports" do %>
-  <%= render "shared/report_list", reports: @reports %>
+  <%= render "shared/report_list", reports: @reports, confirmed: @filter.confirmed?, filtered: @filter.any? %>
 <% end %>

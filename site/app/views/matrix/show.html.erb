@@ -1,21 +1,19 @@
 <% content_for :title, "Compatibility matrix" %>
+<% group = (@by_build ? nil : "release") %>
 <h1>Compatibility matrix</h1>
-<nav class="filters" aria-label="Stack">
-  <%= link_to "all stacks", matrix_path(build: @build, group: (@by_build ? nil : "release")), class: ("current" if @stack.nil?) %>
-  <% CompatibilityMatrix::STACKS.each do |stack| %>
-    <%= link_to Report::STACK_WORDS[stack], matrix_path(stack:, build: @build, group: (@by_build ? nil : "release")), class: ("current" if @stack == stack) %>
-  <% end %>
-</nav>
+<%= render "shared/filter_bar", filter: @filter, options: @options, path: matrix_path, keys: ReportFilter::KEYS, count: @matrix.runs_count,
+                                extra: { group: }, exports: [ [ "matrix.json", api_v1_matrix_path(format: :json) + query(@filter.to_params(group:)) ],
+                                                               [ "checks.csv", api_v1_checks_path(format: :csv) + query(@filter.to_params) ] ] %>
 <nav class="filters" aria-label="Build" id="build-filters">
-  <%= link_to "one row per build", matrix_path(stack: @stack), class: ("current" if @by_build && @build.nil?) %>
-  <%= link_to "one row per release", matrix_path(stack: @stack, group: "release"), class: ("current" if !@by_build) %>
+  <%= link_to "one row per build", matrix_path + query(@filter.to_params(except: "build")), class: ("current" if @by_build && @build.nil?) %>
+  <%= link_to "one row per release", matrix_path + query(@filter.to_params(except: "build", group: "release")), class: ("current" if !@by_build) %>
   <% @builds.each do |build, runs| %>
-    <%= link_to build.label, matrix_path(stack: @stack, build: build.words), class: ("current" if @build == build.words), title: "#{build.words}: #{pluralize(runs.size, "run")}", data: { build: build.id } %>
+    <%= link_to build.label, matrix_path + query(@filter.to_params.merge("build" => build.words)), class: ("current" if @build == build.words), title: "#{build.words}: #{pluralize(runs.size, "run")}", data: { build: build.id } %>
   <% end %>
 </nav>
 <%= card(@by_build ? "model × stack/version × build" : "model × stack/version") do %>
-  <% if @matrix.empty? %>
-    <p class="dim">No reports<%= " on #{Report::STACK_WORDS[@stack]}" if @stack %><%= " on build #{@build}" if @build %> yet.</p>
+  <% if @matrix.empty? || @matrix.rows.empty? %>
+    <p class="dim">No reports<%= " match these filters" if @filter.any? %> yet.</p>
   <% else %>
     <%= render "shared/matrix", rows: @matrix.rows, features: @matrix.features %>
   <% end %>

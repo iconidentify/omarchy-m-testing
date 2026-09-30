@@ -65,9 +65,10 @@ class Report < ApplicationRecord
   EXPECTED_GAP_OUTCOMES = %w[not-in-aurora not-in-asahi not-in-omarchy not-applicable].freeze
   def self.expected_gap?(check) = check["status"] == "fail" && EXPECTED_GAP_OUTCOMES.include?(check.dig("classification", "outcome"))
 
-  # pass, fail (not expected), gap (expected failures) and skip counts.
-  def result_counts
-    @result_counts ||= checks.each_with_object(Hash.new(0)) do |check, counts|
+  # pass, fail (not expected), gap (expected failures) and skip counts; confirmed: of the counted checks only.
+  def result_counts(confirmed: false)
+    @result_counts ||= {}
+    @result_counts[confirmed] ||= (confirmed ? counted_checks : checks).each_with_object(Hash.new(0)) do |check, counts|
       counts[Report.expected_gap?(check) ? "gap" : check["status"]] += 1
     end
   end
