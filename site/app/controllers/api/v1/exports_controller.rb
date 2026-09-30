@@ -2,14 +2,15 @@ module Api
   module V1
     # The rest of the public data, CC0: every check result as CSV, and the
     # compatibility matrix, the benchmark comparison and the Aurora
-    # feature-support table as JSON.
+    # feature-support table as JSON. The checks and the matrix take the
+    # filters the pages do (ReportFilter), and the matrix ?group=release.
     class ExportsController < ActionController::API
       def checks
-        send_data DataExport.checks_csv, type: "text/csv; charset=utf-8", filename: "omarchy-m-testing-checks.csv"
+        send_data DataExport.checks_csv(ReportFilter.new(params)), type: "text/csv; charset=utf-8", filename: "omarchy-m-testing-checks.csv"
       end
 
       def matrix
-        render json: { license: DataExport::LICENSE, generated_at: Time.current.utc.iso8601, **CompatibilityMatrix.visible.as_json }
+        render json: { license: DataExport::LICENSE, generated_at: Time.current.utc.iso8601, **matrix_json }
       end
 
       def benchmarks
@@ -19,6 +20,14 @@ module Api
       def aurora
         render json: { license: DataExport::LICENSE, note: DataExport::ASAHI_NOTE, generated_at: Time.current.utc.iso8601,
                        **AuroraSupport.visible.as_json(->(report) { report_url(report) }) }
+      end
+
+      private
+
+      def matrix_json
+        filter = ReportFilter.new(params)
+        matrix = CompatibilityMatrix.visible(by_build: params[:group] != "release", filter:)
+        { filters: filter.values.presence, runs: matrix.reports.size, **matrix.as_json }.compact
       end
     end
   end

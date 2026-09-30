@@ -2,11 +2,12 @@ class ReportsController < ApplicationController
   before_action :set_report, except: :index
   before_action :require_deletion_token, only: %i[deletion destroy]
 
-  # ?build= lists the runs on one build (Build#id).
+  # The runs the filters (ReportFilter) pass: ?build= lists the runs on one build (Build#matches?).
   def index
-    @reports = Report.visible.newest_first.to_a
-    @build = params[:build].presence
-    @reports = @reports.select { |report| report.build&.matches?(@build) } if @build
+    @filter = ReportFilter.new(params, keys: ReportFilter::LIST_KEYS)
+    all = Report.visible.newest_first.to_a
+    @reports = @filter.runs(all)
+    @options = FilterOptions.new(all)
   end
 
   def show

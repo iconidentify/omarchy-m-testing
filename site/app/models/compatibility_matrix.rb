@@ -9,39 +9,47 @@ class CompatibilityMatrix
     def cell(feature_id) = cells.fetch(feature_id) { MatrixCell.new({}, []) }
   end
 
-  # build: only the runs on that build (Build#id).
-  def self.visible(stack: nil, build: nil, by_build: true)
-    scope = Report.visible
-    scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
-    reports = scope.to_a
-    reports = reports.select { |report| report.build&.matches?(build) } if build.present?
-    new(reports, by_build:)
+  # build: only the runs on that build (Build#id). filter: a ReportFilter, which takes the place of stack and build.
+  def self.visible(stack: nil, build: nil, by_build: true, filter: nil)
+    filter ||= ReportFilter.new({ "stack" => stack, "build" => build })
+    new(filter.runs(Report.visible.to_a), by_build:, filter:)
   end
 
-  # The builds of the visible reports, newest run first: [[build, runs], ...] (Build.runs).
-  def self.builds(stack: nil)
-    scope = Report.visible
-    scope = scope.where("body -> 'system' ->> 'stack' = ?", stack) if stack.present?
-    Build.runs(scope.to_a)
+  # The builds of the visible reports the filter's other filters pass, newest run first: [[build, runs], ...] (Build.runs).
+  def self.builds(stack: nil, filter: nil)
+    filter = ReportFilter.new((filter&.values || { "stack" => stack }).except("build"))
+    Build.runs(filter.runs(Report.visible.to_a))
   end
 
-  # only_testers: cells from tester runs only (a candidate set's view).
-  def initialize(reports, only_testers: false, by_build: true)
+  # only_testers: cells from tester runs only (a candidate set's view). filter: a ReportFilter's result
+  # filters (the runs are already chosen): confirmed cells only, one layer's columns, the rows and columns with a state.
+  def initialize(reports, only_testers: false, by_build: true, filter: nil)
     @reports = reports.sort_by { |report| [ report.created_at, report.id ] }
     @only_testers = only_testers
     @by_build = by_build
+    @filter = filter || ReportFilter.new
   end
 
-  def features = Catalogue.tested_features
   def reports = @reports.reverse
   def empty? = @reports.empty?
 
+  # The columns: the catalogue's tested features, of the filter's layer, and with its state in some row.
+  def features
+    @features ||= begin
+      features = Catalogue.tested_features
+      features = features.select { |feature| feature.fetch("layer") == @filter.layer } if @filter.layer
+      features = features.select { |feature| all_rows.any? { |row| state?(row.cell(feature.fetch("id"))) } } if @filter.state
+      features
+    end
+  end
+
+  # The rows: with confirmed only, those with a confirmed cell; with a state, those with a cell in it.
   def rows
-    @rows ||= @reports.group_by { |report| report.configuration(by_build: @by_build) }.map do |configuration, reports|
-      latest = reports.last
-      Row.new(configuration:, model_name: latest.short_model_name, chip: latest.chip, soc: latest.soc, reports: reports.reverse,
-              cells: features.to_h { |feature| [ feature.fetch("id"), MatrixCell.from(reports, feature.fetch("id"), only_testers: @only_testers) ] })
-    end.sort { |a, b| compare(a, b) }
+    @rows ||= all_rows.select do |row|
+      cells = features.map { |feature| row.cell(feature.fetch("id")) }
+      (!@filter.confirmed? || cells.any? { |cell| !cell.hidden? && !cell.tallies.empty? }) &&
+        (!@filter.state || cells.any? { |cell| state?(cell) })
+    end
   end
 
   def rows_for_board(board) = rows.select { |row| row.configuration.board == board }
@@ -50,6 +58,7 @@ class CompatibilityMatrix
   def rows_for_feature(feature_id) = rows.select { |row| row.cell(feature_id).reports.any? }
 
   def as_json(*)
+    shown = features.map { |feature| feature.fetch("id") }
     {
       catalogue_version: Catalogue.version,
       agreement: "a cell's state is set by tester runs on their own, or once #{MatrixCell::AGREEMENT} or more distinct machines agree; null while unconfirmed",
@@ -59,13 +68,30 @@ class CompatibilityMatrix
           model: row.model_name, board: row.configuration.board, soc: row.soc, chip: row.chip,
           stack: row.configuration.stack, version: row.configuration.version, build: row.reports.first.build&.as_json,
           reports: row.reports.size,
-          cells: row.cells.transform_values { |cell| { state: cell.state, tentative: cell.tentative, machines: cell.tallies, tester_machines: cell.tester_tallies } }
+          cells: row.cells.slice(*shown).transform_values do |cell|
+            json = { state: cell.state, tentative: cell.tentative, machines: cell.tallies, tester_machines: cell.tester_tallies }
+            cell.hidden? ? json.merge(hidden: true) : json
+          end
         }
       end
     }
   end
 
   private
+
+  # Every row of the runs, each cell counted from them (with confirmed only, unconfirmed cells hidden).
+  def all_rows
+    @all_rows ||= @reports.group_by { |report| report.configuration(by_build: @by_build) }.map do |configuration, reports|
+      latest = reports.last
+      cells = Catalogue.tested_features.to_h do |feature|
+        cell = MatrixCell.from(reports, feature.fetch("id"), only_testers: @only_testers)
+        [ feature.fetch("id"), @filter.confirmed? ? cell.confirmed_only : cell ]
+      end
+      Row.new(configuration:, model_name: latest.short_model_name, chip: latest.chip, soc: latest.soc, reports: reports.reverse, cells:)
+    end.sort { |a, b| compare(a, b) }
+  end
+
+  def state?(cell) = !cell.hidden? && @filter.matrix_states.include?(cell.display_state)
 
   # By chip generation, model and stack; within those, newest version first, then the newest build.
   def compare(a, b)

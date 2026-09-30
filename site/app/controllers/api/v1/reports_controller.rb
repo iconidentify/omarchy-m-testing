@@ -13,13 +13,14 @@ module Api
       rate_limit to: UPLOADS_PER_HOUR, within: 1.hour, by: -> { client_ip }, only: :create, store: RATE_LIMITS,
                  with: -> { render json: { error: "Too many uploads from your network: at most #{UPLOADS_PER_HOUR} an hour. Try again later; the report is saved on your Mac." }, status: :too_many_requests }
 
-      # Every visible report as uploaded (JSON), or one row per report (CSV). CC0.
+      # Every visible report as uploaded (JSON), or one row per report (CSV), that the filters pass (ReportFilter). CC0.
       def index
         url_for = ->(report) { report_url(report) }
+        filter = ReportFilter.new(params, keys: ReportFilter::LIST_KEYS)
         if request.format.csv?
-          send_data DataExport.reports_csv(url_for), type: "text/csv; charset=utf-8", filename: "omarchy-m-testing-reports.csv"
+          send_data DataExport.reports_csv(url_for, filter), type: "text/csv; charset=utf-8", filename: "omarchy-m-testing-reports.csv"
         else
-          render json: DataExport.json(url_for)
+          render json: DataExport.json(url_for, filter)
         end
       end
 

@@ -1,0 +1,42 @@
+<%# locals: (filter:, options:, path:, keys:, count:, extra: {}, exports: []) %>
+<form class="filter-bar" method="get" action="<%= path %>" role="search" aria-label="Filter the runs">
+  <% extra.compact.each do |name, value| %><input type="hidden" name="<%= name %>" value="<%= value %>"><% end %>
+  <div class="filter-fields">
+    <% (keys - %w[from to confirmed]).each do |key| %>
+      <% choices = options.public_send(key) %>
+      <% choices = [ [ filter[key], filter[key] ], *choices ] if filter[key] && choices.none? { |value, _| value == filter[key] } %>
+      <label class="filter-field">
+        <span><%= ReportFilter::LABELS.fetch(key) %></span>
+        <select name="<%= key %>" data-filter="<%= key %>">
+          <option value="">any</option>
+          <% choices.each do |value, words| %>
+            <option value="<%= value %>"<%= " selected" if filter[key] == value %>><%= words %></option>
+          <% end %>
+        </select>
+      </label>
+    <% end %>
+    <% %w[from to].each do |key| %>
+      <label class="filter-field">
+        <span>uploaded <%= key %></span>
+        <input type="date" name="<%= key %>" value="<%= filter[key] %>" data-filter="<%= key %>">
+      </label>
+    <% end %>
+    <label class="filter-field filter-check">
+      <input type="checkbox" name="confirmed" value="1"<%= " checked" if filter.confirmed? %> data-filter="confirmed">
+      <span>confirmed only</span>
+    </label>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="button button-small">filter</button>
+  </div>
+</form>
+<p class="filter-status" id="filter-status">
+  <strong class="filter-count" data-count="<%= count %>"><%= pluralize(count, "run") %></strong> <%= count == 1 ? "matches" : "match" %>
+  <% filter.chips.each do |key, value, words| %>
+    <a class="filter-chip" data-filter="<%= key %>" href="<%= path + query(filter.to_params(except: key, **extra)) %>" title="remove this filter" aria-label="remove the filter <%= words %>"><%= words %> <span aria-hidden="true">×</span></a>
+  <% end %>
+  <% if filter.any? %><a class="filter-clear" href="<%= path + query(extra.compact) %>">clear</a><% end %>
+  <% if exports.any? %>
+    <span class="filter-exports">· download <%= safe_join(exports.map { |name, url| link_to(name, url) }, " ") %></span>
+  <% end %>
+</p>
