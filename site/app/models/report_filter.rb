@@ -45,7 +45,8 @@ class ReportFilter
     "confirmed" => "results", "layer" => "layer", "state" => "state"
   }.freeze
   DATE = /\A\d{4}-\d{2}-\d{2}\z/
-  MAX_LENGTH = 300
+  # Build words run long (an image naming its set carries its runtime, kernel, boot package, build time and digest).
+  MAX_LENGTH = 2048
 
   attr_reader :values
 

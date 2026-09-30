@@ -102,6 +102,12 @@ class FiltersTest < ActionDispatch::IntegrationTest
     assert_equal 0, count
   end
 
+  test "a build filter as long as an image's build words is kept" do
+    long = "apple-test-1937418f520b-20260926 (#{"x" * 400})"
+    assert_equal [], listed(build: long)
+    assert_select %(.filter-chip[data-filter="build"])
+  end
+
   test "an unknown value matches nothing, and a value past the choices still shows as picked" do
     assert_equal [], listed(model: "j999")
     assert_select %(select[name="model"] option[selected][value="j999"])
@@ -133,6 +139,14 @@ class FiltersTest < ActionDispatch::IntegrationTest
     get "/matrix", params: { chip: "M3", tool: "0.1.8", to: "2026-09-28" }
     assert_equal [ "j613" ], css_select("tr.matrix-row").map { |row| row["data-board"] }
     assert_equal 1, count
+
+    # The count is of the runs behind the rows shown: result filters leave rows out.
+    get "/matrix", params: { gen: "m1", state: "regression" }
+    assert_select "tr.matrix-row", 0
+    assert_equal 0, count
+    get "/matrix", params: { confirmed: "1" }
+    assert_equal css_select("tr.matrix-row .row-meta").sum { |meta| meta.text[/(\d+) reports?/, 1].to_i }, count
+    assert count < PRODUCTION.size
 
     get "/matrix", params: { from: "2026-09-29" }
     assert_select "tr.matrix-row", 0
@@ -210,7 +224,7 @@ class FiltersTest < ActionDispatch::IntegrationTest
   test "the reports exports take the filters, and without any are unchanged" do
     get "/api/v1/reports.json"
     body = response.parsed_body
-    assert_not body.key?("filters")
+    assert_equal %w[license note generated_at catalogue_version reports], body.keys
     assert_equal PRODUCTION.size, body["reports"].size
 
     get "/api/v1/reports.json", params: { gen: "m1", tool: "0.1.8" }
@@ -258,7 +272,7 @@ class FiltersTest < ActionDispatch::IntegrationTest
   test "matrix.json takes the filters and ?group=release, and without any is unchanged" do
     get "/api/v1/matrix.json"
     plain = response.parsed_body
-    assert_not plain.key?("filters")
+    assert_equal %w[license generated_at catalogue_version agreement features rows], plain.keys
     assert_equal Catalogue.tested_features.size, plain["features"].size
 
     get "/api/v1/matrix.json", params: { gen: "m2", layer: "asahi" }

@@ -1,7 +1,7 @@
 <% content_for :title, "Compatibility matrix" %>
 <% group = (@by_build ? nil : "release") %>
 <h1>Compatibility matrix</h1>
-<%= render "shared/filter_bar", filter: @filter, options: @options, path: matrix_path, keys: ReportFilter::KEYS, count: @matrix.reports.size,
+<%= render "shared/filter_bar", filter: @filter, options: @options, path: matrix_path, keys: ReportFilter::KEYS, count: @matrix.runs_count,
                                 extra: { group: }, exports: [ [ "matrix.json", api_v1_matrix_path(format: :json) + query(@filter.to_params(group:)) ],
                                                                [ "checks.csv", api_v1_checks_path(format: :csv) + query(@filter.to_params) ] ] %>
 <nav class="filters" aria-label="Build" id="build-filters">

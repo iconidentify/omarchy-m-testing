@@ -27,7 +27,7 @@ module Api
       def matrix_json
         filter = ReportFilter.new(params)
         matrix = CompatibilityMatrix.visible(by_build: params[:group] != "release", filter:)
-        { filters: filter.values.presence, runs: matrix.reports.size, **matrix.as_json }.compact
+        filter.any? ? { filters: filter.values, runs: matrix.runs_count, **matrix.as_json } : matrix.as_json
       end
     end
   end

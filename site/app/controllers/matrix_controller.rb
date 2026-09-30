@@ -5,8 +5,9 @@ class MatrixController < ApplicationController
     @stack = @filter["stack"]
     @build = @filter["build"]
     @by_build = params[:group] != "release"
-    @matrix = CompatibilityMatrix.visible(by_build: @by_build, filter: @filter)
-    @builds = CompatibilityMatrix.builds(filter: @filter)
-    @options = FilterOptions.new(Report.visible.to_a)
+    reports = Report.visible.to_a
+    @matrix = CompatibilityMatrix.visible(by_build: @by_build, filter: @filter, reports:)
+    @builds = CompatibilityMatrix.builds(filter: @filter, reports:)
+    @options = FilterOptions.new(reports)
   end
 end

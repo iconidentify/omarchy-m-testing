@@ -10,15 +10,16 @@ class CompatibilityMatrix
   end
 
   # build: only the runs on that build (Build#id). filter: a ReportFilter, which takes the place of stack and build.
-  def self.visible(stack: nil, build: nil, by_build: true, filter: nil)
+  # reports: the visible reports, when the caller has them already.
+  def self.visible(stack: nil, build: nil, by_build: true, filter: nil, reports: nil)
     filter ||= ReportFilter.new({ "stack" => stack, "build" => build })
-    new(filter.runs(Report.visible.to_a), by_build:, filter:)
+    new(filter.runs(reports || Report.visible.to_a), by_build:, filter:)
   end
 
   # The builds of the visible reports the filter's other filters pass, newest run first: [[build, runs], ...] (Build.runs).
-  def self.builds(stack: nil, filter: nil)
+  def self.builds(stack: nil, filter: nil, reports: nil)
     filter = ReportFilter.new((filter&.values || { "stack" => stack }).except("build"))
-    Build.runs(filter.runs(Report.visible.to_a))
+    Build.runs(filter.runs(reports || Report.visible.to_a))
   end
 
   # only_testers: cells from tester runs only (a candidate set's view). filter: a ReportFilter's result
@@ -31,6 +32,9 @@ class CompatibilityMatrix
   end
 
   def reports = @reports.reverse
+
+  # The runs behind the rows shown (fewer than reports when result filters leave rows out).
+  def runs_count = rows.sum { |row| row.reports.size }
   def empty? = @reports.empty?
 
   # The columns: the catalogue's tested features, of the filter's layer, and with its state in some row.
