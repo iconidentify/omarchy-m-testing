@@ -472,14 +472,16 @@ class RecordingHost:
 
     def recording(self, scrubber: Scrubber) -> dict[str, Any]:
         """The scrubbed recording of everything captured so far."""
-        commands = [_projected(entry) for entry in _without_repeats(self.commands)]
-        files = {path: [_file_projected(path, data) for data in answers] for path, answers in self.files.items()}
-        for entry in commands:  # a serial or device name one output names is removed from all of them
+        # A serial or device name one output names is removed from all of them: learnt from what the machine
+        # answered, before projection drops the field that named it (hyprctl's "serial").
+        for entry in self.commands:
             scrubber.learn(entry["stdout"] + "\n" + entry["stderr"])
-        for answers in files.values():
+        for answers in self.files.values():
             for data in answers:
                 if isinstance(data, bytes):
                     scrubber.learn(data.decode("utf-8", "replace"))
+        commands = [_projected(entry) for entry in _without_repeats(self.commands)]
+        files = {path: [_file_projected(path, data) for data in answers] for path, answers in self.files.items()}
         saved_files = {scrubber.scrub(path): _answers([_file_entry(path, data, scrubber) for data in answers])
                        for path, answers in files.items()}
         saved_dirs = {scrubber.scrub(path): _answers([_dir_entry(path, names, scrubber) for names in answers])

@@ -35,7 +35,6 @@ from .host import Host
 MAX_READS = 256  # files read (a module search also tries absent paths, which cost nothing)
 MAX_ATTEMPTS = 1024
 KEY_FIELDS = ("output", "mode", "resolution", "disabled", "mirror", "mirror_of")
-LIBRARIES = ("default.hypr.paths", "default.hypr.require_all", "default.hypr.require_optional")
 BOOTSTRAP = 'dofile((os.getenv("OMARCHY_PATH")or"/usr/share/omarchy").."/default/hypr/bootstrap.lua")'
 
 
@@ -138,8 +137,9 @@ class Reader:
             return
         path, text = found
         self.loaded.add(module)
-        if module in LIBRARIES and path.startswith(self.paths["omarchy_path"].rstrip("/") + "/"):
-            return  # Omarchy's own helpers: read for what they do (below), not as configuration
+        if module in HELPERS:
+            _helper_body(_tokens(text))  # read for what it does (below), once its body is the plain helper
+            return
         self.lua(path, text, sink)
 
     def probe(self, load) -> None:
@@ -233,7 +233,7 @@ def read(host: Host) -> Rules:
             if text is None:
                 raise _Unknown
             reader.conf(conf, text)
-    except _Unknown:
+    except (_Unknown, IndexError):  # IndexError: a truncated statement this reader didn't expect
         reader.rules.unavailable = True
     return reader.rules
 
@@ -290,6 +290,18 @@ def _tokens(text: str) -> list[Tok]:
     return tokens
 
 
+def _balanced(tokens: list[Tok]) -> bool:
+    blocks, brackets = 0, 0
+    for tok in tokens:
+        if tok.kind == "name":
+            blocks += (tok.value in OPEN) - (tok.value in CLOSE)
+        elif tok.kind == "op" and tok.value in ("(", "[", "{", ")", "]", "}"):
+            brackets += 1 if tok.value in "([{" else -1
+        if blocks < 0 or brackets < 0:
+            return False
+    return blocks == 0 and brackets == 0
+
+
 def _dotted(tokens: list[Tok], i: int) -> tuple[str, int]:
     """A dotted name starting at i (hl.monitor, require_all.files) and the index after it."""
     parts, j = [tokens[i].value], i + 1
@@ -341,15 +353,94 @@ def _call_args(tokens: list[Tok], j: int) -> tuple[list[Tok], int]:
     raise _Unknown
 
 
+# Tokens after which an expression goes on (so a line break there doesn't end the statement).
+CONTINUES = {"and", "or", "not", "..", "+", "-", "*", "/", "//", "%", "^", "#", "==", "~=", "<", "<=", ">", ">=",
+             "&", "|", "~", "<<", ">>", "=", ",", "(", "[", "{"}
+# Tokens that only start (or sit between) statements: what came before can't branch what follows.
+STATEMENT = {"local", "if", "then", "else", "elseif", "end", "do", "while", "for", "repeat", "until", "return",
+             "function", "goto", "break", ";"}
+HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
+           "default.hypr.require_optional": "require_optional"}
+
+
+def _bindings(tokens: list[Tok]) -> dict[str, int]:
+    """How many times each name is bound (local, assignment, for variable, function name or parameter).
+    A local is trusted as a known directory or helper only when it is bound once."""
+    counts: dict[str, int] = {}
+
+    def bind(tok: Tok) -> None:
+        counts[tok.value] = counts.get(tok.value, 0) + 1
+
+    brackets = 0
+    for k, tok in enumerate(tokens):
+        nxt = tokens[k + 1] if k + 1 < len(tokens) else None
+        prev = tokens[k - 1] if k else None
+        if tok.kind == "op" and tok.value in "([{":
+            brackets += 1
+        elif tok.kind == "op" and tok.value in ")]}":
+            brackets = max(brackets - 1, 0)
+        if tok.kind != "name":
+            continue
+        if tok.value in ("local", "for"):
+            m = k + 1
+            if m < len(tokens) and tokens[m].value == "function":
+                m += 1
+            while m < len(tokens) and tokens[m].kind == "name":
+                bind(tokens[m])
+                if m + 1 < len(tokens) and tokens[m + 1].value == ",":
+                    m += 2
+                else:
+                    break
+        elif tok.value == "function":
+            m = k + 1
+            while m < len(tokens) and tokens[m].value != "(":
+                m += 1
+            if m < len(tokens) and k + 1 < m and tokens[k + 1].kind == "name" and (prev is None or prev.value != "local"):
+                bind(tokens[k + 1])  # function name() ... end: assigns name
+            m += 1
+            while m < len(tokens) and tokens[m].value != ")":
+                if tokens[m].kind == "name":
+                    bind(tokens[m])
+                m += 1
+        elif (prev is None or prev.value not in (".", ":", "local", "for", ",")) and nxt is not None and (
+                nxt.value == "=" or (nxt.value == "," and brackets == 0)):
+            bind(tok)  # name = ..., or the first of name, other = ...
+        elif prev is not None and prev.value == "," and brackets == 0 and nxt is not None and nxt.value in ("=", ","):
+            bind(tok)
+    return counts
+
+
+def _branching(tokens: list[Tok]) -> list[bool]:
+    """Per token: is it in a statement that already branched (an and/or before it, across line breaks too)?"""
+    flags, branched, brackets = [], False, 0
+    for k, tok in enumerate(tokens):
+        value = tok.value if tok.kind in ("op", "name") else ""
+        previous = tokens[k - 1] if k else None
+        if previous is not None and brackets == 0 and (
+                value in STATEMENT or previous.value == ";"
+                or (tok.line != previous.line and previous.value not in CONTINUES and value not in CONTINUES - {"(", "{", "["})):
+            branched = False
+        if value in ("and", "or"):
+            branched = True
+        flags.append(branched)
+        if tok.kind == "op" and value in ("(", "[", "{"):
+            brackets += 1
+        elif tok.kind == "op" and value in (")", "]", "}"):
+            brackets = max(brackets - 1, 0)
+    return flags
+
+
 class _LuaFile:
     def __init__(self, reader: Reader, path: str, tokens: list[Tok], sink: Rules):
         self.reader, self.path, self.tokens, self.sink = reader, path, tokens, sink
         self.locals: dict[str, str] = {}  # local name -> a statically known directory
-        self.branching = {t.line for t in tokens if t.kind == "name" and t.value in ("and", "or")}
+        self.helpers: dict[str, str] = {}  # local name -> which Omarchy helper it is bound to (paths, require_all...)
+        self.branched = _branching(tokens)
+        self.bound = _bindings(tokens)
 
     def conditional(self, i: int) -> bool:
-        """Inside a block, or on a line that branches (and/or): it may not run."""
-        return self.tokens[i].depth > 0 or self.tokens[i].line in self.branching
+        """Inside a block, or in a statement that branches (and/or): it may not run."""
+        return self.tokens[i].depth > 0 or self.branched[i]
 
     def load(self, i: int, action) -> None:
         if self.conditional(i):
@@ -357,8 +448,17 @@ class _LuaFile:
         else:
             action(self.sink)
 
+    def helper(self, name: str) -> str | None:
+        """ra.files -> "require_all.files" when ra is bound (once) here to Omarchy's require_all; else None."""
+        head, _, rest = name.partition(".")
+        if head in self.helpers and rest and self.bound.get(head) == 1:
+            return f"{self.helpers[head]}.{rest}"
+        return None
+
     def run(self) -> None:
         tokens, i = self.tokens, 0
+        if tokens and (tokens[-1].value in CONTINUES or not _balanced(tokens)):
+            raise _Unknown  # a truncated file: Hyprland wouldn't load it as written
         while i < len(tokens):
             tok = tokens[i]
             if tok.kind != "name" or (i and tokens[i - 1].value in (".", ":") and tokens[i - 1].kind == "op"):
@@ -369,41 +469,54 @@ class _LuaFile:
                 if "." not in name:
                     raise _Unknown  # the globals table itself: anything could be reached through it
                 name = name.split(".", 1)[1]
+            called = self.helper(name)
+            if called is None and name in ("require_all.files", "require_optional.module"):
+                raise _Unknown  # require_all.files or require_optional.module not bound to Omarchy's helper here
             if name == "hl.monitor" or name.startswith("hl.monitor."):
                 i = self.monitor(i, j)
-            elif name == "hl" and j < len(tokens) and tokens[j].value in ("[", ":"):
-                raise _Unknown  # hl["monitor"], hl:monitor: not read
             elif name == "hl" and (j >= len(tokens) or tokens[j].value != "."):
-                raise _Unknown  # hl passed on or aliased: its monitor calls can't be followed
+                raise _Unknown  # hl["monitor"], hl:monitor, hl passed on or aliased: not read
             elif name == "require":
                 i = self.require(i, j)
-            elif name == "require_optional.module":
+            elif called == "require_optional.module":
                 args, i = _call_args(tokens, j)
                 module = args[0].literal() if len(args) == 1 else None
                 if module is None:
                     raise _Unknown
                 self.reader.probe(lambda sink, m=module: self.reader.require(m, sink, optional=True))
-            elif name == "require_all.files":
+            elif called == "require_all.files":
                 i = self.require_all(i, j)
             elif name in ("dofile", "loadfile", "load", "loadstring"):
-                args, i = _call_args(tokens, j)
-                if name != "dofile" or "".join(t.value for t in args) != BOOTSTRAP[7:-1] or tokens[i].depth:
+                args, after = _call_args(tokens, j)
+                if name != "dofile" or "".join(t.value for t in args) != BOOTSTRAP[7:-1] or self.conditional(i):
                     raise _Unknown
-            elif name == "package.path" or name.startswith("package.searchers") or name.startswith("package.loaders"):
+                i = after
+            elif name == "package.path" or name.startswith(("package.searchers", "package.loaders", "package.preload")):
                 i = self.package_path(i, j)
             elif name == "local" and j + 2 < len(tokens) and tokens[j].kind == "name" and tokens[j + 1].value == "=":
-                end = j + 2
-                while end < len(tokens) and tokens[end].line == tokens[j + 2].line:
-                    end += 1
-                directory = self.directory(tokens[j + 2:end])
-                if directory is not None and tok.depth == 0:
-                    self.locals[tokens[j].value] = directory
-                else:
-                    self.locals.pop(tokens[j].value, None)
-                i = j  # read the value's own calls
+                self.local(tokens[j].value, j + 2, tok.depth)
+                i = j + 1  # read the value's own calls
             else:
                 i = j
         return None
+
+    def local(self, name: str, start: int, depth: int) -> None:
+        tokens = self.tokens
+        self.locals.pop(name, None)
+        self.helpers.pop(name, None)
+        end = start
+        while end < len(tokens) and tokens[end].line == tokens[start].line:
+            end += 1
+        value = tokens[start:end]
+        if depth or self.branched[start] or (end < len(tokens) and tokens[end - 1].value in CONTINUES):
+            return  # it may not run, or the value goes on: neither is known
+        values = [t.value for t in value]
+        if len(value) == 4 and values[0] == "require" and values[1] == "(" and values[3] == ")" and value[2].literal() in HELPERS:
+            self.helpers[name] = HELPERS[value[2].literal()]
+            return
+        directory = self.directory(value)
+        if directory is not None:
+            self.locals[name] = directory
 
     def monitor(self, i: int, j: int) -> int:
         tokens = self.tokens
@@ -482,7 +595,7 @@ class _LuaFile:
             end += 1
         expr = tokens[j + 1:end]
         # package.path = <directory> .. "/?.lua;" .. package.path
-        if (len(expr) >= 5 and [t.value for t in expr[-4:]] == ["..", "package", ".", "path"]
+        if (len(expr) >= 7 and [t.value for t in expr[-4:]] == ["..", "package", ".", "path"]
                 and expr[-5].literal() == "/?.lua;" and expr[-6].value == ".." and not self.conditional(i)):
             directory = self.directory(expr[:-6])
             if directory is not None:
@@ -502,9 +615,10 @@ class _LuaFile:
                 i += 1
             elif tok.kind == "name":
                 name, i = _dotted(expr, i)
-                if name.startswith("paths.") and name[6:] in self.reader.paths:
-                    parts.append(self.reader.paths[name[6:]])
-                elif name in self.locals:
+                resolved = self.helper(name) or ""
+                if resolved.startswith("paths.") and resolved[6:] in self.reader.paths:
+                    parts.append(self.reader.paths[resolved[6:]])
+                elif name in self.locals and self.bound.get(name) == 1:
                     parts.append(self.locals[name])
                 else:
                     return None
@@ -517,6 +631,18 @@ class _LuaFile:
                 if i == len(expr):
                     return None
         return posixpath.normpath("".join(parts))
+
+
+def _helper_body(tokens: list[Tok]) -> None:
+    """An Omarchy helper is read for what it does only while its body can't set monitor rules or load anything
+    else: no hl, no globals table, no file loads, and require() only of the module it was handed."""
+    for k, tok in enumerate(tokens):
+        if tok.kind != "name":
+            continue
+        if tok.value in ("hl", "_G", "_ENV", "dofile", "loadfile", "load", "loadstring", "setfenv", "rawset", "debug"):
+            raise _Unknown
+        if tok.value == "require" and [t.value for t in tokens[k + 1:k + 4]] != ["(", "module", ")"]:
+            raise _Unknown
 
 
 def _options(item: list[Tok]) -> tuple[set[str], bool]:

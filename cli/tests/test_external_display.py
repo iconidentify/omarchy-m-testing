@@ -414,6 +414,14 @@ class RecordedProjectionTest(unittest.TestCase):
             "disabled": False, "mirrorOf": "none", "availableModes": ["3440x1440@60.00Hz"]}])
         self.assertEqual(run(saved, RecordedHost)[0], result)
 
+    def test_a_serial_named_only_by_hyprctl_is_still_scrubbed_elsewhere(self):
+        rec = fixture([monitor(serial="9RKXZN3")])
+        rec["commands"].append(command(RECORDED_SOURCES[0], "Oct 03 kernel: usb 1-1: display disconnected: 9RKXZN3\n"))
+        recorder = RecordingHost(NativeHost(rec))
+        display.check(types.SimpleNamespace(host=Bounded(recorder)))
+        recorder.capture_sources([RECORDED_SOURCES[0]])
+        self.assertNotIn("9RKXZN3", json.dumps(recorder.recording(Scrubber())))
+
     def test_an_output_name_that_is_not_a_connector_is_dropped(self):
         self.assertEqual(json.loads(display.recorded_output(display.MONITORS, json.dumps([monitor("SYNTHMODEL-1")]), "")[0]), [])
         self.assertEqual(display.recorded_output(display.MONITORS, "not json SYNTH", "")[0], "")
@@ -529,13 +537,15 @@ class LiteralLuaRulesTest(unittest.TestCase):
 
     def test_conditional_or_computed_requires(self):
         rules = {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
+        rules[f"{OMARCHY}/default/hypr/require_optional.lua"] = HELPER_OPTIONAL
         for main in ('if wide then require("hypr.modes") end\n',
                      'local ok = pcall(require, "hypr.modes")\n',
                      'local name = "hypr.modes"\nrequire(name)\n',
                      'require("hypr." .. "modes")\n',
                      'local _ = wide or require("hypr.modes")\n',
                      'for _, m in ipairs(list) do require("hypr.modes") end\n',
-                     'require_optional.module("hypr.modes")\n',
+                     OPTIONAL + 'require_optional.module("hypr.modes")\n',
+                     'require_optional.module("hypr.keys")\n',  # not bound to Omarchy's helper here
                      'dofile("/home/tester/.config/hypr/modes.lua")\n',
                      'package.path = somewhere .. package.path\n'):
             with self.subTest(main=main):
@@ -547,8 +557,10 @@ class LiteralLuaRulesTest(unittest.TestCase):
         self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
 
     def test_a_conditional_load_without_monitor_rules_does_not_matter(self):
-        rec = lua(self.lower(), {".config/hypr/keys.lua": 'hl.bind("SUPER", "Q", "killactive")\n'},
-                  DEFAULT_LUA + 'if _G.bindings ~= false then\n  require("hypr.keys")\nend\nrequire_optional.module("omarchy.current.theme.hyprland")\n')
+        rec = lua(self.lower(), {".config/hypr/keys.lua": 'hl.bind("SUPER", "Q", "killactive")\n',
+                                 f"{OMARCHY}/default/hypr/require_optional.lua": HELPER_OPTIONAL},
+                  DEFAULT_LUA + OPTIONAL + 'if _G.bindings ~= false then\n  require("hypr.keys")\nend\n'
+                  + 'require_optional.module("omarchy.current.theme.hyprland")\n')
         self.assertEqual(run(rec)[0]["status"], "fail")
 
     def test_omarchy_loaders_resolve_statically(self):
@@ -556,8 +568,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
         files = {
             f"{OMARCHY}/default/hypr/omarchy.lua": 'local require_optional = require("default.hypr.require_optional")\nrequire("default.hypr.toggles")\n'
                                                    'require_optional.module("omarchy.current.theme.hyprland")\n',
-            f"{OMARCHY}/default/hypr/require_optional.lua": "local M = {}\nfunction M.module(m) return require(m) end\nreturn M\n",
-            f"{OMARCHY}/default/hypr/require_all.lua": "local M = {}\nfunction M.files(d) require(d) end\nreturn M\n",
+            f"{OMARCHY}/default/hypr/require_optional.lua": "local M = {}\nfunction M.module(module) return require(module) end\nreturn M\n",
+            f"{OMARCHY}/default/hypr/require_all.lua": "local M = {}\nfunction M.files(dir, prefix) require(module) end\nreturn M\n",
             f"{OMARCHY}/default/hypr/paths.lua": "return { home = os.getenv('HOME') }\n",
             f"{OMARCHY}/default/hypr/toggles.lua": 'local paths = require("default.hypr.paths")\nlocal require_all = require("default.hypr.require_all")\n'
                                                    'local toggles_dir = paths.state_home .. "/omarchy/toggles/hypr"\n'
@@ -581,8 +593,54 @@ class LiteralLuaRulesTest(unittest.TestCase):
 
     def test_a_conditional_theme_with_monitor_rules_is_unknown(self):
         rec = lua(self.lower(), {".config/omarchy/current/theme/hyprland.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'},
-                  DEFAULT_LUA + 'require_optional.module("omarchy.current.theme.hyprland")\n')
+                  DEFAULT_LUA + OPTIONAL + 'require_optional.module("omarchy.current.theme.hyprland")\n')
+        rec["files"][f"{OMARCHY}/default/hypr/require_optional.lua"] = {"text": HELPER_OPTIONAL}
         self.assert_unknown(rec)
+        rec["files"].pop(f"{HOME}/.config/omarchy/current/theme/hyprland.lua")
+        self.assertEqual(run(rec)[0]["status"], "fail")  # a missing optional theme is harmless
+
+    def test_a_statement_that_branches_across_lines_is_conditional(self):
+        modes = {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
+        for main in ('hl.monitor { output="USB-1", mode="2560x1440" }\nlocal x = false and\n  hl.monitor { output="USB-1", mode="preferred" }\n',
+                     'local x = ready\n  or require("hypr.modes")\n',
+                     'local x = (ready or\n  require("hypr.modes"))\n'):
+            with self.subTest(main=main):
+                self.assert_unknown(lua(self.lower(), modes, DEFAULT_LUA + main))
+        # a branch that ended doesn't make the next statement conditional
+        rec = lua(self.lower(), modes, DEFAULT_LUA + 'local x = a or b\nrequire("hypr.modes")\n')
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def test_a_rebound_directory_or_helper_is_not_trusted(self):
+        hypr = f"{HOME}/.config/hypr"
+        for main in (ALL + f'local dir = "{hypr}/old"\ndir = "{hypr}/new"\nrequire_all.files(dir, "hypr.new")\n',
+                     ALL + f'local dir = "{hypr}/old"\nfor _, dir in ipairs(list) do require_all.files(dir, "hypr.new") end\n',
+                     ALL + f'local dir = "{hypr}/old"\nlocal dir, other = "{hypr}/new", 1\nrequire_all.files(dir, "hypr.new")\n',
+                     ALL + f'local dir = "{hypr}/old"\nlocal function load(dir) require_all.files(dir, "hypr.new") end\n',
+                     ALL + 'require_all = mine\nrequire_all.files("/x", "y")\n'):
+            with self.subTest(main=main):
+                rec = lua(self.lower(), {".config/hypr/new/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}, DEFAULT_LUA + main)
+                rec["files"][f"{OMARCHY}/default/hypr/require_all.lua"] = {"text": HELPER_ALL}
+                rec["dirs"][f"{hypr}/old"] = []
+                rec["dirs"][f"{hypr}/new"] = ["wide.lua"]
+                self.assert_unknown(rec)
+
+    def test_a_changed_helper_body_is_not_trusted(self):
+        rec = lua(self.lower(), {}, DEFAULT_LUA + OPTIONAL)
+        for body in (HELPER_OPTIONAL + 'hl.monitor { output="USB-1", mode="2560x1440" }\n',
+                     HELPER_OPTIONAL + 'require("hypr.modes")\n', HELPER_OPTIONAL + 'dofile("/x.lua")\n'):
+            with self.subTest(body=body):
+                rec["files"][f"{OMARCHY}/default/hypr/require_optional.lua"] = {"text": body}
+                self.assert_unknown(rec)
+        rec["files"][f"{OMARCHY}/default/hypr/require_optional.lua"] = {"text": HELPER_OPTIONAL}
+        self.assertEqual(run(rec)[0]["status"], "fail")
+
+    def test_truncated_or_bootstrap_only_configuration_does_not_crash(self):
+        rec = lua(self.lower(), {}, BOOTSTRAP_LUA)
+        self.assertEqual(run(rec)[0]["status"], "fail")  # no rule: Hyprland's preferred default
+        for main in ('package.path = "/?.lua;" .. package.path\n', 'require', 'hl.monitor', 'require_all.files',
+                     'local x =', 'dofile('):
+            with self.subTest(main=main):
+                self.assert_unknown(lua(self.lower(), {}, main))
 
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
@@ -590,6 +648,10 @@ class LiteralLuaRulesTest(unittest.TestCase):
         self.assertEqual(run(rec)[0]["status"], "fail")  # the second require is cached: preferred is the last rule
 
 
+HELPER_OPTIONAL = "local M = {}\nfunction M.module(module)\n  if package.searchpath(module, package.path) then return require(module) end\nend\nreturn M\n"
+HELPER_ALL = "local M = {}\nfunction M.files(dir, prefix, options)\n  require(module)\nend\nreturn M\n"
+OPTIONAL = 'local require_optional = require("default.hypr.require_optional")\n'
+ALL = 'local require_all = require("default.hypr.require_all")\n'
 DEFAULT_LUA = 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })\n'
 BOOTSTRAP_LUA = 'dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/bootstrap.lua")\n'
 
