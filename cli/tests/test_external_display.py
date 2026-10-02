@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import tempfile
+import threading
+import time
 import types
 import unittest
+from unittest import mock
 
-from omarchy_m_test import external_display as display, monitor_rules, ports
-from omarchy_m_test.host import MONITOR_INTENT, Bounded
+from omarchy_m_test import external_display as display, host as host_module, monitor_rules, ports
+from omarchy_m_test.host import MONITOR_INTENT, Bounded, bounded_read
 from omarchy_m_test.privacy import Scrubber
-from omarchy_m_test.recording import RecordedHost, RecordingHost
+from omarchy_m_test.recording import RECORDED_SOURCES, RecordedHost, RecordingHost, RecordingMiss
 from tests.desktop import command
 from tests.test_audio_display import run as run_section
 from tests.live_mac import live_recording
@@ -55,9 +60,33 @@ def fixture(monitors=None, preferred=None, config=DEFAULT) -> dict:
     ]}
 
 
+LUA = f"{HOME}/.config/hypr/hyprland.lua"
+OMARCHY = "/usr/share/omarchy"
+
+
 class NativeHost(RecordedHost):
+    """Reads monitor rules itself; Lua module paths the fixture doesn't list are absent."""
+
     def monitor_intent(self, outputs):
         return monitor_rules.intent(self, outputs)
+
+    def read_file(self, path):
+        try:
+            return super().read_file(path)
+        except RecordingMiss:
+            if path.startswith((f"{HOME}/.local/state/", f"{HOME}/.config/", f"{OMARCHY}/")) and path.endswith(".lua"):
+                raise FileNotFoundError(path)
+            raise
+
+
+def lua(rec: dict, files: dict[str, str], main: str | None = None) -> dict:
+    """Lua configuration: main is ~/.config/hypr/hyprland.lua, files are other paths (relative to $HOME)."""
+    rec["files"][CONFIG] = None
+    if main is not None:
+        rec["files"][LUA] = {"text": main}
+    for path, text in files.items():
+        rec["files"][path if path.startswith("/") else f"{HOME}/{path}"] = {"text": text}
+    return rec
 
 
 def run(rec=None, cls=NativeHost):
@@ -300,7 +329,9 @@ class DiagnosticsTest(unittest.TestCase):
         result, host = run(rec)
         self.assertEqual(result["status"], "pass")
         self.assertIn("diagnostic: card2-USB-1 CRTC 67", result["evidence"])
-        self.assertEqual(sum("diagnostic: kernel:" in line for line in result["evidence"]), 2)
+        self.assertEqual([line for line in result["evidence"] if "diagnostic: kernel:" in line],
+                         ["diagnostic: kernel: apple-dcp: atomic-check-failed",
+                          "diagnostic: kernel: apple-dcp: mode-not-found mode=2560x1440"])
         self.assertNotIn(display.drm_info_argv("card2"), host.commands_run)
 
     def test_drm_info_fallback_joins_by_connector_id(self):
@@ -354,6 +385,351 @@ class RecordingTest(unittest.TestCase):
         saved = recorder.recording(Scrubber())
         self.assertEqual(saved["files"][path], {"redacted_bytes": 12})
         self.assertEqual(run(saved, RecordedHost)[0], result)
+
+
+def synthetic_identity_monitor(**extra) -> dict:
+    return monitor(make="SYNTHMAKE", model="SYNTHMODEL", description="SYNTHMAKE SYNTHMODEL SYNTHSERIAL",
+                   serial="SYNTHSERIAL", activeWorkspace={"name": "SYNTHWS"}, availableModes=["3440x1440@60.00Hz", "SYNTH"],
+                   **extra)
+
+
+def record(rec: dict, cls=NativeHost) -> tuple[dict, dict, RecordingHost]:
+    """Run the check live through record mode; the result and the saved (scrubbed) recording."""
+    recorder = RecordingHost(cls(rec))
+    result = display.check(types.SimpleNamespace(host=Bounded(recorder)))
+    return result, recorder.recording(Scrubber()), recorder
+
+
+class RecordedProjectionTest(unittest.TestCase):
+    """Review finding 1: recordings keep an allowlisted projection, never monitor identity."""
+
+    def test_hyprctl_monitors_keep_only_names_modes_flags_and_ids(self):
+        rec = fixture([synthetic_identity_monitor()])
+        rec["commands"][1]["stderr"] = "SYNTHMODEL warning\n"
+        result, saved, _ = record(rec)
+        entry = next(e for e in saved["commands"] if e["argv"] == display.MONITORS)
+        self.assertNotIn("SYNTH", json.dumps(entry))
+        self.assertEqual(json.loads(entry["stdout"]), [{
+            "name": "USB-1", "id": 1, "width": 3440, "height": 1440, "refreshRate": 60.0, "transform": 0, "scale": 1.0,
+            "disabled": False, "mirrorOf": "none", "availableModes": ["3440x1440@60.00Hz"]}])
+        self.assertEqual(run(saved, RecordedHost)[0], result)
+
+    def test_an_output_name_that_is_not_a_connector_is_dropped(self):
+        self.assertEqual(json.loads(display.recorded_output(display.MONITORS, json.dumps([monitor("SYNTHMODEL-1")]), "")[0]), [])
+        self.assertEqual(display.recorded_output(display.MONITORS, "not json SYNTH", "")[0], "")
+
+    def test_debugfs_state_and_drm_info_keep_numeric_connector_and_crtc_ids(self):
+        rec = fixture()
+        rec["files"]["/sys/kernel/debug/dri/2/state"] = {"text": (
+            "plane[31]: plane-0\n\tfb=99\n\t\tallocated by = SYNTHPROC\ncrtc[67]: crtc-1\n\tactive=1\n\tmode: \"SYNTHMODE\"\n"
+            "connector[42]: USB-1\n\tcrtc=crtc-1\n\tself_refresh_aware=0\n\tSYNTHSERIAL\n")}
+        result, saved, _ = record(rec)
+        state = saved["files"]["/sys/kernel/debug/dri/2/state"]["text"]
+        self.assertEqual(state, "crtc[67]: crtc-1\nconnector[42]: USB-1\n\tcrtc=crtc-1\n")
+        self.assertEqual(run(saved, RecordedHost)[0], result)
+        self.assertIn("diagnostic: card2-USB-1 CRTC 67", result["evidence"])
+
+        info = {"/dev/dri/card2": {"driver": {"name": "SYNTH"}, "connectors": [
+            {"id": 42, "name": "SYNTHMODEL", "modes": [{"name": "SYNTH"}],
+             "properties": {"CRTC_ID": {"value": 67}, "EDID": {"value": "SYNTHSERIAL"}}}]}}
+        rec = fixture()
+        rec["commands"][2] = command(display.drm_info_argv("card2"), json.dumps(info), stderr="SYNTH\n")
+        result, saved, _ = record(rec)
+        entry = next(e for e in saved["commands"] if e["argv"] == display.drm_info_argv("card2"))
+        self.assertNotIn("SYNTH", json.dumps(entry))
+        self.assertEqual(json.loads(entry["stdout"]), {"/dev/dri/card2": {"connectors": [{"id": 42, "properties": {"CRTC_ID": {"value": 67}}}]}})
+        self.assertEqual(run(saved, RecordedHost)[0], result)
+        self.assertIn("diagnostic: card2-USB-1 CRTC 67", result["evidence"])
+
+
+class KernelDiagnosticTest(unittest.TestCase):
+    """Review finding 2: apple-dcp findings are fixed categories with validated numbers, never message text."""
+
+    LOG = ("apple-dcp 38bc00000.dcp: atomic check failed for SYNTHMODEL\n"
+           "apple-dcp 38bc00000.dcp: set_digital_out_mode finished:-22 SYNTHSERIAL\n"
+           "apple-dcp 38bc00000.dcp: set_digital_out_mode finished:8338\n"
+           "apple-dcp 38bc00000.dcp: swap failed! status 3\n"
+           "apple-dcp 38bc00000.dcp: swap failed! status 3\n"
+           "apple-dcp 38bc00000.dcp: dcp_dptx_connect: port 1 link complete failed:-110\n"
+           "apple-dcp 38bc00000.dcp: SYNTHMODEL mode on DP-1 rejected\n"
+           "apple-dcp 38bc00000.dcp: cb_hotplug() connected:1, valid_mode:0\n")
+
+    def test_reports_carry_categories_and_numbers_only(self):
+        rec = fixture()
+        rec["commands"][-1]["stdout"] = self.LOG
+        result, _ = run(rec)
+        kernel = [line for line in result["evidence"] if "kernel:" in line]
+        self.assertEqual(kernel, [
+            "diagnostic: kernel: apple-dcp: atomic-check-failed",
+            "diagnostic: kernel: apple-dcp: mode-set-failed errno=-22",
+            "diagnostic: kernel: apple-dcp: swap-failed status=3 (x2)",
+            "diagnostic: kernel: apple-dcp: link-failed errno=-110 port=1",
+            "diagnostic: kernel: apple-dcp: mode-failed",
+        ])
+        self.assertNotIn("SYNTH", json.dumps(result))
+
+    def test_out_of_range_numbers_are_dropped(self):
+        self.assertEqual(display.dcp_finding("apple-dcp x: swap failed! status 99999999999"), "apple-dcp: swap-failed")
+        self.assertEqual(display.dcp_finding("apple-dcp x: mode 99999x1 not found"), "apple-dcp: mode-not-found")
+
+    def test_recordings_keep_the_canonical_findings_and_replay_the_same_evidence(self):
+        rec = fixture()
+        rec["commands"][-1]["stdout"] = self.LOG
+        dmesg = "Oct 03 kernel: " + self.LOG.replace("\n", "\nOct 03 kernel: ").rstrip("Oct 03 kernel: ") + "Oct 03 kernel: usb 1-1: new device\n"
+        rec["commands"].append(command(RECORDED_SOURCES[0], dmesg))
+        recorder = RecordingHost(NativeHost(rec))
+        result = display.check(types.SimpleNamespace(host=Bounded(recorder)))
+        recorder.capture_sources([RECORDED_SOURCES[0]])
+        saved = recorder.recording(Scrubber())
+        self.assertNotIn("SYNTH", json.dumps(saved))
+        full = next(e for e in saved["commands"] if e["argv"] == RECORDED_SOURCES[0])["stdout"]
+        self.assertIn("Oct 03 kernel: apple-dcp: swap-failed status=3\n", full)
+        self.assertIn("usb 1-1: new device", full)
+        self.assertIn("set_digital_out_mode finished:8338", full)  # not a finding: kept as it was
+        self.assertEqual(run(saved, RecordedHost)[0], result)
+
+
+class LiteralLuaRulesTest(unittest.TestCase):
+    """Review finding 3: only fully literal Lua rules count; anything computed or conditional leaves intent unknown."""
+
+    def assert_unknown(self, rec):
+        result, _ = run(rec)
+        self.assertEqual(result["status"], "skip")
+        self.assertIn("mode intent unknown", result["evidence"][1])
+
+    def lower(self):
+        return fixture([monitor(width=2560)], {"USB-1": (3440, 1440)})
+
+    def test_computed_selectors_and_modes_skip_instead_of_failing(self):
+        for text in ('hl.monitor { output="USB" .. "-1", mode="2560x1440" }',
+                     'hl.monitor { output=name, mode="2560x1440" }',
+                     'hl.monitor { output="USB-1", mode=pick("2560x1440") }',
+                     'hl.monitor { output="USB-1", mode="2560" .. "x1440" }',
+                     'hl.monitor { output="USB-\\x31", mode="2560x1440" }',
+                     'hl.monitor { output=[[USB-1]], mode="2560x1440" }',
+                     'hl.monitor { "USB-1", "2560x1440" }',
+                     'hl.monitor { ["output"]="USB-1", mode="2560x1440" }',
+                     'hl.monitor({ output="USB-1" }, extra)',
+                     'local m = hl.monitor\nm { output="USB-1", mode="2560x1440" }',
+                     'local h = hl\nh.monitor { output="USB-1", mode="2560x1440" }',
+                     'hl["monitor"] { output="USB-1", mode="2560x1440" }',
+                     'if wide then hl.monitor { output="USB-1", mode="2560x1440" } end',
+                     'local function f() hl.monitor { output="USB-1", mode="2560x1440" } end',
+                     'local _ = wide and hl.monitor { output="USB-1", mode="2560x1440" }',
+                     '_G.hl.monitor { output="USB-1", mode=wide }',
+                     'local g = _G\ng.hl.monitor { output="USB-1", mode="2560x1440" }'):
+            with self.subTest(text=text):
+                self.assert_unknown(lua(self.lower(), {}, DEFAULT_LUA + text + "\n"))
+
+    def test_a_literal_rule_still_counts_and_computed_scale_does_not_matter(self):
+        rec = lua(self.lower(), {}, DEFAULT_LUA + 'hl.monitor { output = "USB-1", mode = "preferred", scale = omarchy_scale }\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")
+        rec = lua(self.lower(), {}, 'hl.monitor { output = "USB-1", mode = "2560x1440", scale = 1.5 * 2 }\n')
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def test_conditional_or_computed_requires(self):
+        rules = {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
+        for main in ('if wide then require("hypr.modes") end\n',
+                     'local ok = pcall(require, "hypr.modes")\n',
+                     'local name = "hypr.modes"\nrequire(name)\n',
+                     'require("hypr." .. "modes")\n',
+                     'local _ = wide or require("hypr.modes")\n',
+                     'for _, m in ipairs(list) do require("hypr.modes") end\n',
+                     'require_optional.module("hypr.modes")\n',
+                     'dofile("/home/tester/.config/hypr/modes.lua")\n',
+                     'package.path = somewhere .. package.path\n'):
+            with self.subTest(main=main):
+                self.assert_unknown(lua(self.lower(), rules, DEFAULT_LUA + main))
+
+    def test_an_unconditional_literal_require_is_followed(self):
+        rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
+                  DEFAULT_LUA + 'local modes = require("hypr.modes")\n')
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def test_a_conditional_load_without_monitor_rules_does_not_matter(self):
+        rec = lua(self.lower(), {".config/hypr/keys.lua": 'hl.bind("SUPER", "Q", "killactive")\n'},
+                  DEFAULT_LUA + 'if _G.bindings ~= false then\n  require("hypr.keys")\nend\nrequire_optional.module("omarchy.current.theme.hyprland")\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")
+
+    def test_omarchy_loaders_resolve_statically(self):
+        state = f"{HOME}/.local/state/omarchy/toggles/hypr"
+        files = {
+            f"{OMARCHY}/default/hypr/omarchy.lua": 'local require_optional = require("default.hypr.require_optional")\nrequire("default.hypr.toggles")\n'
+                                                   'require_optional.module("omarchy.current.theme.hyprland")\n',
+            f"{OMARCHY}/default/hypr/require_optional.lua": "local M = {}\nfunction M.module(m) return require(m) end\nreturn M\n",
+            f"{OMARCHY}/default/hypr/require_all.lua": "local M = {}\nfunction M.files(d) require(d) end\nreturn M\n",
+            f"{OMARCHY}/default/hypr/paths.lua": "return { home = os.getenv('HOME') }\n",
+            f"{OMARCHY}/default/hypr/toggles.lua": 'local paths = require("default.hypr.paths")\nlocal require_all = require("default.hypr.require_all")\n'
+                                                   'local toggles_dir = paths.state_home .. "/omarchy/toggles/hypr"\n'
+                                                   'package.path = toggles_dir .. "/?.lua;" .. package.path\n'
+                                                   'require_all.files(toggles_dir, nil, { reload = true, exclude = { ["legacy"] = true } })\n',
+            f"{state}/flags.lua": "hl.config({ general = { gaps_in = 0 } })\n",
+            f"{state}/legacy.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n',
+        }
+        main = BOOTSTRAP_LUA + 'require("default.hypr.omarchy")\nrequire("hypr.monitors")\n'
+        rec = lua(self.lower(), {**files, ".config/hypr/monitors.lua": 'hl.monitor { output="", mode="preferred", scale=s }\n'}, main)
+        rec["dirs"][state] = ["flags.lua", "legacy.lua", "notes.txt"]
+        result, _ = run(rec)
+        self.assertEqual(result["status"], "fail")  # the excluded legacy file's rule is not read
+        # a toggle that does set a rule is read as an unconditional load
+        rec["dirs"][state] = ["flags.lua", "wide.lua"]
+        rec["files"][f"{state}/wide.lua"] = {"text": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+        # an unresolvable directory is unknown
+        rec["files"][f"{OMARCHY}/default/hypr/toggles.lua"] = {"text": 'local require_all = require("default.hypr.require_all")\nrequire_all.files(os.getenv("X"))\n'}
+        self.assert_unknown(rec)
+
+    def test_a_conditional_theme_with_monitor_rules_is_unknown(self):
+        rec = lua(self.lower(), {".config/omarchy/current/theme/hyprland.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'},
+                  DEFAULT_LUA + 'require_optional.module("omarchy.current.theme.hyprland")\n')
+        self.assert_unknown(rec)
+
+    def test_a_module_is_loaded_once(self):
+        rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
+                  'require("hypr.modes")\nhl.monitor { output="USB-1", mode="preferred" }\nrequire("hypr.modes")\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")  # the second require is cached: preferred is the last rule
+
+
+DEFAULT_LUA = 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })\n'
+BOOTSTRAP_LUA = 'dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/bootstrap.lua")\n'
+
+
+class BoundedReadTest(unittest.TestCase):
+    """Review finding 4: reads refuse non-regular files and are bounded in size and time."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+
+    def test_a_fifo_or_directory_is_refused_at_once(self):
+        fifo = os.path.join(self.dir.name, "fifo")
+        os.mkfifo(fifo)
+        for path in (fifo, self.dir.name):
+            started = time.monotonic()
+            with self.assertRaises(OSError) as raised:
+                bounded_read(path)
+            self.assertNotIsInstance(raised.exception, FileNotFoundError)
+            self.assertLess(time.monotonic() - started, 1)
+
+    def test_size_cap_and_regular_reads(self):
+        path = os.path.join(self.dir.name, "big")
+        with open(path, "wb") as f:
+            f.write(b"x" * 100)
+        self.assertEqual(bounded_read(path, limit=100), b"x" * 100)
+        with self.assertRaises(OSError):
+            bounded_read(path, limit=99)
+        with self.assertRaises(FileNotFoundError):
+            bounded_read(os.path.join(self.dir.name, "absent"))
+
+    def test_a_read_that_never_answers_times_out(self):
+        release = threading.Event()
+        self.addCleanup(release.set)
+        with mock.patch.object(host_module, "_read_regular", lambda path, limit: release.wait(10) and b""):
+            started = time.monotonic()
+            with self.assertRaises(TimeoutError):
+                bounded_read("/anything", timeout=0.2)
+            self.assertLess(time.monotonic() - started, 2)
+
+    def test_a_config_source_naming_a_fifo_leaves_intent_unknown_without_hanging(self):
+        fifo = os.path.join(self.dir.name, "modes.conf")
+        os.mkfifo(fifo)
+        config = os.path.join(self.dir.name, "hypr", "hyprland.conf")
+        os.makedirs(os.path.dirname(config))
+        with open(config, "w") as f:
+            f.write(DEFAULT + f"source = {fifo}\n")
+
+        class Real(host_module.RealHost):
+            def env(self, name):
+                return {"HOME": "/nonexistent", "XDG_CONFIG_HOME": os.path.dirname(os.path.dirname(config))}.get(name)
+
+        started = time.monotonic()
+        rules = monitor_rules.read(Real())
+        self.assertTrue(rules.unavailable)
+        self.assertLess(time.monotonic() - started, 2)
+
+
+class SuccessiveObservationTest(unittest.TestCase):
+    """Review finding 5: record mode keeps successive answers in order, so a settled pass replays as a pass."""
+
+    def test_live_settle_pass_records_and_replays_as_a_pass(self):
+        class Settling(NativeHost):
+            def sleep(self, seconds):
+                super().sleep(seconds)
+                self.recording["commands"][1] = command(display.MONITORS, json.dumps([monitor()]))
+
+        rec = fixture([monitor(width=2560)], {"USB-1": (3440, 1440)})
+        live, saved, _ = record(rec, Settling)
+        self.assertEqual(live["status"], "pass")
+        self.assertEqual(saved["recording_version"], 2)
+        answers = [json.loads(e["stdout"])[0]["width"] for e in saved["commands"] if e["argv"] == display.MONITORS]
+        self.assertEqual(answers, [2560, 3440])
+        replayed, host = run(saved, RecordedHost)
+        self.assertEqual(replayed, live)
+        self.assertEqual(host.slept, [2])
+
+    def test_repeats_of_the_last_answer_are_not_saved_and_files_keep_their_sequence(self):
+        class Changing(NativeHost):
+            reads = 0
+
+            def read_file(self, path):
+                if path == "/sys/x":
+                    self.reads += 1
+                    if self.reads == 2:
+                        raise PermissionError(path)
+                    return b"one" if self.reads == 1 else b"two"
+                return super().read_file(path)
+
+        recorder = RecordingHost(Changing(fixture()))
+        recorder.run(ports.DISPLAYS_LIST)
+        recorder.run(ports.DISPLAYS_LIST)
+        for _ in range(4):
+            try:
+                recorder.read_file("/sys/x")
+            except PermissionError:
+                pass
+        saved = recorder.recording(Scrubber())
+        self.assertEqual(sum(e["argv"] == ports.DISPLAYS_LIST for e in saved["commands"]), 1)
+        self.assertEqual(saved["files"]["/sys/x"], [{"text": "one"}, {"error": "permission"}, {"text": "two"}])
+        replay = RecordedHost(saved)
+        self.assertEqual(replay.read_file("/sys/x"), b"one")
+        with self.assertRaises(PermissionError):
+            replay.read_file("/sys/x")
+        self.assertEqual([replay.read_file("/sys/x") for _ in range(3)], [b"two"] * 3)
+
+    def test_a_recording_without_sequences_stays_version_1(self):
+        _, saved, _ = record(fixture())
+        self.assertEqual(saved["recording_version"], 1)
+
+
+class EffectiveMirrorTest(unittest.TestCase):
+    """Review finding 6: mirroring comes from the rules that win, not from superseded ones."""
+
+    def lower(self, config):
+        return fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config)
+
+    def test_an_overridden_mirror_rule_no_longer_hides_a_downgrade(self):
+        for config in (DEFAULT + "monitor=USB-1,preferred,auto,1,mirror,eDP-1\nmonitor=USB-1,preferred,auto,1\n",
+                       DEFAULT + "monitor=eDP-1,preferred,auto,1,mirror,USB-1\nmonitor=eDP-1,preferred,auto,1\n",
+                       "monitor=,preferred,auto,1,mirror,USB-1\nmonitor=,preferred,auto,1\n"):
+            with self.subTest(config=config):
+                result, _ = run(self.lower(config))
+                self.assertEqual(result["status"], "fail")
+
+    def test_an_effective_mirror_rule_still_skips(self):
+        for config in (DEFAULT + "monitor=USB-1,preferred,auto,1\nmonitor=USB-1,preferred,auto,1,mirror,eDP-1\n",
+                       "monitor=,preferred,auto,1,mirror,eDP-1\n"):
+            with self.subTest(config=config):
+                result, _ = run(self.lower(config))
+                self.assertEqual(result["status"], "skip")
+                self.assertIn("mirroring", result["evidence"][1])
+
+    def test_a_connected_source_mirrored_by_description(self):
+        rec = fixture([monitor(width=2560, description="Generic Ultrawide"), monitor("USB-2", id=2)],
+                      {"USB-1": (3440, 1440), "USB-2": (3440, 1440)},
+                      DEFAULT + "monitor=USB-2,preferred,auto,1,mirror,desc:Generic Ultra\n")
+        result, _ = run(rec)
+        self.assertEqual(result["status"], "skip")
+        self.assertTrue(all("mirroring" in line for line in result["evidence"][1:3]))
 
 
 if __name__ == "__main__":

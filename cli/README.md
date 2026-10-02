@@ -36,23 +36,44 @@ DisplayPort and HDMI are included. Missing external displays, unavailable
 Hyprland state, unreadable or invalid EDIDs (including a missing first
 preferred detailed timing), intentional disables and mirroring are skipped.
 An explicit monitor mode also skips that output. The check reads static
-hyprlang rules, `monitorv2` blocks and Omarchy's Lua `hl.monitor` tables,
-following static `source`/`require` references. Named and `desc:` rules win
-over the fallback; the last matching rule wins. Computed or unreadable
-configuration leaves intent unknown and skips. Live overrides not saved to
-these files cannot be identified. A mode larger than the EDID preference
-is skipped rather than called a downgrade. Any confirmed downgrade fails
-the check; otherwise an untested output leaves the aggregate skipped.
+hyprlang rules, `monitorv2` blocks and Omarchy's Lua `hl.monitor` tables
+without executing them, following static `source` and `require` references
+the way Omarchy's bootstrap resolves modules (`~/.local/state`, `~/.config`,
+`$OMARCHY_PATH`, each module once). Omarchy's `require_optional.module` and
+`require_all.files` helpers are read for what they do. Named and `desc:`
+rules win over the fallback; the last matching rule wins, and mirroring
+comes only from the rules that win. Only fully literal rules count: a
+computed output or mode (a concatenation, a variable, a call), a rule inside
+a block, an unresolvable load, or a conditional load of a file that sets
+monitor rules leaves intent unknown and skips, never fails. A conditional
+load of a file with no monitor rules doesn't matter. Unreadable
+configuration also skips: the host reads only regular files, at most 16 MiB
+within five seconds each, so a `source` naming a FIFO or device can't hold
+the run. Live overrides not saved to these files cannot be identified. A
+mode larger than the EDID preference is skipped rather than called a
+downgrade. Any confirmed downgrade fails the check; otherwise an untested
+output leaves the aggregate skipped.
 
 Evidence also records each connector's CRTC from readable debugfs state,
-falling back to `drm_info` when available, and up to ten apple-dcp mode/atomic
-failure lines from this boot's kernel log. The optional commands have
-three-second limits; diagnostics never decide pass/fail. EDID identity
-fields and monitor descriptions are not put in the evidence. Recordings
-keep only an anonymous EDID timing block, so mode checks can be replayed
-without retaining manufacturer, product, serial or descriptor strings.
-Monitor configuration is inspected inside the host boundary; recordings
-receive only per-output policy flags, without the user's config text.
+falling back to `drm_info` when available, and up to ten apple-dcp kernel
+findings from this boot: fixed categories (`atomic-check-failed`,
+`mode-set-failed`, `mode-set-timeout`, `mode-parse-failed`,
+`mode-not-found`, `swap-failed`, `link-failed`, `edid-failed`,
+`power-timeout`, `mode-failed`) with validated numbers only (errno, status,
+port, mode), never message text. The optional commands have three-second
+limits; diagnostics never decide pass/fail. EDID identity fields and
+monitor descriptions are not put in the evidence.
+
+Recordings keep allowlisted projections only: an anonymous EDID timing
+block; from `hyprctl -j monitors` the output names, current and available
+modes, transform, scale, the disabled/DPMS/mirror flags and ids (never
+make, model, description or serial); numeric connector and CRTC ids from
+debugfs state and `drm_info`; and the canonical apple-dcp findings, also
+in place of those lines in any other recorded kernel log. Monitor
+configuration is inspected inside the host boundary; recordings receive
+only per-output policy flags, without the user's config text. When the
+settle re-read sees a different answer, record mode keeps each answer in
+order, so a run that passed after settling replays as a pass.
 
 This catches boot-time display routing regressions without depending on a
 particular Mac model or fixed CRTC numbers. A monitorless lab run skips.

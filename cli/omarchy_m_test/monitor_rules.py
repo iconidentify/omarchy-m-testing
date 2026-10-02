@@ -1,8 +1,26 @@
 """Read monitor intent without executing user configuration (hyprlang and Omarchy's Lua).
 
 Follow static sources in order. A named rule wins over the fallback; the
-last rule for a selector wins. Computed monitor rules cannot be interpreted
-safely here, so they leave the native-mode check skipped rather than failed.
+last rule for a selector wins. Anything this reader can't resolve statically
+leaves intent unknown, so the native-mode check skips rather than fails:
+
+  - a monitor rule whose output, mode, disabled or mirror is not one plain
+    literal (a concatenation, a variable, a call), or a rule inside a block
+    (if, for, while, a function);
+  - a load this reader can't resolve: require() of anything but a literal
+    module, dofile/loadfile/load other than Omarchy's bootstrap line, an
+    unrecognised package.path change;
+  - a conditional load (inside a block, or in an and/or expression) of a
+    module that sets monitor rules or is itself unknown. A conditional load
+    of a module with no monitor rules doesn't matter either way, which is how
+    Omarchy's own `if ... then require(...) end` bindings stay readable.
+
+Lua modules resolve the way Omarchy's bootstrap sets package.path
+(~/.local/state, ~/.config, $OMARCHY_PATH), each loaded once. Omarchy's
+helpers are read for what they do, not executed: require_optional.module("x")
+is an optional load of x; require_all.files(dir, prefix, {exclude=..., reload=...})
+loads dir's *.lua files in sorted order, when dir is literals joined with
+paths.home/config_home/state_home/omarchy_path or a local set that way.
 """
 
 from __future__ import annotations
@@ -10,9 +28,15 @@ from __future__ import annotations
 import fnmatch
 import posixpath
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .host import Host
+
+MAX_READS = 256  # files read (a module search also tries absent paths, which cost nothing)
+MAX_ATTEMPTS = 1024
+KEY_FIELDS = ("output", "mode", "resolution", "disabled", "mirror", "mirror_of")
+LIBRARIES = ("default.hypr.paths", "default.hypr.require_all", "default.hypr.require_optional")
+BOOTSTRAP = 'dofile((os.getenv("OMARCHY_PATH")or"/usr/share/omarchy").."/default/hypr/bootstrap.lua")'
 
 
 @dataclass(frozen=True)
@@ -23,12 +47,16 @@ class Rule:
     mirror: str = ""
 
     def matches(self, name: str, description: str) -> bool:
-        return description.startswith(self.output[5:]) if self.output.startswith("desc:") else self.output == name
+        return selects(self.output, name, description)
+
+
+def selects(selector: str, name: str, description: str) -> bool:
+    return description.startswith(selector[5:]) if selector.startswith("desc:") else selector == name
 
 
 @dataclass
 class Rules:
-    entries: list[Rule]
+    entries: list[Rule] = field(default_factory=list)
     unavailable: bool = False
 
     def for_output(self, name: str, description: str) -> Rule:
@@ -40,135 +68,501 @@ class Rules:
 def intent(host: Host, outputs: list[dict]) -> dict[str, dict]:
     """Only policy flags leave the host, never config text or description selectors."""
     rules = read(host)
+    effective = {o["name"]: (rules.for_output(o["name"], o.get("description", "")), o.get("description", "")) for o in outputs}
     found = {}
-    for output in outputs:
-        name = output["name"]
-        rule = rules.for_output(name, output.get("description", ""))
+    for name, (rule, description) in effective.items():
+        mirrored = bool(rule.mirror) or any(
+            other != name and selects(r.mirror, name, description) for other, (r, _) in effective.items() if r.mirror)
         found[name] = {"preferred": rule.mode == "preferred", "disabled": rule.disabled,
-                       "mirrored": bool(rule.mirror or any(r.mirror == name for r in rules.entries)),
-                       "unavailable": rules.unavailable}
+                       "mirrored": mirrored, "unavailable": rules.unavailable}
     return found
 
 
-def read(host: Host) -> Rules:
-    home = host.env("HOME") or ""
-    config = host.env("XDG_CONFIG_HOME") or f"{home}/.config"
-    omarchy = host.env("OMARCHY_PATH") or "/usr/share/omarchy"
-    roots = (config, omarchy, f"{home}/.local/share/omarchy")
-    variables = {"HOME": home, "XDG_CONFIG_HOME": config}
-    rules = Rules([])
-    active: set[str] = set()
-    reads = 0
+def _env(host: Host, name: str, fallback: str) -> str:
+    return host.env(name) or fallback
 
-    def expand(value: str) -> str:
-        value = re.sub(r"\$(?:\{(\w+)\}|(\w+))", lambda m: variables.get(m[1] or m[2], m[0]), value)
-        return home + value[1:] if value.startswith("~/") else value
 
-    def load(path: str, optional: bool = False) -> bool:
-        nonlocal reads
-        path = posixpath.normpath(path)
-        if path in active or reads >= 64:
-            rules.unavailable = True
-            return False
+class Reader:
+    def __init__(self, host: Host):
+        self.host = host
+        home = host.env("HOME") or ""
+        self.home = home
+        self.config = _env(host, "XDG_CONFIG_HOME", f"{home}/.config")
+        self.paths = {"home": home, "config_home": self.config,
+                      "state_home": _env(host, "XDG_STATE_HOME", f"{home}/.local/state"),
+                      "omarchy_path": _env(host, "OMARCHY_PATH", "/usr/share/omarchy")}
+        # Omarchy's bootstrap: package.path is ~/.local/state, ~/.config, then $OMARCHY_PATH
+        self.lua_roots = [f"{home}/.local/state", f"{home}/.config", host.env("OMARCHY_PATH") or "/usr/share/omarchy"]
+        self.rules = Rules()
+        self.active: set[str] = set()
+        self.loaded: set[str] = set()
+        self.reads = 0
+        self.attempts = 0
+
+    def text(self, path: str) -> str | None:
+        """None when absent; raises _Unknown when present but unreadable or past the budget."""
+        self.attempts += 1
+        if self.attempts > MAX_ATTEMPTS or self.reads >= MAX_READS:
+            raise _Unknown
         try:
-            text = host.read_file(path).decode("utf-8")
-        except (OSError, UnicodeError):
+            data = self.host.read_file(path)
+        except FileNotFoundError:
+            return None
+        except OSError:  # a FIFO, a device, too large, too slow (the host refuses them): counts as a read
+            self.reads += 1
+            raise _Unknown
+        self.reads += 1
+        try:
+            return data.decode("utf-8")
+        except UnicodeError:
+            raise _Unknown
+
+    # -- Lua ---------------------------------------------------------------
+
+    def find_module(self, module: str) -> tuple[str, str] | None:
+        relative = module.replace(".", "/") + ".lua"
+        for root in self.lua_roots:
+            path = posixpath.normpath(f"{root}/{relative}")
+            text = self.text(path)
+            if text is not None:
+                return path, text
+        return None
+
+    def require(self, module: str, sink: Rules, optional: bool = False, reload: bool = False) -> None:
+        if module in self.loaded and not reload:
+            return
+        found = self.find_module(module)
+        if found is None:
             if not optional:
-                rules.unavailable = True
-            return False
-        reads += 1
-        active.add(path)
-        lua = path.endswith(".lua")
-        text = re.sub(r"--\[\[.*?\]\]", "", text, flags=re.S) if lua else text
-        comment = r"--[^\n]*" if lua else r"#[^\n]*"
-        text = re.sub(r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|''' + comment,
-                      lambda m: m[1] or "", text)
-        pattern = (r"hl\.monitor\s*\(?\s*\{([^{}]*)\}|require\s*\(?\s*['\"]([^'\"]+)['\"]\s*\)?"
-                   if lua else r"monitorv2\s*\{([^{}]*)\}|^\s*(monitor|source|\$\w+)\s*=\s*([^\n]+)")
-        matches = list(re.finditer(pattern, text, re.M))
-        if lua and len(re.findall(r"hl\.monitor\b", text)) != sum(m[1] is not None for m in matches):
-            rules.unavailable = True
-        if lua and "hl.monitor" in text and re.search(r"\b(if|for|while|function)\b", text):
-            rules.unavailable = True
-        if lua and re.search(r"\bdofile\b", text) and "/default/hypr/bootstrap.lua" not in text:
-            rules.unavailable = True
-        for match in matches:
-            if lua:
-                if match[2] is not None:
-                    relative = match[2].replace(".", "/") + ".lua"
-                    if not any(load(f"{root}/{relative}", optional=True) for root in roots):
-                        rules.unavailable = True
-                else:
-                    rule = _table(match[1], lua=True)
-                    if rule is None:
-                        rules.unavailable = True
-                    else:
-                        rules.entries.append(rule)
-            elif match[1] is not None:
-                rule = _table(match[1], lua=False)
-                if rule is None:
-                    rules.unavailable = True
-                else:
-                    rules.entries.append(rule)
+                raise _Unknown
+            return
+        path, text = found
+        self.loaded.add(module)
+        if module in LIBRARIES and path.startswith(self.paths["omarchy_path"].rstrip("/") + "/"):
+            return  # Omarchy's own helpers: read for what they do (below), not as configuration
+        self.lua(path, text, sink)
+
+    def probe(self, load) -> None:
+        """A conditional load: harmless unless what it loads sets monitor rules (or can't be read)."""
+        trial = Rules()
+        loaded, roots = set(self.loaded), list(self.lua_roots)
+        load(trial)
+        self.loaded, self.lua_roots = loaded, roots  # it may not run: a later unconditional load still reads the module
+        if trial.entries or trial.unavailable:
+            raise _Unknown
+
+    def lua(self, path: str, text: str, sink: Rules) -> None:
+        if path in self.active:
+            raise _Unknown
+        self.active.add(path)
+        try:
+            _LuaFile(self, path, _tokens(text), sink).run()
+        finally:
+            self.active.discard(path)
+
+    # -- hyprlang -----------------------------------------------------------
+
+    def conf(self, path: str, text: str) -> None:
+        path = posixpath.normpath(path)
+        if path in self.active:
+            raise _Unknown
+        self.active.add(path)
+        variables = {"HOME": self.home, "XDG_CONFIG_HOME": self.config}
+
+        def expand(value: str) -> str:
+            value = re.sub(r"\$(?:\{(\w+)\}|(\w+))", lambda m: variables.get(m[1] or m[2], m[0]), value)
+            return self.home + value[1:] if value.startswith("~/") else value
+
+        text = re.sub(r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|#[^\n]*''', lambda m: m[1] or "", text)
+        for match in re.finditer(r"monitorv2\s*\{([^{}]*)\}|^\s*(monitor|source|\$\w+)\s*=\s*([^\n]+)", text, re.M):
+            if match[1] is not None:
+                self.rules.entries.append(_conf_table(match[1]))
+                continue
+            key, value = match[2], expand(match[3].strip())
+            if key.startswith("$"):
+                variables[key[1:]] = value
+            elif key == "source":
+                value = value.strip('"\'')
+                if "$" in value:
+                    raise _Unknown
+                if not value.startswith("/"):
+                    value = posixpath.join(posixpath.dirname(path), value)
+                sources = self.sources(value)
+                if not sources:
+                    raise _Unknown
+                for source in sources:
+                    found = self.text(source)
+                    if found is None:
+                        raise _Unknown
+                    self.conf(source, found)
             else:
-                key, value = match[2], expand(match[3].strip())
-                if key.startswith("$"):
-                    variables[key[1:]] = value
-                elif key == "source":
-                    value = value.strip('"\'')
-                    if "$" in value:
-                        rules.unavailable = True
-                        continue
-                    if not value.startswith("/"):
-                        value = posixpath.join(posixpath.dirname(path), value)
-                    sources = _sources(host, value)
-                    if not sources:
-                        rules.unavailable = True
-                    for source in sources:
-                        load(source)
-                else:
-                    fields = [field.strip() for field in value.split(",")]
-                    if len(fields) < 2 or "$" in value:
-                        rules.unavailable = True
-                        continue
-                    output, mode = fields[:2]
-                    if mode in ("transform", "addreserved"):
-                        continue
-                    mirror = fields[fields.index("mirror") + 1] if "mirror" in fields[:-1] else ""
-                    rules.entries.append(Rule(output, mode, mode == "disable", mirror))
-        active.remove(path)
-        return True
+                fields = [f.strip() for f in value.split(",")]
+                if len(fields) < 2 or "$" in value:
+                    raise _Unknown
+                output, mode = fields[:2]
+                if mode in ("transform", "addreserved"):
+                    continue
+                mirror = fields[fields.index("mirror") + 1] if "mirror" in fields[:-1] else ""
+                self.rules.entries.append(Rule(output, mode, mode == "disable", mirror))
+        self.active.discard(path)
 
-    if not load(f"{config}/hypr/hyprland.lua", optional=True):
-        if not load(f"{config}/hypr/hyprland.conf", optional=True):
-            rules.unavailable = True
-    return rules
+    def sources(self, pattern: str) -> list[str]:
+        if not any(char in pattern for char in "*?["):
+            return [pattern]
+        directory, basename = posixpath.split(pattern)
+        try:
+            return [f"{directory}/{name}" for name in self.host.list_dir(directory) if fnmatch.fnmatchcase(name, basename)]
+        except OSError:
+            return []
 
 
-def _sources(host: Host, pattern: str) -> list[str]:
-    if not any(char in pattern for char in "*?["):
-        return [pattern]
-    directory, basename = posixpath.split(pattern)
+class _Unknown(Exception):
+    """Intent can't be read statically."""
+
+
+def read(host: Host) -> Rules:
+    reader = Reader(host)
     try:
-        return [f"{directory}/{name}" for name in host.list_dir(directory) if fnmatch.fnmatchcase(name, basename)]
-    except OSError:
-        return []
+        lua = f"{reader.config}/hypr/hyprland.lua"
+        text = reader.text(lua)
+        if text is not None:
+            reader.lua(lua, text, reader.rules)
+        else:
+            conf = f"{reader.config}/hypr/hyprland.conf"
+            text = reader.text(conf)
+            if text is None:
+                raise _Unknown
+            reader.conf(conf, text)
+    except _Unknown:
+        reader.rules.unavailable = True
+    return reader.rules
 
 
-def _table(text: str, lua: bool) -> Rule | None:
+def _conf_table(text: str) -> Rule:
     fields = {}
-    statements = (re.findall(r'''(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^,;\n])+''', text)
-                  if lua else re.split(r"\n|;", text))
-    for statement in statements:
-        if "=" not in statement:
-            continue
-        key, value = map(str.strip, statement.split("=", 1))
-        fields[key] = value[1:-1] if re.fullmatch(r"(['\"]).*\1", value) else value
-    output = fields.get("output", "")
-    mode = fields.get("mode", fields.get("resolution", "preferred"))
-    if lua:
-        for key in ("output", "mode"):
-            if key in fields and ("\\" in fields[key] or not re.search(rf"\b{key}\s*=\s*(['\"])[^'\"]*\1", text)):
+    for statement in re.split(r"\n|;", text):
+        if "=" in statement:
+            key, value = map(str.strip, statement.split("=", 1))
+            fields[key] = value[1:-1] if re.fullmatch(r"(['\"]).*\1", value) else value
+    return Rule(fields.get("output", ""), fields.get("mode", fields.get("resolution", "preferred")),
+                fields.get("disabled", "false") in ("true", "1", "yes"), fields.get("mirror", fields.get("mirror_of", "")))
+
+
+# -- Lua, read as tokens -------------------------------------------------------
+
+_TOKEN = re.compile(r"""
+    (?P<space>\s+)
+  | --\[(?P<ceq>=*)\[.*?\](?P=ceq)\]
+  | (?P<comment>--[^\n]*)
+  | \[(?P<leq>=*)\[(?P<long>.*?)\](?P=leq)\]
+  | (?P<str>"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')
+  | (?P<name>[A-Za-z_][A-Za-z0-9_]*)
+  | (?P<num>0[xX][0-9a-fA-F.]+(?:[pP][-+]?\d+)?|\d+\.?\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?)
+  | (?P<op>\.\.\.|\.\.|==|~=|<=|>=|::|//|<<|>>|.)
+""", re.S | re.X)
+OPEN = {"function", "if", "do", "repeat"}
+CLOSE = {"end", "until"}
+
+
+@dataclass(frozen=True)
+class Tok:
+    kind: str  # name, str, long, num, op
+    value: str
+    line: int
+    depth: int  # block depth (if/for/while/do/function/repeat) at the token
+
+    def literal(self) -> str | None:
+        """A plain string literal's text: no escapes, so what's written is what Lua sees."""
+        return self.value[1:-1] if self.kind == "str" and "\\" not in self.value else None
+
+
+def _tokens(text: str) -> list[Tok]:
+    tokens, depth, line = [], 0, 1
+    for match in _TOKEN.finditer(text):
+        kind, value = match.lastgroup, match[0]
+        if kind in ("name", "str", "num", "op", "long"):
+            if kind == "name" and value in CLOSE:
+                depth = max(depth - 1, 0)
+            tokens.append(Tok(kind, value, line, depth))
+            if kind == "name" and value in OPEN:
+                depth += 1
+        line += value.count("\n")
+    return tokens
+
+
+def _dotted(tokens: list[Tok], i: int) -> tuple[str, int]:
+    """A dotted name starting at i (hl.monitor, require_all.files) and the index after it."""
+    parts, j = [tokens[i].value], i + 1
+    while j + 1 < len(tokens) and tokens[j].value == "." and tokens[j + 1].kind == "name":
+        parts.append(tokens[j + 1].value)
+        j += 2
+    return ".".join(parts), j
+
+
+def _group(tokens: list[Tok], i: int) -> int:
+    """The index of the bracket closing the one at i, or raises _Unknown."""
+    pairs, stack = {"(": ")", "{": "}", "[": "]"}, []
+    for j in range(i, len(tokens)):
+        value = tokens[j].value if tokens[j].kind == "op" else ""
+        if value in pairs:
+            stack.append(pairs[value])
+        elif stack and value == stack[-1]:
+            stack.pop()
+            if not stack:
+                return j
+    raise _Unknown
+
+
+def _split(tokens: list[Tok]) -> list[list[Tok]]:
+    """Top-level comma- or semicolon-separated items."""
+    items, item, depth = [], [], 0
+    for tok in tokens:
+        if tok.kind == "op" and tok.value in "({[":
+            depth += 1
+        elif tok.kind == "op" and tok.value in ")}]":
+            depth -= 1
+        if depth == 0 and tok.kind == "op" and tok.value in ",;":
+            items.append(item)
+            item = []
+        else:
+            item.append(tok)
+    if item:
+        items.append(item)
+    return items
+
+
+def _call_args(tokens: list[Tok], j: int) -> tuple[list[Tok], int]:
+    """The argument tokens of a call at j: f(...), f"str" or f{...}; and the index after."""
+    if j < len(tokens) and tokens[j].value in ("(", "{") and tokens[j].kind == "op":
+        end = _group(tokens, j)
+        return (tokens[j + 1:end] if tokens[j].value == "(" else tokens[j:end + 1]), end + 1
+    if j < len(tokens) and tokens[j].kind == "str":
+        return [tokens[j]], j + 1
+    raise _Unknown
+
+
+class _LuaFile:
+    def __init__(self, reader: Reader, path: str, tokens: list[Tok], sink: Rules):
+        self.reader, self.path, self.tokens, self.sink = reader, path, tokens, sink
+        self.locals: dict[str, str] = {}  # local name -> a statically known directory
+        self.branching = {t.line for t in tokens if t.kind == "name" and t.value in ("and", "or")}
+
+    def conditional(self, i: int) -> bool:
+        """Inside a block, or on a line that branches (and/or): it may not run."""
+        return self.tokens[i].depth > 0 or self.tokens[i].line in self.branching
+
+    def load(self, i: int, action) -> None:
+        if self.conditional(i):
+            self.reader.probe(action)
+        else:
+            action(self.sink)
+
+    def run(self) -> None:
+        tokens, i = self.tokens, 0
+        while i < len(tokens):
+            tok = tokens[i]
+            if tok.kind != "name" or (i and tokens[i - 1].value in (".", ":") and tokens[i - 1].kind == "op"):
+                i += 1
+                continue
+            name, j = _dotted(tokens, i)
+            if name.split(".")[0] in ("_G", "_ENV"):
+                if "." not in name:
+                    raise _Unknown  # the globals table itself: anything could be reached through it
+                name = name.split(".", 1)[1]
+            if name == "hl.monitor" or name.startswith("hl.monitor."):
+                i = self.monitor(i, j)
+            elif name == "hl" and j < len(tokens) and tokens[j].value in ("[", ":"):
+                raise _Unknown  # hl["monitor"], hl:monitor: not read
+            elif name == "hl" and (j >= len(tokens) or tokens[j].value != "."):
+                raise _Unknown  # hl passed on or aliased: its monitor calls can't be followed
+            elif name == "require":
+                i = self.require(i, j)
+            elif name == "require_optional.module":
+                args, i = _call_args(tokens, j)
+                module = args[0].literal() if len(args) == 1 else None
+                if module is None:
+                    raise _Unknown
+                self.reader.probe(lambda sink, m=module: self.reader.require(m, sink, optional=True))
+            elif name == "require_all.files":
+                i = self.require_all(i, j)
+            elif name in ("dofile", "loadfile", "load", "loadstring"):
+                args, i = _call_args(tokens, j)
+                if name != "dofile" or "".join(t.value for t in args) != BOOTSTRAP[7:-1] or tokens[i].depth:
+                    raise _Unknown
+            elif name == "package.path" or name.startswith("package.searchers") or name.startswith("package.loaders"):
+                i = self.package_path(i, j)
+            elif name == "local" and j + 2 < len(tokens) and tokens[j].kind == "name" and tokens[j + 1].value == "=":
+                end = j + 2
+                while end < len(tokens) and tokens[end].line == tokens[j + 2].line:
+                    end += 1
+                directory = self.directory(tokens[j + 2:end])
+                if directory is not None and tok.depth == 0:
+                    self.locals[tokens[j].value] = directory
+                else:
+                    self.locals.pop(tokens[j].value, None)
+                i = j  # read the value's own calls
+            else:
+                i = j
+        return None
+
+    def monitor(self, i: int, j: int) -> int:
+        tokens = self.tokens
+        if self.conditional(i) or j != i + 3:
+            raise _Unknown  # a rule that may not run, or hl.monitor.something
+        args, after = _call_args(tokens, j)
+        if not args or args[0].value != "{" or _group(args, 0) != len(args) - 1:
+            raise _Unknown  # hl.monitor(screens[1]), hl.monitor({...}, more)
+        rule = _lua_table(args)
+        if rule is None:
+            raise _Unknown
+        self.sink.entries.append(rule)
+        return after
+
+    def require(self, i: int, j: int) -> int:
+        tokens = self.tokens
+        if j < len(tokens) and (tokens[j].kind == "str" or tokens[j].value == "("):
+            args, after = _call_args(tokens, j)
+            module = args[0].literal() if len(args) == 1 else None
+            if module is not None:
+                self.load(i, lambda sink: self.reader.require(module, sink))
+                return after
+        raise _Unknown  # require(name), pcall(require, ...): what loads can't be read
+
+    def require_all(self, i: int, j: int) -> int:
+        args, after = _call_args(self.tokens, j)
+        items = _split(args)
+        if not 1 <= len(items) <= 3:
+            raise _Unknown
+        directory = self.directory(items[0])
+        prefix = None
+        if len(items) > 1:
+            if len(items[1]) == 1 and items[1][0].value == "nil" and items[1][0].kind == "name":
+                pass
+            elif len(items[1]) == 1 and items[1][0].literal() is not None:
+                prefix = items[1][0].literal()
+            else:
+                raise _Unknown
+        exclude, reload = _options(items[2]) if len(items) > 2 else (set(), False)
+        if directory is None:
+            raise _Unknown
+
+        def action(sink: Rules) -> None:
+            try:
+                names = self.reader.host.list_dir(directory)
+            except FileNotFoundError:
+                return  # find prints nothing for a missing directory
+            except OSError:
+                raise _Unknown
+            for filename in sorted(names):
+                if not filename.endswith(".lua") or filename[:-4] in exclude:
+                    continue
+                module = f"{prefix}.{filename[:-4]}" if prefix else filename[:-4]
+                if prefix is None:
+                    path = f"{directory}/{filename}"
+                    text = self.reader.text(path)
+                    if text is None:
+                        raise _Unknown
+                    if module in self.reader.loaded and not reload:
+                        continue
+                    self.reader.loaded.add(module)
+                    self.reader.lua(path, text, sink)
+                else:
+                    self.reader.require(module, sink, reload=reload)
+
+        self.load(i, action)
+        return after
+
+    def package_path(self, i: int, j: int) -> int:
+        tokens = self.tokens
+        if not (tokens[i].value == "package" and j < len(tokens) and tokens[j].value == "="
+                and _dotted(tokens, i)[0] == "package.path"):
+            raise _Unknown
+        end = j + 1
+        while end < len(tokens) and tokens[end].line == tokens[j + 1].line:
+            end += 1
+        expr = tokens[j + 1:end]
+        # package.path = <directory> .. "/?.lua;" .. package.path
+        if (len(expr) >= 5 and [t.value for t in expr[-4:]] == ["..", "package", ".", "path"]
+                and expr[-5].literal() == "/?.lua;" and expr[-6].value == ".." and not self.conditional(i)):
+            directory = self.directory(expr[:-6])
+            if directory is not None:
+                self.reader.lua_roots.insert(0, directory)
+                return end
+        raise _Unknown
+
+    def directory(self, expr: list[Tok]) -> str | None:
+        """Literals joined (..) with paths.<field> or a known local; None if anything else."""
+        if not expr:
+            return None
+        parts, i = [], 0
+        while i < len(expr):
+            tok = expr[i]
+            if tok.literal() is not None:
+                parts.append(tok.literal())
+                i += 1
+            elif tok.kind == "name":
+                name, i = _dotted(expr, i)
+                if name.startswith("paths.") and name[6:] in self.reader.paths:
+                    parts.append(self.reader.paths[name[6:]])
+                elif name in self.locals:
+                    parts.append(self.locals[name])
+                else:
+                    return None
+            else:
                 return None
-    return Rule(output, mode, fields.get("disabled", "false") in ("true", "1", "yes"),
-                fields.get("mirror", fields.get("mirror_of", "")))
+            if i < len(expr):
+                if expr[i].value != "..":
+                    return None
+                i += 1
+                if i == len(expr):
+                    return None
+        return posixpath.normpath("".join(parts))
+
+
+def _options(item: list[Tok]) -> tuple[set[str], bool]:
+    """require_all.files' options table: { reload = true, exclude = { ["name"] = true, name = true } }."""
+    if not item or item[0].value != "{" or item[-1].value != "}":
+        raise _Unknown
+    exclude, reload = set(), False
+    for entry in _split(item[1:-1]):
+        if len(entry) == 3 and entry[0].kind == "name" and entry[1].value == "=" and entry[0].value == "reload":
+            if entry[2].value not in ("true", "false"):
+                raise _Unknown
+            reload = entry[2].value == "true"
+        elif len(entry) >= 4 and entry[0].value == "exclude" and entry[1].value == "=" and entry[2].value == "{":
+            for name in _split(entry[3:-1]):
+                values = [t.value for t in name]
+                if len(name) == 5 and values[0] == "[" and name[1].literal() is not None and values[2:] == ["]", "=", "true"]:
+                    exclude.add(name[1].literal())
+                elif len(name) == 3 and name[0].kind == "name" and values[1:] == ["=", "true"]:
+                    exclude.add(name[0].value)
+                else:
+                    raise _Unknown
+        else:
+            raise _Unknown
+    return exclude, reload
+
+
+def _lua_table(table: list[Tok]) -> Rule | None:
+    """A monitor table whose output, mode, disabled and mirror are plain literals; None otherwise."""
+    fields: dict[str, str] = {}
+    for entry in _split(table[1:-1]):
+        if len(entry) < 3 or entry[0].kind != "name" or entry[1].value != "=":
+            return None  # positional values and ["key"] = ...: not read
+        key, value = entry[0].value, entry[2:]
+        if any(t.value in ("{", "}") and t.kind == "op" for t in value):
+            if key in KEY_FIELDS:
+                return None
+            continue
+        if key not in KEY_FIELDS:
+            continue  # scale = omarchy_monitor_scale: doesn't decide the mode
+        if len(value) != 1:
+            return None  # "USB" .. "-1", a call, an expression
+        literal = value[0].literal()
+        if key == "disabled" and value[0].kind == "name" and value[0].value in ("true", "false"):
+            literal = value[0].value
+        if literal is None:
+            return None
+        fields[key] = literal
+    return Rule(fields.get("output", ""), fields.get("mode", fields.get("resolution", "preferred")),
+                fields.get("disabled", "false") == "true", fields.get("mirror", fields.get("mirror_of", "")))

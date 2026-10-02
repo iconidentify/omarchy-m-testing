@@ -240,10 +240,187 @@ def diagnostics(host: Host, connectors: list[tuple[str, str]]) -> list[str]:
         log = host.run(KERNEL_LOG)
         if log.returncode != 0:
             evidence.append("diagnostic: kernel log unavailable")
-        lines = [line for line in log.stdout.splitlines() if re.search(r"apple[-_]dcp", line, re.I)
-                 and re.search(r"mode|atomic", line, re.I)
-                 and re.search(r"fail|error|not found|unknown|unable|cannot|could not|reject|invalid", line, re.I)] if log.returncode == 0 else []
-        evidence.extend(f"diagnostic: kernel: {line}" for line in lines[-10:])
+        else:
+            evidence.extend(f"diagnostic: kernel: {line}" for line in kernel_findings(log.stdout))
     except TimedOut:
         evidence.append("diagnostic: kernel log unavailable (timed out)")
     return evidence
+
+
+# -- apple-dcp kernel messages: fixed categories and validated numbers, never message text ----------
+
+DCP = re.compile(r"apple[-_]dcp", re.I)
+# (category, pattern): the first that matches a DCP line names it. Patterns follow the Asahi driver's messages.
+DCP_CATEGORIES: tuple[tuple[str, re.Pattern], ...] = tuple((name, re.compile(pattern, re.I)) for name, pattern in (
+    ("atomic-check-failed", r"atomic.*(?:fail|error|reject|invalid|no modeset)"),
+    ("mode-set-timeout", r"set_digital_out_mode timed out|mode\w*.*(?:timed out|timeout)"),
+    ("mode-set-failed", r"set_digital_out_mode finished:\s*-[1-9]"),  # positive: time left, not a failure
+    ("mode-parse-failed", r"failed to parse modes|without valid modes|duplicate display mode"),
+    ("mode-not-found", r"mode.*(?:not found|unknown|lookup failed|invalid|unsupported)"),
+    ("swap-failed", r"swap(?:_clear)? failed"),
+    ("link-failed", r"link complete failed"),
+    ("edid-failed", r"copy_edid failed"),
+    ("power-timeout", r"wait for power timed out|set(?:DCPPower|PowerState)\(0\) timeout"),
+    ("mode-failed", r"mode.*(?:fail|error|unable|cannot|could not|reject)"),
+))
+CATEGORY_NAMES = {name for name, _ in DCP_CATEGORIES}
+FIELDS: tuple[tuple[str, re.Pattern, int, int], ...] = (  # name, pattern, low, high
+    ("errno", re.compile(r"(?:failed|error|ret|err|finished)\s*[:=]?\s*(-\d{1,4})(?![\w.-])", re.I), -4095, -1),
+    ("status", re.compile(r"\bstatus\s*[:=]?\s*(\d{1,10})(?![\w.-])", re.I), 0, 2**32 - 1),
+    ("port", re.compile(r"\bport\s*[:=]?\s*(\d{1,2})(?![\w.-])", re.I), 0, 99),
+)
+MODE = re.compile(r"(?<![\w.])(\d{2,5})x(\d{2,5})(?![\w.])")
+CANONICAL = re.compile(r"apple-dcp: ([a-z-]+)((?: (?:errno|status|port)=-?\d+| mode=\d+x\d+)*)")
+FINDINGS_LIMIT = 10
+
+
+def dcp_finding(line: str) -> str | None:
+    """A DCP kernel line as "apple-dcp: <category> [errno=N] [status=N] [port=N] [mode=WxH]"; None if not a finding.
+
+    The canonical form reads back as itself, so a recording can keep it in place of the message."""
+    found = DCP.search(line)
+    if not found:
+        return None
+    message = line[found.start():]
+    canonical = CANONICAL.fullmatch(message.strip())
+    if canonical and canonical[1] in CATEGORY_NAMES:
+        message = canonical[1] + canonical[2]  # parse the fields as written below, validated again
+        category = canonical[1]
+    else:
+        category = next((name for name, pattern in DCP_CATEGORIES if pattern.search(message)), None)
+    if category is None:
+        return None
+    fields = []
+    for name, pattern, low, high in FIELDS:
+        value = pattern.search(message) if not canonical else re.search(rf"\b{name}=(-?\d+)\b", message)
+        if value and low <= int(value[1]) <= high:
+            fields.append(f"{name}={int(value[1])}")
+    mode = MODE.search(message) if not canonical else re.search(r"\bmode=(\d+)x(\d+)\b", message)
+    if mode and all(1 <= int(n) <= 16384 for n in mode.groups()):
+        fields.append(f"mode={int(mode[1])}x{int(mode[2])}")
+    return " ".join(["apple-dcp:", category, *fields])
+
+
+def kernel_findings(log: str) -> list[str]:
+    """Distinct DCP findings, the last FINDINGS_LIMIT to appear, each with how often it appeared."""
+    counts: dict[str, int] = {}
+    for line in log.splitlines():
+        finding = dcp_finding(line)
+        if finding:
+            counts[finding] = counts.pop(finding, 0) + 1  # re-inserted: ordered by last appearance
+    return [f"{finding} (x{n})" if n > 1 else finding for finding, n in list(counts.items())[-FINDINGS_LIMIT:]]
+
+
+# -- what a recording keeps: allowlisted projections, never monitor identity -------------------------
+
+OUTPUT_NAME = re.compile(r"(?:eDP|DP|HDMI-[AB]|DVI-[DIA]|VGA|USB|DSI|DPI|LVDS|Virtual|Unknown|HEADLESS|WL|Writeback|SPI)-\d{1,3}(?:-\d{1,3}){0,3}")
+MODE_TEXT = re.compile(r"\d{1,5}x\d{1,5}@\d{1,4}(?:\.\d{1,6})?Hz")
+
+
+def _number(value, kind, low, high):
+    if kind is float and isinstance(value, (int, float)) and not isinstance(value, bool):
+        value = float(value)
+    if type(value) is not kind or (kind is float and not math.isfinite(value)) or not low <= value <= high:
+        return None
+    return value
+
+
+def _monitor_projection(monitor) -> dict | None:
+    if not isinstance(monitor, dict) or not isinstance(monitor.get("name"), str) or not OUTPUT_NAME.fullmatch(monitor["name"]):
+        return None
+    kept = {"name": monitor["name"]}
+    for key, kind, low, high in (("id", int, 0, 2**31), ("width", int, 1, 65535), ("height", int, 1, 65535),
+                                 ("refreshRate", float, 0, 10000), ("transform", int, 0, 7), ("scale", float, 0, 100)):
+        if key in monitor and (value := _number(monitor[key], kind, low, high)) is not None:
+            kept[key] = value
+    for key in ("disabled", "dpmsStatus"):
+        if isinstance(monitor.get(key), bool):
+            kept[key] = monitor[key]
+    mirror = monitor.get("mirrorOf")
+    if isinstance(mirror, str) and (mirror in ("none", "") or OUTPUT_NAME.fullmatch(mirror) or re.fullmatch(r"-?\d{1,10}", mirror)):
+        kept["mirrorOf"] = mirror
+    elif _number(mirror, int, -1, 2**31) is not None:
+        kept["mirrorOf"] = mirror
+    if isinstance(monitor.get("availableModes"), list):
+        kept["availableModes"] = [m for m in monitor["availableModes"] if isinstance(m, str) and MODE_TEXT.fullmatch(m)]
+    return kept
+
+
+def _monitors_projection(text: str) -> str:
+    try:
+        monitors = json.loads(text)
+    except ValueError:
+        return ""
+    if not isinstance(monitors, list):
+        return ""
+    return json.dumps([kept for kept in map(_monitor_projection, monitors) if kept is not None])
+
+
+def _drm_info_projection(text: str) -> str:
+    try:
+        devices = json.loads(text)
+    except ValueError:
+        return ""
+    if not isinstance(devices, dict):
+        return ""
+    kept = {}
+    for node, device in devices.items():
+        if not re.fullmatch(r"/dev/dri/card\d{1,3}", str(node)) or not isinstance(device, dict):
+            continue
+        connectors = []
+        for connector in device.get("connectors", []) if isinstance(device.get("connectors"), list) else []:
+            if not isinstance(connector, dict) or _number(connector.get("id"), int, 0, 2**32) is None:
+                continue
+            entry = {"id": connector["id"]}
+            props = connector.get("properties")
+            crtc = props.get("CRTC_ID") if isinstance(props, dict) else None
+            value = crtc.get("value") if isinstance(crtc, dict) else None
+            if _number(value, int, 0, 2**32) is not None:
+                entry["properties"] = {"CRTC_ID": {"value": value}}
+            connectors.append(entry)
+        kept[node] = {"connectors": connectors}
+    return json.dumps(kept)
+
+
+def debugfs_projection(state: str) -> str:
+    """Only CRTC ids and which CRTC each connector is on, the lines _debug_crtcs reads."""
+    kept = []
+    for line in state.splitlines():
+        if crtc := re.fullmatch(r"crtc\[(\d{1,6})\]:\s*(crtc-\d{1,3})\s*", line):
+            kept.append(f"crtc[{crtc[1]}]: {crtc[2]}")
+        elif connector := re.fullmatch(r"connector\[(\d{1,6})\]:\s*(\S+)\s*", line):
+            kept.append(f"connector[{connector[1]}]: {connector[2]}" if OUTPUT_NAME.fullmatch(connector[2]) else f"connector[{connector[1]}]: <output>")
+        elif target := re.fullmatch(r"\s+crtc=(crtc-\d{1,3}|\(null\))\s*", line):
+            if kept and kept[-1].startswith("connector["):
+                kept.append(f"\tcrtc={target[1]}")
+    return "".join(line + "\n" for line in kept)
+
+
+def is_debugfs_state(path: str) -> bool:
+    return re.fullmatch(r"/sys/kernel/debug/dri/\d{1,3}/state", path) is not None
+
+
+def recorded_output(argv: list[str], stdout: str, stderr: str) -> tuple[str, str] | None:
+    """What a recording keeps of a command this check runs: (stdout, stderr), or None to keep it as it is
+    (then only its DCP findings are rewritten, by recorded_text)."""
+    if argv[:3] == ["hyprctl", "-j", "monitors"]:
+        return _monitors_projection(stdout), ""
+    if len(argv) >= 4 and argv[2] == "drm_info" and argv[:2] == ["timeout", "3"]:
+        return _drm_info_projection(stdout), ""
+    if argv == KERNEL_LOG:
+        return "".join(f"{finding}\n" for line in stdout.splitlines() if (finding := dcp_finding(line))), ""
+    return None
+
+
+def recorded_text(text: str) -> str:
+    """Any other recorded text (the full kernel log): DCP findings replaced by their canonical form in place."""
+    if not DCP.search(text):
+        return text
+    lines = []
+    for line in text.splitlines(keepends=True):
+        finding = dcp_finding(line)
+        if finding:
+            end = "\n" if line.endswith("\n") else ""
+            line = line[:DCP.search(line).start()] + finding + end
+        lines.append(line)
+    return "".join(lines)
