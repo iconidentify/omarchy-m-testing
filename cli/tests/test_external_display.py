@@ -804,7 +804,10 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'hl.monitor = print\nhl.monitor { output="USB-1", mode="preferred" }\n',
                      'local require = print\n', 'local os = { getenv = function() return "/other" end }\n',
                      'os.getenv = function() return "/other" end\n', 'os["getenv"] = print\n',
-                     'local api = os\napi.getenv = print\n', 'rawset(os, "getenv", print)\n', 'debug.sethook()\n'):
+                     'local api = os\napi.getenv = print\n', 'rawset(os, "getenv", print)\n', 'debug.sethook()\n',
+                     'io.popen = function() end\n', 'local p = io\np.popen = print\n',
+                     'os.execute("hyprctl keyword monitor USB-1,2560x1440,auto,1")\n',
+                     'hl.exec_cmd("kanshi")\n'):
             with self.subTest(main=main):
                 rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
                 self.assert_unknown(rec)
@@ -824,7 +827,9 @@ class LiteralLuaRulesTest(unittest.TestCase):
                        DEFAULT + "exec = echo ## monitor=USB-1,2560x1440\n",
                        DEFAULT + "monitorv2[x] {\n output = USB-1\n}\n",
                        DEFAULT + "general {\n",
-                       DEFAULT + "$tail = tor\ngeneral {\n  moni$tail = USB-1,2560x1440,auto,1\n}\n"):
+                       DEFAULT + "$tail = tor\ngeneral {\n  moni$tail = USB-1,2560x1440,auto,1\n}\n",
+                       DEFAULT + "exec-once = hyprctl keyword monitor USB-1,2560x1440,auto,1\n",
+                       DEFAULT + "exec = wlr-randr --output USB-1 --mode 2560x1440\n"):
             with self.subTest(config=config):
                 result, _ = run(self.lower_conf(config))
                 self.assertEqual(result["status"], "skip")

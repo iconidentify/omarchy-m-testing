@@ -27,6 +27,10 @@ of x; require_all.files(dir, prefix, {exclude=..., reload=...}) loads dir's
 regular *.lua files in sorted order, when dir is literals joined with
 paths.home/config_home/state_home/omarchy_path or a local set that way once.
 
+A command the configuration runs that names a monitor-changing tool
+(hyprctl keyword monitor/eval, kanshi, wlr-randr...) is unknown too; a
+command built at runtime can't be seen, like any live hyprctl override.
+
 hyprlang is read line by line (Reader.conf): top-level monitor, source and
 $variable lines and monitorv2 blocks; anything it can't read for certain is
 unknown. With monitorv2 blocks, an output whose matching rules disagree is
@@ -259,6 +263,8 @@ class Reader:
                 self.variables[key[1:]] = self.expand(value)
             elif "$" in key:
                 raise _Unknown  # a key spelt through a variable
+            elif key.startswith("exec") and MONITOR_COMMAND.search(self.expand(value)):
+                raise _Unknown  # exec-once = hyprctl keyword monitor ...: set at runtime, not in the files
             elif key == "source":
                 self.source(path, self.expand(value))
             elif key == "monitor":
@@ -469,9 +475,13 @@ STATEMENT = {"local", "if", "then", "else", "elseif", "end", "do", "while", "for
 EFFECTS = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV",
            "require_all", "require_optional"}
 # The real API and what Omarchy's bootstrap relies on: rebinding or replacing any of them isn't modelled.
-SHADOWED = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV", "os", "debug",
+SHADOWED = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV", "os", "io", "debug",
             "setmetatable", "getmetatable", "rawset", "string", "table", "pairs", "ipairs"}
-LIBRARIES = {"os", "string", "table"}  # used only as os.getenv(...) and the like
+LIBRARIES = {"os", "string", "table", "io"}  # used only as os.getenv(...), io.open(...) and the like
+# A command the configuration runs that changes monitors itself (hyprctl keyword monitor, a layout tool):
+# what it sets isn't in the files. Commands built at runtime can't be seen (like a live hyprctl override).
+MONITOR_COMMAND = re.compile(r"\bhyprctl\b.*\b(?:keyword\s+monitor|eval|--batch|reload)\b|"
+                             r"\b(?:kanshi|wlr-randr|shikane|nwg-displays|way-displays|wdisplays)\b", re.I)
 OPAQUE = {"debug", "rawset", "rawget", "setmetatable", "getmetatable", "rawequal", "collectgarbage"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
@@ -584,6 +594,8 @@ class _LuaFile:
         self.helper_bindings: set[int] = set()  # the name tokens of those bindings
         if any(t.kind == "op" and t.value == "::" for t in tokens):
             raise _Unknown  # labels (goto): not read
+        if any(t.kind in ("str", "long") and MONITOR_COMMAND.search(t.value) for t in tokens):
+            raise _Unknown  # it runs (or may run) a command that sets monitors
         if any(name in self.bound for name in SHADOWED):
             raise _Unknown  # hl, require, package... rebound here: what they do isn't the real API
 

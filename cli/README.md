@@ -39,8 +39,10 @@ An explicit monitor mode also skips that output. The check reads static
 hyprlang rules, `monitorv2` blocks and Omarchy's Lua `hl.monitor` tables
 without executing them, following static `source` and `require` references
 the way Omarchy's bootstrap resolves modules (`~/.local/state`, `~/.config`,
-`$OMARCHY_PATH`, each module once). Omarchy's `require_optional.module` and
-`require_all.files` helpers are read for what they do. Named and `desc:`
+`$OMARCHY_PATH`, each module once), and `source` paths the way Hyprland
+resolves them. Omarchy's bootstrap and its `require_optional.module` and
+`require_all.files` helpers are read for what they do, only while they are
+Omarchy's current versions; hyprlang is read line by line. Named and `desc:`
 rules win over the fallback; the last matching rule wins, and mirroring
 comes only from the rules that win. Only fully literal rules count: a
 computed output or mode (a concatenation, a variable, a call), a rule inside
@@ -49,7 +51,10 @@ monitor rules leaves intent unknown and skips, never fails. A conditional
 load of a file with no monitor rules doesn't matter. Unreadable
 configuration also skips: the host reads only regular files, at most 16 MiB
 within five seconds each, so a `source` naming a FIFO or device can't hold
-the run. Live overrides not saved to these files cannot be identified. A
+the run. A command the configuration runs that names a monitor-changing
+tool (`hyprctl keyword monitor`, `kanshi`, `wlr-randr`...) also leaves intent
+unknown. Live overrides not saved to these files, and commands built at
+runtime, cannot be identified. A
 mode larger than the EDID preference is skipped rather than called a
 downgrade. Any confirmed downgrade fails the check; otherwise an untested
 output leaves the aggregate skipped.
