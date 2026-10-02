@@ -256,6 +256,8 @@ class RecordedHost:
         """From "regular_files" when the recording has it for path, else every name "dirs" lists."""
         if path in self.recording.get("regular_files", {}):
             names = self.recording["regular_files"][path]
+            if _is_sequence(names):
+                names = self._next(("regular", path), names)
             if names is None:
                 raise FileNotFoundError(path)
             return sorted(names)
@@ -376,7 +378,7 @@ class RecordingHost:
         self.commands: list[dict[str, Any]] = []  # every answer, in order (repeats dropped when saved)
         self.files: dict[str, list[Any]] = {}  # path -> its answers in order: bytes, None (absent) or an error kind
         self.dirs: dict[str, list[Any]] = {}
-        self.regular: dict[str, list[str] | None] = {}
+        self.regular: dict[str, list[Any]] = {}
         self.env_read: dict[str, str | None] = {}
 
     # -- machine (recorded) ---------------------------------------------
@@ -429,9 +431,9 @@ class RecordingHost:
         try:
             names = self.inner.regular_files(path)
         except FileNotFoundError:
-            self.regular.setdefault(path, None)
+            self.regular.setdefault(path, []).append(None)
             raise
-        self.regular.setdefault(path, list(names))
+        self.regular.setdefault(path, []).append(list(names))
         return names
 
     def env(self, name: str) -> str | None:
@@ -506,9 +508,11 @@ class RecordingHost:
                        for path, answers in files.items()}
         saved_dirs = {scrubber.scrub(path): _answers([_dir_entry(path, names, scrubber) for names in answers])
                       for path, answers in self.dirs.items()}
+        saved_regular = {scrubber.scrub(path): _answers([_dir_entry(path, names, scrubber) for names in answers])
+                         for path, answers in self.regular.items()}
         sequence = (len({json.dumps(entry["argv"]) for entry in commands}) < len(commands)
                     or any(isinstance(entry, list) for entry in saved_files.values())
-                    or any(_is_sequence(names) for names in saved_dirs.values()))
+                    or any(_is_sequence(names) for names in [*saved_dirs.values(), *saved_regular.values()]))
         recording = {
             "recording_version": SEQUENCE_VERSION if sequence else RECORDING_VERSION,
             "description": "Recorded by omarchy-m-test --record",
@@ -526,8 +530,8 @@ class RecordingHost:
             "files": saved_files,
             "dirs": saved_dirs,
         }
-        if self.regular:
-            recording["regular_files"] = {scrubber.scrub(path): _dir_entry(path, names, scrubber) for path, names in self.regular.items()}
+        if saved_regular:
+            recording["regular_files"] = saved_regular
         env = {name: scrubber.scrub(value) for name, value in self.env_read.items() if value is not None}
         if env:
             recording["env"] = env

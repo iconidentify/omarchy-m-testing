@@ -16,7 +16,8 @@ Operations:
                              takes longer than READ_TIMEOUT_SECONDS is TimeoutError (all OSError)
   list_dir(path)             list a directory's entry names, sorted
   regular_files(path)        the names of a directory's regular files, sorted, symlinks not followed
-                             (what `find -maxdepth 1 -type f` lists); FileNotFoundError if absent
+                             (what `find PATH -maxdepth 1 -type f` lists: nothing when PATH itself is a
+                             symlink); FileNotFoundError if absent
   monitor_intent(outputs)   read monitor rules locally; only policy flags leave the host,
                              never user configuration text or monitor description selectors
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
@@ -386,6 +387,8 @@ class RealHost:
         return sorted(os.listdir(path))
 
     def regular_files(self, path: str) -> list[str]:
+        if os.path.islink(path):
+            return []  # find without -L doesn't descend into a symlinked starting point
         with os.scandir(path) as entries:
             return sorted(entry.name for entry in entries if entry.is_file(follow_symlinks=False))
 

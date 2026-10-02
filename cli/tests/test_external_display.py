@@ -696,8 +696,16 @@ class LiteralLuaRulesTest(unittest.TestCase):
                           DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n')
                 rec["dirs"][f"{hypr}/new"] = ["wide.lua"]
                 self.assert_unknown(rec)
-        rec["files"][LUA] = {"text": DEFAULT_LUA + 'local ra = require "default.hypr.require_all"\n' + f'ra.files("{hypr}/new", "hypr.new")\n'}
-        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])  # require "x" binds too
+        for binding in ('local ra = require "default.hypr.require_all"\n', 'local ra = require("default.hypr.require_all");\n'):
+            with self.subTest(binding=binding):
+                rec["files"][LUA] = {"text": DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
+                self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])  # these bind too
+        for binding in ('local ra = require("default.hypr.require_all")\n  and { files = function() end }\n',
+                        'local ra = require("default.hypr.require_all")\n  .files\n', 'local ra = require(\n"default.hypr.require_all")\n',
+                        'local ra = require("default.hypr.require_all")\n("x")\n'):
+            with self.subTest(binding=binding):
+                rec["files"][LUA] = {"text": DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
+                self.assert_unknown(rec)
 
     def test_a_directory_load_lists_regular_files_only(self):
         files = {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
@@ -712,6 +720,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
             with open(os.path.join(directory, "file.lua"), "w") as f:
                 f.write("\n")
             self.assertEqual(host_module.RealHost().regular_files(directory), ["file.lua"])
+            os.symlink(directory, os.path.join(directory, "linked"))
+            self.assertEqual(host_module.RealHost().regular_files(os.path.join(directory, "linked")), [])
 
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},

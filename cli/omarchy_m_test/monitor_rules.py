@@ -466,6 +466,7 @@ class _LuaFile:
         self.branched = _branching(tokens)
         self.bound = _bindings(tokens)
         self.nesting = _nesting(tokens)
+        self.helper_requires: set[int] = set()  # the require tokens that bound a helper (local name = require "...")
 
     def conditional(self, i: int) -> bool:
         """Inside a block, or in a statement that branches (and/or): it may not run."""
@@ -476,6 +477,13 @@ class _LuaFile:
             self.reader.probe(action)
         else:
             action(self.sink)
+
+    def goes_on(self, end: int) -> bool:
+        """Does the expression ending before end continue on the next line (and ..., .field, (...), "...")?"""
+        if end >= len(self.tokens) or self.tokens[end].value == ";":
+            return False
+        nxt = self.tokens[end]
+        return nxt.kind in ("str", "long") or nxt.value in CONTINUES or nxt.value in (".", ":")
 
     def helper(self, name: str) -> str | None:
         """ra.files -> "require_all.files" when ra is bound (once) here to Omarchy's require_all; else None."""
@@ -539,20 +547,22 @@ class _LuaFile:
         return None
 
     def local(self, name: str, start: int, depth: int) -> None:
+        """local name = <value> on one line: a known directory, or an Omarchy helper's require; else neither."""
         tokens = self.tokens
         self.locals.pop(name, None)
         self.helpers.pop(name, None)
         end = start
-        while end < len(tokens) and tokens[end].line == tokens[start].line:
+        while end < len(tokens) and tokens[end].line == tokens[start].line and tokens[end].value != ";":
             end += 1
         value = tokens[start:end]
-        if depth or self.branched[start] or (end < len(tokens) and tokens[end - 1].value in CONTINUES):
-            return  # it may not run, or the value goes on: neither is known
+        if not value or depth or self.branched[start] or value[-1].value in CONTINUES or self.goes_on(end):
+            return  # it may not run, or the value goes on past the line: neither is known
         values = [t.value for t in value]
         module = (value[2].literal() if len(value) == 4 and values[:2] == ["require", "("] and values[3] == ")"
                   else value[1].literal() if len(value) == 2 and values[0] == "require" else None)
         if module in HELPERS:
             self.helpers[name] = HELPERS[module]
+            self.helper_requires.add(start)
             return
         directory = self.directory(value)
         if directory is not None:
@@ -577,9 +587,7 @@ class _LuaFile:
             args, after = _call_args(tokens, j)
             module = args[0].literal() if len(args) == 1 else None
             grouped = i > 0 and tokens[i - 1].value == "(" and tokens[i - 1].kind == "op"  # (require "x").field = ...
-            bound = (i >= 3 and tokens[i - 3].value == "local" and tokens[i - 2].kind == "name" and tokens[i - 1].value == "="
-                     and (after >= len(tokens) or tokens[after].line != tokens[i].line or tokens[after].value == ";"))
-            if module in HELPERS and not bound:
+            if module in HELPERS and i not in self.helper_requires:
                 raise _Unknown  # a helper only as `local name = require("...")`: other forms aren't followed
             if module is not None and not grouped and not (after < len(tokens) and tokens[after].kind == "op"
                                                            and tokens[after].value in (".", "[", ":")):
