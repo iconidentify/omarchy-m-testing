@@ -31,7 +31,7 @@ preferred timing block; their identity fields and other descriptors are zeroed.
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A file that was there but couldn't be read is {"error": "permission"} (PermissionError),
 {"error": "timeout"} (TimeoutError) or {"error": "unreadable"} (OSError): the
-kind only, never a message.
+kind only, never a message. A directory that couldn't be listed is recorded the same way.
 
 Successive observations: when a command, file or directory answered
 differently the next time it was asked for (a display that settled), each
@@ -250,6 +250,8 @@ class RecordedHost:
             names = self._next(("dir", path), names)
         if names is None:
             raise FileNotFoundError(path)
+        if isinstance(names, dict):
+            raise READ_ERRORS.get(names.get("error"), OSError)(path)
         return sorted(names)
 
     def regular_files(self, path: str) -> list[str]:
@@ -260,6 +262,8 @@ class RecordedHost:
                 names = self._next(("regular", path), names)
             if names is None:
                 raise FileNotFoundError(path)
+            if isinstance(names, dict):
+                raise READ_ERRORS.get(names.get("error"), OSError)(path)
             return sorted(names)
         return self.list_dir(path)
 
@@ -424,6 +428,9 @@ class RecordingHost:
         except FileNotFoundError:
             self.dirs.setdefault(path, []).append(None)
             raise
+        except OSError as problem:
+            self.dirs.setdefault(path, []).append(ReadError(_error_kind(problem)))
+            raise
         self.dirs.setdefault(path, []).append(list(names))
         return names
 
@@ -432,6 +439,9 @@ class RecordingHost:
             names = self.inner.regular_files(path)
         except FileNotFoundError:
             self.regular.setdefault(path, []).append(None)
+            raise
+        except OSError as problem:
+            self.regular.setdefault(path, []).append(ReadError(_error_kind(problem)))
             raise
         self.regular.setdefault(path, []).append(list(names))
         return names
@@ -585,7 +595,8 @@ def _answers(answers: list[Any]) -> Any:
 
 
 def _is_sequence(names: Any) -> bool:
-    return isinstance(names, list) and bool(names) and (names[0] is None or isinstance(names[0], list))
+    """A directory's answers in order (each a listing, None or an error), not one listing of names."""
+    return isinstance(names, list) and bool(names) and (names[0] is None or isinstance(names[0], (list, dict)))
 
 
 def _projected(entry: dict[str, Any]) -> dict[str, Any]:
@@ -604,9 +615,11 @@ def _file_projected(path: str, data: Any) -> Any:
     return data
 
 
-def _dir_entry(path: str, names: list[str] | None, scrubber: Scrubber) -> list[str] | None:
+def _dir_entry(path: str, names: Any, scrubber: Scrubber) -> Any:
     if names is None:
         return None
+    if isinstance(names, ReadError):
+        return {"error": names.kind}
     if path == HOME_DIR:  # account names, however short
         return ["<user>" if not name.startswith(".") else name for name in sorted(names)]
     return sorted(scrubber.scrub(name) for name in names)

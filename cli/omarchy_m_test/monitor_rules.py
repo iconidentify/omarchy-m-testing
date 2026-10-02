@@ -45,6 +45,7 @@ from .host import Host
 
 MAX_READS = 256  # files read (a module search also tries absent paths, which cost nothing)
 MAX_ATTEMPTS = 1024
+MAX_NESTING = 32  # files loading files: deeper than this is unknown
 KEY_FIELDS = ("output", "mode", "resolution", "disabled", "mirror", "mirror_of")
 BOOTSTRAP = 'dofile((os.getenv("OMARCHY_PATH")or"/usr/share/omarchy").."/default/hypr/bootstrap.lua")'
 
@@ -191,7 +192,7 @@ class Reader:
         self.loaded = loaded  # it may not run: a later unconditional load still reads the module
 
     def lua(self, path: str, text: str, sink: Rules) -> None:
-        if path in self.active:
+        if path in self.active or len(self.active) >= MAX_NESTING:
             raise _Unknown
         self.active.add(path)
         try:
@@ -206,7 +207,7 @@ class Reader:
         blocks are read; other keys and categories are skipped. Anything this can't read for certain (a
         hyprlang directive other than noerror, an escaped #, a line continuation, {{math}}, a monitor or source key inside a
         category, a $ left after expansion) leaves intent unknown."""
-        if path in self.active:
+        if path in self.active or len(self.active) >= MAX_NESTING:
             raise _Unknown
         self.active.add(path)
         depth, block = 0, None  # category nesting; the open top-level monitorv2 block's fields
@@ -337,7 +338,7 @@ def read(host: Host) -> Rules:
             if text is None:
                 raise _Unknown
             reader.conf(conf, text)
-    except (_Unknown, IndexError):  # IndexError: a truncated statement this reader didn't expect
+    except (_Unknown, IndexError, RecursionError):  # a truncated statement or a depth this reader didn't expect
         reader.rules.unavailable = True
     return reader.rules
 
@@ -470,6 +471,8 @@ EFFECTS = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package
 # The real API and what Omarchy's bootstrap relies on: rebinding or replacing any of them isn't modelled.
 SHADOWED = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV", "os", "debug",
             "setmetatable", "getmetatable", "rawset", "string", "table", "pairs", "ipairs"}
+LIBRARIES = {"os", "string", "table"}  # used only as os.getenv(...) and the like
+OPAQUE = {"debug", "rawset", "rawget", "setmetatable", "getmetatable", "rawequal", "collectgarbage"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
 # The helper implementations this reader interprets, by digest of their tokens (comments and spacing don't count):
@@ -633,18 +636,21 @@ class _LuaFile:
                 if "." not in name:
                     raise _Unknown  # the globals table itself: anything could be reached through it
                 name = name.split(".", 1)[1]
+            head = name.split(".")[0]
             called = self.helper(name)
             if called is None and (name in ("require_all.files", "require_optional.module")
                                    or name.split(".")[0] in self.helper_names and i not in self.helper_bindings):
                 raise _Unknown  # a helper call this reader can't attribute
             if name == "goto":
                 raise _Unknown
+            if head in OPAQUE or (head in LIBRARIES and not (
+                    name.count(".") == 1 and j < len(tokens) and (tokens[j].value == "(" or tokens[j].kind == "str"))):
+                raise _Unknown  # os/string/table only as calls of their functions: an alias, index or write escapes
             if "." in name and name.split(".")[0] in SHADOWED and name != "package.path" and j < len(tokens) \
                     and tokens[j].kind == "op" and tokens[j].value in ("=", ","):
                 raise _Unknown  # hl.monitor = ..., require_all.files = ...: the API itself replaced
             if name == "return" and tok.functions == 0:
                 self.returns(i)
-            head = name.split(".")[0]
             if head in self.helpers:
                 # only reads of a helper's own fields: a write, an index or an alias could change what it does
                 field = name.split(".")[1] if name.count(".") == 1 else None
@@ -652,7 +658,7 @@ class _LuaFile:
                 if (field not in HELPER_FIELDS[self.helpers[head]]
                         or (after is not None and after.kind == "op" and (after.value in ("=", "[", ":", ".")
                                                                           or (after.value == "," and self.nesting[i] == 0)))):
-                    raise _Unknown  # paths.x = ..., paths.x, y = ...: what it holds may change  # require_all.files or require_optional.module not bound to Omarchy's helper here
+                    raise _Unknown  # paths.x = ..., paths.x, y = ...: what it holds may change
             if name == "hl.monitor" or name.startswith("hl.monitor."):
                 i = self.monitor(i, j)
             elif name == "hl" and (j >= len(tokens) or tokens[j].value != "."):

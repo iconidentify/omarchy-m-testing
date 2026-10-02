@@ -769,6 +769,14 @@ class LiteralLuaRulesTest(unittest.TestCase):
             result, _ = run(rec, Host)
             self.assertIn("explicit monitor mode", result["evidence"][1])  # "link/" is followed, as find follows it
 
+    def test_a_deep_chain_of_modules_is_unknown_not_a_crash(self):
+        files = {f".config/m/m{k}.lua": f'require("m.m{k + 1}")\n' for k in range(200)}
+        self.assert_unknown(lua(self.lower(), files, DEFAULT_LUA + 'require("m.m0")\n'))
+
+    def test_os_and_string_calls_stay_readable(self):
+        rec = lua(self.lower(), {}, DEFAULT_LUA + 'local home = os.getenv("HOME")\nlocal s = string.format("%s", home)\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")
+
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/keys.lua": 'hl.bind("SUPER", "Q", "killactive")\n'},
                   DEFAULT_LUA + 'require("hypr.keys")\nrequire("hypr.keys")\n')
@@ -795,7 +803,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'function hl.monitor(t) end\nhl.monitor { output="USB-1", mode="preferred" }\n',
                      'hl.monitor = print\nhl.monitor { output="USB-1", mode="preferred" }\n',
                      'local require = print\n', 'local os = { getenv = function() return "/other" end }\n',
-                     'os.getenv = function() return "/other" end\n'):
+                     'os.getenv = function() return "/other" end\n', 'os["getenv"] = print\n',
+                     'local api = os\napi.getenv = print\n', 'rawset(os, "getenv", print)\n', 'debug.sethook()\n'):
             with self.subTest(main=main):
                 rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
                 self.assert_unknown(rec)
@@ -990,6 +999,38 @@ class SuccessiveObservationTest(unittest.TestCase):
         with self.assertRaises(PermissionError):
             replay.read_file("/sys/x")
         self.assertEqual([replay.read_file("/sys/x") for _ in range(3)], [b"two"] * 3)
+
+    def test_directory_errors_are_recorded_and_replayed_in_order(self):
+        class Slow(NativeHost):
+            calls = 0
+
+            def list_dir(self, path):
+                self.calls += 1
+                if self.calls == 1:
+                    raise TimeoutError(path)
+                return ["a.conf"]
+
+            def regular_files(self, path):
+                raise TimeoutError(path)
+
+        recorder = RecordingHost(Slow(fixture()))
+        for _ in range(2):
+            try:
+                recorder.list_dir("/d")
+            except TimeoutError:
+                pass
+        with self.assertRaises(TimeoutError):
+            recorder.regular_files("/d")
+        saved = recorder.recording(Scrubber())
+        self.assertEqual(saved["dirs"]["/d"], [{"error": "timeout"}, ["a.conf"]])
+        self.assertEqual(saved["regular_files"]["/d"], {"error": "timeout"})
+        self.assertEqual(saved["recording_version"], 2)
+        replay = RecordedHost(saved)
+        with self.assertRaises(TimeoutError):
+            replay.list_dir("/d")
+        self.assertEqual(replay.list_dir("/d"), ["a.conf"])
+        with self.assertRaises(TimeoutError):
+            replay.regular_files("/d")
 
     def test_a_recording_without_sequences_stays_version_1(self):
         _, saved, _ = record(fixture())
