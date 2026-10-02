@@ -807,7 +807,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'local api = os\napi.getenv = print\n', 'rawset(os, "getenv", print)\n', 'debug.sethook()\n',
                      'io.popen = function() end\n', 'local p = io\np.popen = print\n',
                      'os.execute("hyprctl keyword monitor USB-1,2560x1440,auto,1")\n',
-                     'hl.exec_cmd("kanshi")\n'):
+                     'hl.exec_cmd("kanshi")\n', "hl.exec_cmd([[hyprctl \\\n  eval 'x']])\n",
+                     'hl.exec_cmd("hyprctl --batch x")\n'):
             with self.subTest(main=main):
                 rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
                 self.assert_unknown(rec)
@@ -829,7 +830,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                        DEFAULT + "general {\n",
                        DEFAULT + "$tail = tor\ngeneral {\n  moni$tail = USB-1,2560x1440,auto,1\n}\n",
                        DEFAULT + "exec-once = hyprctl keyword monitor USB-1,2560x1440,auto,1\n",
-                       DEFAULT + "exec = wlr-randr --output USB-1 --mode 2560x1440\n"):
+                       DEFAULT + "exec = wlr-randr --output USB-1 --mode 2560x1440\n",
+                       DEFAULT + "general {\n  exec-once = hyprctl keyword monitor USB-1,2560x1440,auto,1\n}\n"):
             with self.subTest(config=config):
                 result, _ = run(self.lower_conf(config))
                 self.assertEqual(result["status"], "skip")

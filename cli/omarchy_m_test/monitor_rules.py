@@ -250,6 +250,8 @@ class Reader:
             key, value = assignment[1].strip(), assignment[2].strip()
             if "$" in key and not (depth == 0 and re.fullmatch(r"\$\w+", key)):
                 raise _Unknown  # a key spelt through a variable, or a variable set inside a category
+            if key.startswith("exec") and MONITOR_COMMAND.search(self.expand(value)):
+                raise _Unknown  # exec-once = hyprctl keyword monitor ...: set at runtime, not in the files
             if block is not None and depth == 1:
                 if key in ("monitor", "source", "monitorv2") or "$" in key:
                     raise _Unknown  # a statement with effects inside the block
@@ -263,8 +265,6 @@ class Reader:
                 self.variables[key[1:]] = self.expand(value)
             elif "$" in key:
                 raise _Unknown  # a key spelt through a variable
-            elif key.startswith("exec") and MONITOR_COMMAND.search(self.expand(value)):
-                raise _Unknown  # exec-once = hyprctl keyword monitor ...: set at runtime, not in the files
             elif key == "source":
                 self.source(path, self.expand(value))
             elif key == "monitor":
@@ -480,8 +480,8 @@ SHADOWED = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "packag
 LIBRARIES = {"os", "string", "table", "io"}  # used only as os.getenv(...), io.open(...) and the like
 # A command the configuration runs that changes monitors itself (hyprctl keyword monitor, a layout tool):
 # what it sets isn't in the files. Commands built at runtime can't be seen (like a live hyprctl override).
-MONITOR_COMMAND = re.compile(r"\bhyprctl\b.*\b(?:keyword\s+monitor|eval|--batch|reload)\b|"
-                             r"\b(?:kanshi|wlr-randr|shikane|nwg-displays|way-displays|wdisplays)\b", re.I)
+MONITOR_COMMAND = re.compile(r"\bhyprctl\b.*(?:\bkeyword\s+monitor|\beval\b|(?<!\S)--batch\b|(?<!\S)-b\b|\breload\b)|"
+                             r"\b(?:kanshi|wlr-randr|shikane|nwg-displays|way-displays|wdisplays)\b", re.I | re.S)
 OPAQUE = {"debug", "rawset", "rawget", "setmetatable", "getmetatable", "rawequal", "collectgarbage"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
