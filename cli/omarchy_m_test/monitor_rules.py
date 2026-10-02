@@ -426,6 +426,18 @@ def _bindings(tokens: list[Tok]) -> dict[str, int]:
     return counts
 
 
+def _nesting(tokens: list[Tok]) -> list[int]:
+    """Per token: how many brackets ((, [, {) it is inside."""
+    depths, depth = [], 0
+    for tok in tokens:
+        if tok.kind == "op" and tok.value in (")", "]", "}"):
+            depth = max(depth - 1, 0)
+        depths.append(depth)
+        if tok.kind == "op" and tok.value in ("(", "[", "{"):
+            depth += 1
+    return depths
+
+
 def _branching(tokens: list[Tok]) -> list[bool]:
     """Per token: is it in a statement that already branched (an and/or before it, across line breaks too)?"""
     flags, branched, brackets = [], False, 0
@@ -453,6 +465,7 @@ class _LuaFile:
         self.helpers: dict[str, str] = {}  # local name -> which Omarchy helper it is bound to (paths, require_all...)
         self.branched = _branching(tokens)
         self.bound = _bindings(tokens)
+        self.nesting = _nesting(tokens)
 
     def conditional(self, i: int) -> bool:
         """Inside a block, or in a statement that branches (and/or): it may not run."""
@@ -492,9 +505,11 @@ class _LuaFile:
             if head in self.helpers:
                 # only reads of a helper's own fields: a write, an index or an alias could change what it does
                 field = name.split(".")[1] if name.count(".") == 1 else None
+                after = tokens[j] if j < len(tokens) else None
                 if (field not in HELPER_FIELDS[self.helpers[head]]
-                        or (j < len(tokens) and tokens[j].kind == "op" and tokens[j].value in ("=", "[", ":", "."))):
-                    raise _Unknown  # require_all.files or require_optional.module not bound to Omarchy's helper here
+                        or (after is not None and after.kind == "op" and (after.value in ("=", "[", ":", ".")
+                                                                          or (after.value == "," and self.nesting[i] == 0)))):
+                    raise _Unknown  # paths.x = ..., paths.x, y = ...: what it holds may change  # require_all.files or require_optional.module not bound to Omarchy's helper here
             if name == "hl.monitor" or name.startswith("hl.monitor."):
                 i = self.monitor(i, j)
             elif name == "hl" and (j >= len(tokens) or tokens[j].value != "."):
@@ -559,8 +574,9 @@ class _LuaFile:
         if j < len(tokens) and (tokens[j].kind == "str" or tokens[j].value == "("):
             args, after = _call_args(tokens, j)
             module = args[0].literal() if len(args) == 1 else None
-            if module is not None and not (after < len(tokens) and tokens[after].kind == "op"
-                                           and tokens[after].value in (".", "[", ":")):
+            grouped = i > 0 and tokens[i - 1].value == "(" and tokens[i - 1].kind == "op"  # (require "x").field = ...
+            if module is not None and not grouped and not (after < len(tokens) and tokens[after].kind == "op"
+                                                           and tokens[after].value in (".", "[", ":")):
                 self.load(i, lambda sink: self.reader.require(module, sink))
                 return after
         raise _Unknown  # require(name), pcall(require, ...): what loads can't be read
@@ -593,18 +609,8 @@ class _LuaFile:
             for filename in sorted(names):
                 if not filename.endswith(".lua") or filename[:-4] in exclude:
                     continue
-                module = f"{prefix}.{filename[:-4]}" if prefix else filename[:-4]
-                if prefix is None:
-                    path = f"{directory}/{filename}"
-                    text = self.reader.text(path)
-                    if text is None:
-                        raise _Unknown
-                    if module in self.reader.loaded and not reload:
-                        continue
-                    self.reader.loaded.add(module)
-                    self.reader.lua(path, text, sink)
-                else:
-                    self.reader.require(module, sink, reload=reload)
+                # the helper require()s each name through package.path, as this does
+                self.reader.require(f"{prefix}.{filename[:-4]}" if prefix else filename[:-4], sink, reload=reload)
 
         self.load(i, action)
         return after

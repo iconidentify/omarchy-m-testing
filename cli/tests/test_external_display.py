@@ -643,6 +643,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      paths + ALL + 'local p = paths\np.config_home = "/new"\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
                      paths + ALL + 'paths["config_home"] = "/new"\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
                      ALL + 'require("default.hypr.paths").config_home = "/new"\n',
+                     ALL + '(require("default.hypr.paths")).config_home = "/new"\n',
+                     paths + ALL + 'paths.config_home, x = "/new", 1\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
                      ALL + 'require_all.files = nil\n',
                      'package.loaded["default.hypr.paths"] = { config_home = "/new" }\n'):
             with self.subTest(main=main):
@@ -666,6 +668,16 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'local x =', 'dofile('):
             with self.subTest(main=main):
                 self.assert_unknown(lua(self.lower(), {}, main))
+
+    def test_an_unprefixed_directory_load_resolves_through_package_path(self):
+        files = {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                 "/listed/wide.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n',
+                 ".config/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
+        rec = lua(self.lower(), files, DEFAULT_LUA + ALL + 'require_all.files("/listed")\n')
+        rec["dirs"]["/listed"] = ["wide.lua"]
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])  # require("wide") finds ~/.config/wide.lua
+        rec = lua(rec, {}, DEFAULT_LUA + ALL + 'package.path = "/listed" .. "/?.lua;" .. package.path\nrequire_all.files("/listed")\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")  # with the directory first on package.path, its own file
 
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
