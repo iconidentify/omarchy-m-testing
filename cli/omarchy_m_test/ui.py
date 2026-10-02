@@ -442,6 +442,10 @@ class Feed:
         self._add([f"list {path}"])
         return self.inner.list_dir(path)
 
+    def regular_files(self, path: str) -> list[str]:
+        self._add([f"list {path}"])
+        return self.inner.regular_files(path)  # type: ignore[attr-defined]
+
     def note(self, text: str) -> None:
         self._add([text])
 

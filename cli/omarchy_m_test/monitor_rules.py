@@ -549,8 +549,10 @@ class _LuaFile:
         if depth or self.branched[start] or (end < len(tokens) and tokens[end - 1].value in CONTINUES):
             return  # it may not run, or the value goes on: neither is known
         values = [t.value for t in value]
-        if len(value) == 4 and values[0] == "require" and values[1] == "(" and values[3] == ")" and value[2].literal() in HELPERS:
-            self.helpers[name] = HELPERS[value[2].literal()]
+        module = (value[2].literal() if len(value) == 4 and values[:2] == ["require", "("] and values[3] == ")"
+                  else value[1].literal() if len(value) == 2 and values[0] == "require" else None)
+        if module in HELPERS:
+            self.helpers[name] = HELPERS[module]
             return
         directory = self.directory(value)
         if directory is not None:
@@ -567,7 +569,7 @@ class _LuaFile:
         if rule is None:
             raise _Unknown
         self.sink.entries.append(rule)
-        return after
+        return j  # its fields are read on (scale = (function() ... end)(): what they run counts too)
 
     def require(self, i: int, j: int) -> int:
         tokens = self.tokens
@@ -575,6 +577,10 @@ class _LuaFile:
             args, after = _call_args(tokens, j)
             module = args[0].literal() if len(args) == 1 else None
             grouped = i > 0 and tokens[i - 1].value == "(" and tokens[i - 1].kind == "op"  # (require "x").field = ...
+            bound = (i >= 3 and tokens[i - 3].value == "local" and tokens[i - 2].kind == "name" and tokens[i - 1].value == "="
+                     and (after >= len(tokens) or tokens[after].line != tokens[i].line or tokens[after].value == ";"))
+            if module in HELPERS and not bound:
+                raise _Unknown  # a helper only as `local name = require("...")`: other forms aren't followed
             if module is not None and not grouped and not (after < len(tokens) and tokens[after].kind == "op"
                                                            and tokens[after].value in (".", "[", ":")):
                 self.load(i, lambda sink: self.reader.require(module, sink))
@@ -601,7 +607,7 @@ class _LuaFile:
 
         def action(sink: Rules) -> None:
             try:
-                names = self.reader.host.list_dir(directory)
+                names = self.reader.host.regular_files(directory)  # find -maxdepth 1 -type f
             except FileNotFoundError:
                 return  # find prints nothing for a missing directory
             except OSError:

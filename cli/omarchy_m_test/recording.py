@@ -16,6 +16,7 @@ A recording is a JSON file (recording_version 1, or 2 when it holds a sequence; 
       "/proc/device-tree/compatible": null
     },
     "dirs": {"/proc/device-tree": ["compatible", "model"]},
+    "regular_files": {"/some/dir": ["a.lua"]},
     "env": {"HOME": "/home/<user>"}
   }
 
@@ -251,6 +252,15 @@ class RecordedHost:
             raise FileNotFoundError(path)
         return sorted(names)
 
+    def regular_files(self, path: str) -> list[str]:
+        """From "regular_files" when the recording has it for path, else every name "dirs" lists."""
+        if path in self.recording.get("regular_files", {}):
+            names = self.recording["regular_files"][path]
+            if names is None:
+                raise FileNotFoundError(path)
+            return sorted(names)
+        return self.list_dir(path)
+
     def env(self, name: str) -> str | None:
         return self.recording.get("env", {}).get(name)
 
@@ -366,6 +376,7 @@ class RecordingHost:
         self.commands: list[dict[str, Any]] = []  # every answer, in order (repeats dropped when saved)
         self.files: dict[str, list[Any]] = {}  # path -> its answers in order: bytes, None (absent) or an error kind
         self.dirs: dict[str, list[Any]] = {}
+        self.regular: dict[str, list[str] | None] = {}
         self.env_read: dict[str, str | None] = {}
 
     # -- machine (recorded) ---------------------------------------------
@@ -412,6 +423,15 @@ class RecordingHost:
             self.dirs.setdefault(path, []).append(None)
             raise
         self.dirs.setdefault(path, []).append(list(names))
+        return names
+
+    def regular_files(self, path: str) -> list[str]:
+        try:
+            names = self.inner.regular_files(path)
+        except FileNotFoundError:
+            self.regular.setdefault(path, None)
+            raise
+        self.regular.setdefault(path, list(names))
         return names
 
     def env(self, name: str) -> str | None:
@@ -506,6 +526,8 @@ class RecordingHost:
             "files": saved_files,
             "dirs": saved_dirs,
         }
+        if self.regular:
+            recording["regular_files"] = {scrubber.scrub(path): _dir_entry(path, names, scrubber) for path, names in self.regular.items()}
         env = {name: scrubber.scrub(value) for name, value in self.env_read.items() if value is not None}
         if env:
             recording["env"] = env

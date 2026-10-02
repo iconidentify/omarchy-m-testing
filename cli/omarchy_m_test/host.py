@@ -15,6 +15,8 @@ Operations:
                              refused, more than READ_LIMIT_BYTES is EFBIG, and a read that
                              takes longer than READ_TIMEOUT_SECONDS is TimeoutError (all OSError)
   list_dir(path)             list a directory's entry names, sorted
+  regular_files(path)        the names of a directory's regular files, sorted, symlinks not followed
+                             (what `find -maxdepth 1 -type f` lists); FileNotFoundError if absent
   monitor_intent(outputs)   read monitor rules locally; only policy flags leave the host,
                              never user configuration text or monitor description selectors
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
@@ -204,6 +206,8 @@ class Host(Protocol):
 
     def list_dir(self, path: str) -> list[str]: ...
 
+    def regular_files(self, path: str) -> list[str]: ...
+
     def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]: ...
 
     def prompt(self, message: str) -> str: ...
@@ -380,6 +384,10 @@ class RealHost:
 
     def list_dir(self, path: str) -> list[str]:
         return sorted(os.listdir(path))
+
+    def regular_files(self, path: str) -> list[str]:
+        with os.scandir(path) as entries:
+            return sorted(entry.name for entry in entries if entry.is_file(follow_symlinks=False))
 
     def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
         from .monitor_rules import intent

@@ -679,6 +679,40 @@ class LiteralLuaRulesTest(unittest.TestCase):
         rec = lua(rec, {}, DEFAULT_LUA + ALL + 'package.path = "/listed" .. "/?.lua;" .. package.path\nrequire_all.files("/listed")\n')
         self.assertEqual(run(rec)[0]["status"], "fail")  # with the directory first on package.path, its own file
 
+    def test_what_an_ignored_field_runs_still_counts(self):
+        for field in ('scale = (function() hl.monitor { output="USB-1", mode="2560x1440" } return 1 end)()',
+                      'scale = pcall(require, "hypr.modes")', 'scale = load("x")()'):
+            with self.subTest(field=field):
+                self.assert_unknown(lua(self.lower(), {}, 'hl.monitor { output = "", mode = "preferred", ' + field + ' }\n'))
+
+    def test_a_helper_bound_in_another_form_is_not_followed(self):
+        hypr = f"{HOME}/.config/hypr"
+        for binding in ('local ra, unused = require("default.hypr.require_all"), nil\n',
+                        'ra = require("default.hypr.require_all")\n', 'local ra = (require("default.hypr.require_all"))\n',
+                        'require("default.hypr.require_all")\n'):
+            with self.subTest(binding=binding):
+                rec = lua(self.lower(), {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                                         ".config/hypr/new/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
+                          DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n')
+                rec["dirs"][f"{hypr}/new"] = ["wide.lua"]
+                self.assert_unknown(rec)
+        rec["files"][LUA] = {"text": DEFAULT_LUA + 'local ra = require "default.hypr.require_all"\n' + f'ra.files("{hypr}/new", "hypr.new")\n'}
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])  # require "x" binds too
+
+    def test_a_directory_load_lists_regular_files_only(self):
+        files = {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                 ".config/wide.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'}
+        rec = lua(self.lower(), files, 'hl.monitor { output="USB-1", mode="2560x1440" }\n' + ALL + 'require_all.files("/listed")\n')
+        rec["dirs"]["/listed"] = ["wide.lua"]
+        rec["regular_files"] = {"/listed": []}  # wide.lua there is a directory or a symlink: find -type f skips it
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+        with tempfile.TemporaryDirectory() as directory:
+            os.mkdir(os.path.join(directory, "dir.lua"))
+            os.symlink(os.path.join(directory, "file.lua"), os.path.join(directory, "link.lua"))
+            with open(os.path.join(directory, "file.lua"), "w") as f:
+                f.write("\n")
+            self.assertEqual(host_module.RealHost().regular_files(directory), ["file.lua"])
+
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
                   'require("hypr.modes")\nhl.monitor { output="USB-1", mode="preferred" }\nrequire("hypr.modes")\n')
