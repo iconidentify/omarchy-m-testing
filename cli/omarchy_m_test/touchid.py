@@ -33,7 +33,7 @@ ENUMS = {
     "boot": {"cold", "warm"}, "protocol": {"sepos13", "variant5"}, "xart": {"enabled", "disabled"},
     "attach": {"pending", "attached", "failed"}, "keystore": {"unknown", "open", "closed"},
     "keybag": {"unknown", "present", "missing", "failed"}, "sensor": {"unbound", "bound", "online", "failed"},
-    "touchid": {"unknown", "ready", "not-ready"},
+    "touchid": {"unknown", "ready", "not-ready", "failed"},
 }
 SERVICE_STATES = {"active", "inactive", "failed", "activating", "deactivating", "reloading"}
 UNLOCK_QUESTION = (
@@ -246,15 +246,17 @@ def ready(found: dict) -> dict:
         reason = "read-only SEP installation: fingerprint operations are disabled"
     elif diag.get("keybag") == "missing":
         reason = "no existing identity keybag; setup is required (nothing was provisioned)"
-    elif diag.get("sensor") == "unbound":
-        reason = "no bound Touch ID sensor; this board or kernel may not describe one"
+    elif diag.get("touchid") == "failed":
+        status, reason = "fail", "Touch ID activation or biometric device publication failed for this boot"
     elif diag.get("attach") == "failed" or diag.get("keystore") == "closed" or diag.get("keybag") == "failed" or diag.get("sensor") == "failed":
         status, reason = "fail", "SEP or sensor initialization failed"
-    elif diag.get("attach") == "pending" or diag.get("touchid") == "unknown" or diag.get("sensor") == "bound":
-        reason = "SEP or Touch ID initialization is still pending"
     elif (diag.get("attach"), diag.get("keystore"), diag.get("keybag"), diag.get("sensor"), diag.get("touchid"), diag.get("xart")) == (
             "attached", "open", "present", "online", "ready", "enabled") and found.get("device") is True:
         status, reason = "pass", "SEP and sensor report ready; a fingerprint match was not tested"
+    elif diag.get("sensor") == "unbound":
+        reason = "no bound Touch ID sensor; this board or kernel may not describe one"
+    elif diag.get("attach") == "pending" or diag.get("touchid") == "unknown" or diag.get("sensor") == "bound":
+        reason = "SEP or Touch ID initialization is still pending"
     else:
         reason = "incomplete or unknown passive state; fingerprint readiness is unconfirmed"
     version = found.get("firmware", {}).get("asahi,system-fw-version") or ""

@@ -208,11 +208,44 @@ class PassiveDiagnosticsTest(unittest.TestCase):
                 found["diag"][field] = value
                 self.assertEqual(touchid.ready(found)["status"], "fail")
 
+    def test_final_touchid_failure_survives_collection_and_other_healthy_states(self):
+        for sensor in ("bound", "online", "unbound"):
+            with self.subTest(sensor=sensor):
+                mac = PassiveHost()
+                mac.files[NODE + "/diag/touchid"] = b"failed\n"
+                mac.files[NODE + "/diag/sensor"] = sensor.encode() + b"\n"
+                found = mac.touchid_snapshot()
+                self.assertEqual(found["diag"]["touchid"], "failed")
+                self.assertEqual(touchid.attachment(found)["status"], "pass")
+                result = touchid.ready(found)
+                self.assertEqual(result["status"], "fail")
+                self.assertIn("failed for this boot", result["evidence"][0])
+                self.assertIn("SEP touchid: failed", result["evidence"])
+
+    def test_intentionally_unprovisioned_final_activation_failure_skips(self):
+        for field, value in (("xart", "disabled"), ("keybag", "missing")):
+            with self.subTest(field=field):
+                found = copy.deepcopy(GOOD)
+                found["diag"].update({"touchid": "failed", field: value})
+                found["provision_keybag"] = False
+                result = touchid.ready(found)
+                self.assertEqual(result["status"], "skip")
+                self.assertTrue("read-only" in result["evidence"][0] or "setup is required" in result["evidence"][0])
+
+    def test_explicit_boot_failures_are_not_hidden_by_an_unbound_sensor(self):
+        for field, value in (("attach", "failed"), ("keystore", "closed"), ("keybag", "failed")):
+            with self.subTest(field=field):
+                found = copy.deepcopy(GOOD)
+                found["diag"].update({"sensor": "unbound", field: value})
+                found["device"] = False
+                self.assertEqual(touchid.ready(found)["status"], "fail")
+
     def test_not_ready_alone_and_unbound_sensor_are_not_regressions(self):
-        for field, value in (("touchid", "not-ready"), ("sensor", "unbound")):
-            found = copy.deepcopy(GOOD)
-            found["diag"][field] = value
-            self.assertEqual(touchid.ready(found)["status"], "skip")
+        for state in ({"touchid": "not-ready"}, {"sensor": "unbound"}, {"touchid": "not-ready", "sensor": "unbound"}):
+            with self.subTest(state=state):
+                found = copy.deepcopy(GOOD)
+                found["diag"].update(state)
+                self.assertEqual(touchid.ready(found)["status"], "skip")
 
     def test_setup_skip_reasons_take_precedence_over_not_ready_and_stale_failures(self):
         for field, value in (("keybag", "missing"), ("xart", "disabled")):
@@ -295,6 +328,17 @@ class TouchIdRunTest(unittest.TestCase):
             self.assertEqual(checks[2]["status"], "skip")
             self.assertEqual(mac.transcript, [])
             self.assertEqual(mac.commands_run, [TOUCHID_SNAPSHOT])
+
+    def test_unattended_final_activation_failure_is_reported_without_waiting(self):
+        found = copy.deepcopy(GOOD)
+        found["diag"].update({"sensor": "bound", "touchid": "failed"})
+        found["device"] = False
+        mac = host(found)
+        result = touchid.run(context(mac))
+        self.assertEqual([r["status"] for r in result], ["pass", "fail", "skip"])
+        self.assertEqual(mac.slept, [])
+        self.assertEqual(mac.transcript, [])
+        self.assertEqual(mac.commands_run, [TOUCHID_SNAPSHOT])
 
     def test_existing_unlock_is_a_human_observation_with_no_authentication_command(self):
         for answer, status in (("y", "pass"), ("n", "fail"), ("s", "skip"), (ENDED, "skip")):
