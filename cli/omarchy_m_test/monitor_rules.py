@@ -26,6 +26,7 @@ paths.home/config_home/state_home/omarchy_path or a local set that way.
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import posixpath
 import re
 from dataclasses import dataclass, field
@@ -138,8 +139,9 @@ class Reader:
         path, text = found
         self.loaded.add(module)
         if module in HELPERS:
-            _helper_body(_tokens(text))  # read for what it does (below), once its body is the plain helper
-            return
+            if helper_digest(_tokens(text)) != KNOWN_HELPERS[HELPERS[module]]:
+                raise _Unknown  # not the helper this reader knows how to read
+            return  # read for what it does where it's called (below), not as configuration
         self.lua(path, text, sink)
 
     def probe(self, load) -> None:
@@ -361,6 +363,20 @@ STATEMENT = {"local", "if", "then", "else", "elseif", "end", "do", "while", "for
              "function", "goto", "break", ";"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
+# The helper implementations this reader interprets, by digest of their tokens (comments and spacing don't count):
+# Omarchy's current paths.lua, require_all.lua (with exclude and reload) and require_optional.lua. Any other body
+# (an older or edited helper) leaves intent unknown rather than being guessed at.
+KNOWN_HELPERS = {
+    "paths": "06c24b72f4dda24d8cd3080b85e1b643998159254145b3cc996d3a2e1bed1bd2",
+    "require_all": "b69b7d44910941e9bafaa6252082f8b39b40b8fa3ead3c3ca680e3198ccc0390",
+    "require_optional": "03547db105b3d66d7e9d80f5aebc5f6c0f249ac4a5a9175e0559687fbe78456f",
+}
+HELPER_FIELDS = {"paths": {"home", "config_home", "state_home", "omarchy_path"},
+                 "require_all": {"files"}, "require_optional": {"module"}}
+
+
+def helper_digest(tokens: list["Tok"]) -> str:
+    return hashlib.sha256("\0".join(t.value for t in tokens).encode("utf-8")).hexdigest()
 
 
 def _bindings(tokens: list[Tok]) -> dict[str, int]:
@@ -471,7 +487,14 @@ class _LuaFile:
                 name = name.split(".", 1)[1]
             called = self.helper(name)
             if called is None and name in ("require_all.files", "require_optional.module"):
-                raise _Unknown  # require_all.files or require_optional.module not bound to Omarchy's helper here
+                raise _Unknown
+            head = name.split(".")[0]
+            if head in self.helpers:
+                # only reads of a helper's own fields: a write, an index or an alias could change what it does
+                field = name.split(".")[1] if name.count(".") == 1 else None
+                if (field not in HELPER_FIELDS[self.helpers[head]]
+                        or (j < len(tokens) and tokens[j].kind == "op" and tokens[j].value in ("=", "[", ":", "."))):
+                    raise _Unknown  # require_all.files or require_optional.module not bound to Omarchy's helper here
             if name == "hl.monitor" or name.startswith("hl.monitor."):
                 i = self.monitor(i, j)
             elif name == "hl" and (j >= len(tokens) or tokens[j].value != "."):
@@ -491,7 +514,7 @@ class _LuaFile:
                 if name != "dofile" or "".join(t.value for t in args) != BOOTSTRAP[7:-1] or self.conditional(i):
                     raise _Unknown
                 i = after
-            elif name == "package.path" or name.startswith(("package.searchers", "package.loaders", "package.preload")):
+            elif name == "package" or name.startswith("package."):
                 i = self.package_path(i, j)
             elif name == "local" and j + 2 < len(tokens) and tokens[j].kind == "name" and tokens[j + 1].value == "=":
                 self.local(tokens[j].value, j + 2, tok.depth)
@@ -536,7 +559,8 @@ class _LuaFile:
         if j < len(tokens) and (tokens[j].kind == "str" or tokens[j].value == "("):
             args, after = _call_args(tokens, j)
             module = args[0].literal() if len(args) == 1 else None
-            if module is not None:
+            if module is not None and not (after < len(tokens) and tokens[after].kind == "op"
+                                           and tokens[after].value in (".", "[", ":")):
                 self.load(i, lambda sink: self.reader.require(module, sink))
                 return after
         raise _Unknown  # require(name), pcall(require, ...): what loads can't be read
@@ -631,18 +655,6 @@ class _LuaFile:
                 if i == len(expr):
                     return None
         return posixpath.normpath("".join(parts))
-
-
-def _helper_body(tokens: list[Tok]) -> None:
-    """An Omarchy helper is read for what it does only while its body can't set monitor rules or load anything
-    else: no hl, no globals table, no file loads, and require() only of the module it was handed."""
-    for k, tok in enumerate(tokens):
-        if tok.kind != "name":
-            continue
-        if tok.value in ("hl", "_G", "_ENV", "dofile", "loadfile", "load", "loadstring", "setfenv", "rawset", "debug"):
-            raise _Unknown
-        if tok.value == "require" and [t.value for t in tokens[k + 1:k + 4]] != ["(", "module", ")"]:
-            raise _Unknown
 
 
 def _options(item: list[Tok]) -> tuple[set[str], bool]:

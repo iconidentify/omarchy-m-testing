@@ -568,9 +568,9 @@ class LiteralLuaRulesTest(unittest.TestCase):
         files = {
             f"{OMARCHY}/default/hypr/omarchy.lua": 'local require_optional = require("default.hypr.require_optional")\nrequire("default.hypr.toggles")\n'
                                                    'require_optional.module("omarchy.current.theme.hyprland")\n',
-            f"{OMARCHY}/default/hypr/require_optional.lua": "local M = {}\nfunction M.module(module) return require(module) end\nreturn M\n",
-            f"{OMARCHY}/default/hypr/require_all.lua": "local M = {}\nfunction M.files(dir, prefix) require(module) end\nreturn M\n",
-            f"{OMARCHY}/default/hypr/paths.lua": "return { home = os.getenv('HOME') }\n",
+            f"{OMARCHY}/default/hypr/require_optional.lua": HELPER_OPTIONAL,
+            f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+            f"{OMARCHY}/default/hypr/paths.lua": HELPER_PATHS,
             f"{OMARCHY}/default/hypr/toggles.lua": 'local paths = require("default.hypr.paths")\nlocal require_all = require("default.hypr.require_all")\n'
                                                    'local toggles_dir = paths.state_home .. "/omarchy/toggles/hypr"\n'
                                                    'package.path = toggles_dir .. "/?.lua;" .. package.path\n'
@@ -626,13 +626,38 @@ class LiteralLuaRulesTest(unittest.TestCase):
 
     def test_a_changed_helper_body_is_not_trusted(self):
         rec = lua(self.lower(), {}, DEFAULT_LUA + OPTIONAL)
+        rec["files"][f"{HOME}/.config/hypr/modes.lua"] = {"text": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}
         for body in (HELPER_OPTIONAL + 'hl.monitor { output="USB-1", mode="2560x1440" }\n',
-                     HELPER_OPTIONAL + 'require("hypr.modes")\n', HELPER_OPTIONAL + 'dofile("/x.lua")\n'):
+                     HELPER_OPTIONAL.replace("return M", 'local module = "hypr.modes"\nrequire(module)\nreturn M'),
+                     HELPER_OPTIONAL + 'dofile("/x.lua")\n'):
             with self.subTest(body=body):
                 rec["files"][f"{OMARCHY}/default/hypr/require_optional.lua"] = {"text": body}
                 self.assert_unknown(rec)
         rec["files"][f"{OMARCHY}/default/hypr/require_optional.lua"] = {"text": HELPER_OPTIONAL}
         self.assertEqual(run(rec)[0]["status"], "fail")
+
+    def test_a_helper_value_that_is_written_aliased_or_indexed_is_not_trusted(self):
+        hypr = f"{HOME}/.config/hypr"
+        paths = 'local paths = require("default.hypr.paths")\n'
+        for main in (paths + ALL + 'paths.config_home = "/new"\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
+                     paths + ALL + 'local p = paths\np.config_home = "/new"\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
+                     paths + ALL + 'paths["config_home"] = "/new"\nrequire_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n',
+                     ALL + 'require("default.hypr.paths").config_home = "/new"\n',
+                     ALL + 'require_all.files = nil\n',
+                     'package.loaded["default.hypr.paths"] = { config_home = "/new" }\n'):
+            with self.subTest(main=main):
+                rec = lua(self.lower(), {f"{OMARCHY}/default/hypr/paths.lua": HELPER_PATHS,
+                                         f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                                         "/new/hypr/new/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'}, DEFAULT_LUA + main)
+                rec["dirs"][f"{hypr}/new"] = []
+                rec["dirs"]["/new/hypr/new"] = ["wide.lua"]
+                self.assert_unknown(rec)
+        # reading the helpers as shipped resolves the directory
+        rec = lua(self.lower(), {f"{OMARCHY}/default/hypr/paths.lua": HELPER_PATHS, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                                 ".config/hypr/new/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
+                  DEFAULT_LUA + paths + ALL + 'require_all.files(paths.config_home .. "/hypr/new", "hypr.new")\n')
+        rec["dirs"][f"{hypr}/new"] = ["wide.lua"]
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
 
     def test_truncated_or_bootstrap_only_configuration_does_not_crash(self):
         rec = lua(self.lower(), {}, BOOTSTRAP_LUA)
@@ -648,8 +673,15 @@ class LiteralLuaRulesTest(unittest.TestCase):
         self.assertEqual(run(rec)[0]["status"], "fail")  # the second require is cached: preferred is the last rule
 
 
-HELPER_OPTIONAL = "local M = {}\nfunction M.module(module)\n  if package.searchpath(module, package.path) then return require(module) end\nend\nreturn M\n"
-HELPER_ALL = "local M = {}\nfunction M.files(dir, prefix, options)\n  require(module)\nend\nreturn M\n"
+STOCK = os.path.join(os.path.dirname(__file__), "fixtures", "omarchy-hypr")  # Omarchy's current helpers, as shipped
+
+
+def stock(name: str) -> str:
+    with open(os.path.join(STOCK, f"{name}.lua"), encoding="utf-8") as f:
+        return f.read()
+
+
+HELPER_OPTIONAL, HELPER_ALL, HELPER_PATHS = stock("require_optional"), stock("require_all"), stock("paths")
 OPTIONAL = 'local require_optional = require("default.hypr.require_optional")\n'
 ALL = 'local require_all = require("default.hypr.require_all")\n'
 DEFAULT_LUA = 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })\n'
