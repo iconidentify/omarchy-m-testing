@@ -143,6 +143,31 @@ class PassiveDiagnosticsTest(unittest.TestCase):
                 self.assertEqual(touchid.ready(found)["status"], "pass")
                 self.assertEqual(found["diag"]["profile"], profile)
 
+    def test_lab_m1_air_abi1_reading_passes_with_later_advertised_endpoints(self):
+        # J313, unreleased linux-aurora 11.25 candidate at 821603affb27, already activated.
+        diag = {
+            "abi": "1", "profile": "T8103/J313", "boot": "cold", "protocol": "sepos13",
+            "xart": "enabled", "attach": "attached", "endpoints": 12, "keystore": "open",
+            "keybag": "present", "sensor": "online", "touchid": "ready",
+        }
+        mac = PassiveHost()
+        node = touchid.PLATFORM + "/242400000.sep"
+        mac.files = {k.replace(NODE, node): v for k, v in mac.files.items() if not k.startswith(touchid.CHOSEN + "/")}
+        mac.dirs = {k.replace(NODE, node): v for k, v in mac.dirs.items()}
+        mac.dirs[touchid.PLATFORM] = ["242400000.sep"]
+        mac.files["/proc/device-tree/compatible"] = b"apple,j313\0apple,t8103\0"
+        for name, value in diag.items():
+            mac.files[node + "/diag/" + name] = str(value).encode() + b"\n"
+        mac.log = "kernel: apple_sep 242400000.sep: attach: 7 endpoints advertised in 8 messages\n"
+        found = mac.touchid_snapshot()
+        self.assertEqual(found["diag"], diag)
+        self.assertEqual(touchid.attachment(found)["status"], "pass")
+        result = touchid.ready(found)
+        self.assertEqual(result["status"], "pass")
+        self.assertIn("SEP endpoints: 12", result["evidence"])
+        self.assertIn("a fingerprint match was not tested", result["evidence"][0])
+        self.assertTrue(all(command[2] not in ("fprintd-list", "fprintd-verify", "fprintd-enroll") for command in mac.commands))
+
     def test_discovers_sep_by_compatible_not_mmio_address(self):
         mac = PassiveHost()
         new = touchid.PLATFORM + "/242400000.sep"
