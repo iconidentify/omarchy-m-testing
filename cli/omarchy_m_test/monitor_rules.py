@@ -5,22 +5,32 @@ last rule for a selector wins. Anything this reader can't resolve statically
 leaves intent unknown, so the native-mode check skips rather than fails:
 
   - a monitor rule whose output, mode, disabled or mirror is not one plain
-    literal (a concatenation, a variable, a call), or a rule inside a block
-    (if, for, while, a function);
+    literal (a concatenation, a variable, a call), whose other fields call or
+    define anything, or that sits inside a block (if, for, while, a function)
+    or a branching (and/or) statement;
   - a load this reader can't resolve: require() of anything but a literal
-    module, dofile/loadfile/load other than Omarchy's bootstrap line, an
-    unrecognised package.path change;
-  - a conditional load (inside a block, or in an and/or expression) of a
-    module that sets monitor rules or is itself unknown. A conditional load
-    of a module with no monitor rules doesn't matter either way, which is how
-    Omarchy's own `if ... then require(...) end` bindings stay readable.
+    module, dofile/loadfile/load other than Omarchy's bootstrap line, any
+    package.* change but a plain package.path prepend, goto, an early return;
+  - a conditional load of a module that sets monitor rules, is unknown, or
+    changes package.path. A conditional load of a module with no monitor
+    rules doesn't matter either way, which is how Omarchy's own
+    `if ... then require(...) end` bindings stay readable;
+  - loading a module with monitor rules a second time (caching, reloads).
 
 Lua modules resolve the way Omarchy's bootstrap sets package.path
-(~/.local/state, ~/.config, $OMARCHY_PATH), each loaded once. Omarchy's
-helpers are read for what they do, not executed: require_optional.module("x")
-is an optional load of x; require_all.files(dir, prefix, {exclude=..., reload=...})
-loads dir's *.lua files in sorted order, when dir is literals joined with
-paths.home/config_home/state_home/omarchy_path or a local set that way.
+(~/.local/state, ~/.config, $OMARCHY_PATH), each loaded once, and only after
+the bootstrap line ran and only while bootstrap.lua is Omarchy's current one.
+Omarchy's helpers are read for what they do, not executed, and only while
+their bodies are Omarchy's current ones (KNOWN_HELPERS) and only through
+reads of their own fields: require_optional.module("x") is an optional load
+of x; require_all.files(dir, prefix, {exclude=..., reload=...}) loads dir's
+regular *.lua files in sorted order, when dir is literals joined with
+paths.home/config_home/state_home/omarchy_path or a local set that way once.
+
+hyprlang is read line by line (Reader.conf): top-level monitor, source and
+$variable lines and monitorv2 blocks; anything it can't read for certain is
+unknown. With monitorv2 blocks, an output whose matching rules disagree is
+unknown (how v2 ranks against monitor= lines isn't modelled).
 """
 
 from __future__ import annotations
@@ -51,13 +61,21 @@ class Rule:
 
 
 def selects(selector: str, name: str, description: str) -> bool:
-    return description.startswith(selector[5:]) if selector.startswith("desc:") else selector == name
+    return description.startswith(selector[5:].strip()) if selector.startswith("desc:") else selector == name
 
 
 @dataclass
 class Rules:
     entries: list[Rule] = field(default_factory=list)
     unavailable: bool = False
+    v2: bool = False  # monitorv2 blocks: how they rank against monitor= lines isn't modelled
+
+    def ambiguous(self, name: str, description: str) -> bool:
+        """With monitorv2 blocks, the rules that match an output must agree, or which one wins matters."""
+        if not self.v2:
+            return False
+        matching = {(r.mode, r.disabled, r.mirror) for r in self.entries if not r.output or r.matches(name, description)}
+        return len(matching) > 1
 
     def for_output(self, name: str, description: str) -> Rule:
         named = [rule for rule in self.entries if rule.output and rule.matches(name, description)]
@@ -74,7 +92,7 @@ def intent(host: Host, outputs: list[dict]) -> dict[str, dict]:
         mirrored = bool(rule.mirror) or any(
             other != name and selects(r.mirror, name, description) for other, (r, _) in effective.items() if r.mirror)
         found[name] = {"preferred": rule.mode == "preferred", "disabled": rule.disabled,
-                       "mirrored": mirrored, "unavailable": rules.unavailable}
+                       "mirrored": mirrored, "unavailable": rules.unavailable or rules.ambiguous(name, description)}
     return found
 
 
@@ -94,8 +112,11 @@ class Reader:
         # Omarchy's bootstrap: package.path is ~/.local/state, ~/.config, then $OMARCHY_PATH
         self.lua_roots = [f"{home}/.local/state", f"{home}/.config", host.env("OMARCHY_PATH") or "/usr/share/omarchy"]
         self.rules = Rules()
+        self.variables = {"HOME": home, "XDG_CONFIG_HOME": self.config}  # hyprlang $variables: shared across sources
         self.active: set[str] = set()
         self.loaded: set[str] = set()
+        self.ruled: set[str] = set()  # modules whose loading set monitor rules: loading them again isn't modelled
+        self.bootstrapped = False
         self.reads = 0
         self.attempts = 0
 
@@ -129,6 +150,10 @@ class Reader:
         return None
 
     def require(self, module: str, sink: Rules, optional: bool = False, reload: bool = False) -> None:
+        if not self.bootstrapped:
+            raise _Unknown  # package.path is Omarchy's only once its bootstrap ran
+        if module in self.ruled:
+            raise _Unknown  # cached or loaded again (reload, a module returning false): not modelled
         if module in self.loaded and not reload:
             return
         found = self.find_module(module)
@@ -142,16 +167,28 @@ class Reader:
             if helper_digest(_tokens(text)) != KNOWN_HELPERS[HELPERS[module]]:
                 raise _Unknown  # not the helper this reader knows how to read
             return  # read for what it does where it's called (below), not as configuration
+        before = len(sink.entries)
         self.lua(path, text, sink)
+        if len(sink.entries) != before:
+            self.ruled.add(module)
+
+    def bootstrap(self) -> None:
+        if self.bootstrapped:
+            raise _Unknown  # a second bootstrap clears the module cache: not modelled
+        path = f"{self.host.env('OMARCHY_PATH') or '/usr/share/omarchy'}/default/hypr/bootstrap.lua"
+        text = self.text(path)
+        if text is None or helper_digest(_tokens(text)) != KNOWN_HELPERS["bootstrap"]:
+            raise _Unknown  # not the bootstrap this reader knows the package.path of
+        self.bootstrapped = True
 
     def probe(self, load) -> None:
         """A conditional load: harmless unless what it loads sets monitor rules (or can't be read)."""
         trial = Rules()
         loaded, roots = set(self.loaded), list(self.lua_roots)
         load(trial)
-        self.loaded, self.lua_roots = loaded, roots  # it may not run: a later unconditional load still reads the module
-        if trial.entries or trial.unavailable:
-            raise _Unknown
+        if trial.entries or trial.unavailable or self.lua_roots != roots:
+            raise _Unknown  # it sets rules, or changes where later modules are found, only if it runs
+        self.loaded = loaded  # it may not run: a later unconditional load still reads the module
 
     def lua(self, path: str, text: str, sink: Rules) -> None:
         if path in self.active:
@@ -165,39 +202,63 @@ class Reader:
     # -- hyprlang -----------------------------------------------------------
 
     def conf(self, path: str, text: str) -> None:
+        """hyprlang, line by line. Only top-level monitor, source and $variable lines and top-level monitorv2
+        blocks are read; other keys and categories are skipped. Anything this can't read for certain (a
+        hyprlang directive other than noerror, an escaped #, a line continuation, {{math}}, a monitor or source key inside a
+        category, a $ left after expansion) leaves intent unknown."""
         path = posixpath.normpath(path)
         if path in self.active:
             raise _Unknown
         self.active.add(path)
-        variables = {"HOME": self.home, "XDG_CONFIG_HOME": self.config}
-
-        def expand(value: str) -> str:
-            value = re.sub(r"\$(?:\{(\w+)\}|(\w+))", lambda m: variables.get(m[1] or m[2], m[0]), value)
-            return self.home + value[1:] if value.startswith("~/") else value
-
-        text = re.sub(r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|#[^\n]*''', lambda m: m[1] or "", text)
-        for match in re.finditer(r"monitorv2\s*\{([^{}]*)\}|^\s*(monitor|source|\$\w+)\s*=\s*([^\n]+)", text, re.M):
-            if match[1] is not None:
-                self.rules.entries.append(_conf_table(match[1], expand))
+        depth, block = 0, None  # category nesting; the open top-level monitorv2 block's fields
+        for raw in text.split("\n"):
+            stripped = raw.strip()
+            directive = re.match(r"#\s*hyprlang\s+(\w+)", stripped)
+            if directive and directive[1] != "noerror":
+                raise _Unknown
+            if stripped.startswith("#") and not stripped.startswith("##"):
+                continue  # a comment line
+            if "##" in raw or raw.rstrip().endswith("\\") or "{{" in raw:
+                raise _Unknown
+            line = raw.split("#", 1)[0].strip()
+            if not line:
                 continue
-            key, value = match[2], expand(match[3].strip())
-            if key.startswith("$"):
-                variables[key[1:]] = value
+            if line == "}":
+                depth -= 1
+                if depth < 0:
+                    raise _Unknown
+                if depth == 0 and block is not None:
+                    self.rules.entries.append(_conf_table(block, self.expand))
+                    self.rules.v2 = True
+                    block = None
+                continue
+            category = re.fullmatch(r"([\w:.\-]+(?:\[[^\]]*\])?)\s*\{", line)
+            if category:
+                if category[1] == "monitorv2" and depth == 0:
+                    block = {}
+                elif category[1].startswith("monitorv2"):
+                    raise _Unknown
+                depth += 1
+                continue
+            assignment = re.fullmatch(r"([^=]+?)\s*=\s*(.*)", line)
+            if not assignment:
+                raise _Unknown  # not a line this reader knows
+            key, value = assignment[1].strip(), assignment[2].strip()
+            if block is not None and depth == 1:
+                block[key] = value
+            elif depth > 0:
+                if key in ("monitor", "source", "monitorv2") or key.startswith("$"):
+                    raise _Unknown
+            elif key.startswith("$"):
+                if not re.fullmatch(r"\$\w+", key):
+                    raise _Unknown
+                self.variables[key[1:]] = self.expand(value)
+            elif "$" in key:
+                raise _Unknown  # a key spelt through a variable
             elif key == "source":
-                value = value.strip('"\'')
-                if "$" in value:
-                    raise _Unknown
-                if not value.startswith("/"):
-                    value = posixpath.join(posixpath.dirname(path), value)
-                sources = self.sources(value)
-                if not sources:
-                    raise _Unknown
-                for source in sources:
-                    found = self.text(source)
-                    if found is None:
-                        raise _Unknown
-                    self.conf(source, found)
-            else:
+                self.source(path, self.expand(value))
+            elif key == "monitor":
+                value = self.expand(value)
                 fields = [f.strip() for f in value.split(",")]
                 if len(fields) < 2 or "$" in value:
                     raise _Unknown
@@ -206,16 +267,41 @@ class Reader:
                     continue
                 mirror = fields[fields.index("mirror") + 1] if "mirror" in fields[:-1] else ""
                 self.rules.entries.append(Rule(output, mode, mode == "disable", mirror))
+        if depth != 0:
+            raise _Unknown
         self.active.discard(path)
 
+    def expand(self, value: str) -> str:
+        value = re.sub(r"\$(?:\{(\w+)\}|(\w+))", lambda m: self.variables.get(m[1] or m[2], m[0]), value)
+        return self.home + value[1:] if value.startswith("~/") else value
+
+    def source(self, path: str, value: str) -> None:
+        if "$" in value:
+            raise _Unknown
+        if not value.startswith("/"):
+            value = posixpath.join(posixpath.dirname(path), value)
+        for source in self.sources(value):
+            found = self.text(source)
+            if found is None:
+                raise _Unknown
+            self.conf(source, found)
+
     def sources(self, pattern: str) -> list[str]:
+        """A glob that matches nothing (its directory absent or empty) sources nothing, as Hyprland's glob does."""
         if not any(char in pattern for char in "*?["):
             return [pattern]
         directory, basename = posixpath.split(pattern)
+        if any(char in directory for char in "*?["):
+            raise _Unknown  # a glob in a directory part: not read
         try:
-            return [f"{directory}/{name}" for name in self.host.list_dir(directory) if fnmatch.fnmatchcase(name, basename)]
-        except OSError:
+            names = self.host.list_dir(directory)
+        except FileNotFoundError:
             return []
+        except OSError:
+            raise _Unknown
+        # glob(3): a wildcard doesn't match a leading dot
+        return [f"{directory}/{name}" for name in names
+                if fnmatch.fnmatchcase(name, basename) and (not name.startswith(".") or basename.startswith("."))]
 
 
 class _Unknown(Exception):
@@ -240,15 +326,13 @@ def read(host: Host) -> Rules:
     return reader.rules
 
 
-def _conf_table(text: str, expand) -> Rule:
+def _conf_table(block: dict[str, str], expand) -> Rule:
     fields = {}
-    for statement in re.split(r"\n|;", text):
-        if "=" in statement:
-            key, value = map(str.strip, statement.split("=", 1))
-            value = expand(value)
-            if key in KEY_FIELDS and "$" in value:
-                raise _Unknown  # a variable this reader can't resolve
-            fields[key] = value[1:-1] if re.fullmatch(r"(['\"]).*\1", value) else value
+    for key, value in block.items():
+        value = expand(value)
+        if key in KEY_FIELDS and "$" in value:
+            raise _Unknown  # a variable this reader can't resolve
+        fields[key] = value
     return Rule(fields.get("output", ""), fields.get("mode", fields.get("resolution", "preferred")),
                 fields.get("disabled", "false") in ("true", "1", "yes"), fields.get("mirror", fields.get("mirror_of", "")))
 
@@ -275,6 +359,7 @@ class Tok:
     value: str
     line: int
     depth: int  # block depth (if/for/while/do/function/repeat) at the token
+    functions: int = 0  # how many function bodies it is inside
 
     def literal(self) -> str | None:
         """A plain string literal's text: no escapes, so what's written is what Lua sees."""
@@ -282,15 +367,15 @@ class Tok:
 
 
 def _tokens(text: str) -> list[Tok]:
-    tokens, depth, line = [], 0, 1
+    tokens, stack, line = [], [], 1
     for match in _TOKEN.finditer(text):
         kind, value = match.lastgroup, match[0]
         if kind in ("name", "str", "num", "op", "long"):
-            if kind == "name" and value in CLOSE:
-                depth = max(depth - 1, 0)
-            tokens.append(Tok(kind, value, line, depth))
+            if kind == "name" and value in CLOSE and stack:
+                stack.pop()
+            tokens.append(Tok(kind, value, line, len(stack), stack.count("function")))
             if kind == "name" and value in OPEN:
-                depth += 1
+                stack.append(value)
         line += value.count("\n")
     return tokens
 
@@ -364,6 +449,8 @@ CONTINUES = {"and", "or", "not", "..", "+", "-", "*", "/", "//", "%", "^", "#", 
 # Tokens that only start (or sit between) statements: what came before can't branch what follows.
 STATEMENT = {"local", "if", "then", "else", "elseif", "end", "do", "while", "for", "repeat", "until", "return",
              "function", "goto", "break", ";"}
+EFFECTS = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV",
+           "require_all", "require_optional"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
 # The helper implementations this reader interprets, by digest of their tokens (comments and spacing don't count):
@@ -373,6 +460,7 @@ KNOWN_HELPERS = {
     "paths": "06c24b72f4dda24d8cd3080b85e1b643998159254145b3cc996d3a2e1bed1bd2",
     "require_all": "b69b7d44910941e9bafaa6252082f8b39b40b8fa3ead3c3ca680e3198ccc0390",
     "require_optional": "03547db105b3d66d7e9d80f5aebc5f6c0f249ac4a5a9175e0559687fbe78456f",
+    "bootstrap": "199761d1f1c8548296a6e4f805847981eb7158829146abbf72ab4a8a5677bad5",
 }
 HELPER_FIELDS = {"paths": {"home", "config_home", "state_home", "omarchy_path"},
                  "require_all": {"files"}, "require_optional": {"module"}}
@@ -470,6 +558,10 @@ class _LuaFile:
         self.bound = _bindings(tokens)
         self.nesting = _nesting(tokens)
         self.helper_requires: set[int] = set()  # the require tokens that bound a helper (local name = require "...")
+        self.helper_names: set[str] = set()  # names ever bound to a helper here
+        self.helper_bindings: set[int] = set()  # the name tokens of those bindings
+        if any(t.kind == "op" and t.value == "::" for t in tokens):
+            raise _Unknown  # labels (goto): not read
 
     def conditional(self, i: int) -> bool:
         """Inside a block, or in a statement that branches (and/or): it may not run."""
@@ -480,6 +572,17 @@ class _LuaFile:
             self.reader.probe(action)
         else:
             action(self.sink)
+
+    def returns(self, i: int) -> None:
+        """The chunk returns here. At the top level that's its last statement (Lua allows nothing after it);
+        inside a block (if ... then return end) it may return early: nothing after the block may set rules or load."""
+        depth = self.tokens[i].depth
+        if depth == 0:
+            return
+        after = next((k for k in range(i + 1, len(self.tokens)) if self.tokens[k].depth < depth), len(self.tokens))
+        for tok in self.tokens[after:]:
+            if tok.kind == "name" and (tok.value in EFFECTS or tok.value in self.helper_names):
+                raise _Unknown
 
     def goes_on(self, end: int) -> bool:
         """Does the expression ending before end continue on the next line (and ..., .field, (...), "...")?"""
@@ -510,8 +613,13 @@ class _LuaFile:
                     raise _Unknown  # the globals table itself: anything could be reached through it
                 name = name.split(".", 1)[1]
             called = self.helper(name)
-            if called is None and name in ("require_all.files", "require_optional.module"):
+            if called is None and (name in ("require_all.files", "require_optional.module")
+                                   or name.split(".")[0] in self.helper_names and i not in self.helper_bindings):
+                raise _Unknown  # a helper call this reader can't attribute
+            if name == "goto":
                 raise _Unknown
+            if name == "return" and tok.functions == 0:
+                self.returns(i)
             head = name.split(".")[0]
             if head in self.helpers:
                 # only reads of a helper's own fields: a write, an index or an alias could change what it does
@@ -539,6 +647,7 @@ class _LuaFile:
                 args, after = _call_args(tokens, j)
                 if name != "dofile" or "".join(t.value for t in args) != BOOTSTRAP[7:-1] or self.conditional(i):
                     raise _Unknown
+                self.reader.bootstrap()
                 i = after
             elif name == "package" or name.startswith("package."):
                 i = self.package_path(i, j)
@@ -566,6 +675,8 @@ class _LuaFile:
         if module in HELPERS:
             self.helpers[name] = HELPERS[module]
             self.helper_requires.add(start)
+            self.helper_names.add(name)
+            self.helper_bindings.add(start - 2)
             return
         directory = self.directory(value)
         if directory is not None:
@@ -582,7 +693,7 @@ class _LuaFile:
         if rule is None:
             raise _Unknown
         self.sink.entries.append(rule)
-        return j  # its fields are read on (scale = (function() ... end)(): what they run counts too)
+        return after
 
     def require(self, i: int, j: int) -> int:
         tokens = self.tokens
@@ -686,13 +797,19 @@ def _options(item: list[Tok]) -> tuple[set[str], bool]:
     if not item or item[0].value != "{" or item[-1].value != "}":
         raise _Unknown
     exclude, reload = set(), False
+    keys = [entry[0].value for entry in _split(item[1:-1]) if entry]
+    if len(keys) != len(set(keys)):
+        raise _Unknown  # a repeated option: the last wins in Lua, not modelled
     for entry in _split(item[1:-1]):
         if len(entry) == 3 and entry[0].kind == "name" and entry[1].value == "=" and entry[0].value == "reload":
             if entry[2].value not in ("true", "false"):
                 raise _Unknown
             reload = entry[2].value == "true"
         elif len(entry) >= 4 and entry[0].value == "exclude" and entry[1].value == "=" and entry[2].value == "{":
-            for name in _split(entry[3:-1]):
+            names = _split(entry[3:-1])
+            if len({tuple(t.value for t in n) for n in names}) != len(names):
+                raise _Unknown
+            for name in names:
                 values = [t.value for t in name]
                 if len(name) == 5 and values[0] == "[" and name[1].literal() is not None and values[2:] == ["]", "=", "true"]:
                     exclude.add(name[1].literal())
@@ -705,6 +822,18 @@ def _options(item: list[Tok]) -> tuple[set[str], bool]:
     return exclude, reload
 
 
+def _inert(value: list[Tok]) -> bool:
+    """Literals, names and operators only: nothing called, defined or built."""
+    for k, tok in enumerate(value):
+        if tok.kind == "op" and tok.value in ("(", "{", ":"):
+            return False
+        if tok.kind == "name" and tok.value == "function":
+            return False
+        if tok.kind in ("str", "long") and k and value[k - 1].kind == "name" and value[k - 1].value not in ("and", "or", "not"):
+            return False  # f"x": a call
+    return True
+
+
 def _lua_table(table: list[Tok]) -> Rule | None:
     """A monitor table whose output, mode, disabled and mirror are plain literals; None otherwise."""
     fields: dict[str, str] = {}
@@ -712,10 +841,8 @@ def _lua_table(table: list[Tok]) -> Rule | None:
         if len(entry) < 3 or entry[0].kind != "name" or entry[1].value != "=":
             return None  # positional values and ["key"] = ...: not read
         key, value = entry[0].value, entry[2:]
-        if any(t.value in ("{", "}") and t.kind == "op" for t in value):
-            if key in KEY_FIELDS:
-                return None
-            continue
+        if not _inert(value):
+            return None  # a field that calls or defines something runs before the rule is made
         if key not in KEY_FIELDS:
             continue  # scale = omarchy_monitor_scale: doesn't decide the mode
         if len(value) != 1:

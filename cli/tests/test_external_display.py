@@ -60,6 +60,16 @@ def fixture(monitors=None, preferred=None, config=DEFAULT) -> dict:
     ]}
 
 
+STOCK = os.path.join(os.path.dirname(__file__), "fixtures", "omarchy-hypr")  # Omarchy's current helpers, as shipped
+
+
+def stock(name: str) -> str:
+    with open(os.path.join(STOCK, f"{name}.lua"), encoding="utf-8") as f:
+        return f.read()
+
+
+HELPER_OPTIONAL, HELPER_ALL, HELPER_PATHS = stock("require_optional"), stock("require_all"), stock("paths")
+BOOTSTRAP_LUA = 'dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/bootstrap.lua")\n'
 LUA = f"{HOME}/.config/hypr/hyprland.lua"
 OMARCHY = "/usr/share/omarchy"
 
@@ -80,10 +90,12 @@ class NativeHost(RecordedHost):
 
 
 def lua(rec: dict, files: dict[str, str], main: str | None = None) -> dict:
-    """Lua configuration: main is ~/.config/hypr/hyprland.lua, files are other paths (relative to $HOME)."""
+    """Lua configuration: main is ~/.config/hypr/hyprland.lua, after Omarchy's bootstrap line unless it has its own;
+    files are other paths (relative to $HOME). Omarchy's stock bootstrap is installed."""
     rec["files"][CONFIG] = None
+    rec["files"].setdefault(f"{OMARCHY}/default/hypr/bootstrap.lua", {"text": stock("bootstrap")})
     if main is not None:
-        rec["files"][LUA] = {"text": main}
+        rec["files"][LUA] = {"text": main if "bootstrap.lua" in main else BOOTSTRAP_LUA + main}
     for path, text in files.items():
         rec["files"][path if path.startswith("/") else f"{HOME}/{path}"] = {"text": text}
     return rec
@@ -281,9 +293,8 @@ class MonitorIntentTest(unittest.TestCase):
         self.assertIn("below preferred resolution", result["evidence"][2])
 
     def test_lua_monitor_rules_and_static_require(self):
-        rec = fixture()
-        rec["files"][f"{HOME}/.config/hypr/hyprland.lua"] = {"text": 'require("hypr.monitors")\n'}
-        rec["files"][f"{HOME}/.config/hypr/monitors.lua"] = {"text": 'hl.monitor({ output = "USB-1", mode = "2560x1440@60", scale = 1 })\n'}
+        rec = lua(fixture(), {".config/hypr/monitors.lua": 'hl.monitor({ output = "USB-1", mode = "2560x1440@60", scale = 1 })\n'},
+                  'require("hypr.monitors")\n')
         result, _ = run(rec)
         self.assertEqual(result["status"], "skip")
         self.assertIn("explicit monitor mode", result["evidence"][1])
@@ -297,9 +308,7 @@ class MonitorIntentTest(unittest.TestCase):
         self.assertIn("explicit monitor mode", result["evidence"][1])
 
     def test_omarchy_lua_bootstrap_and_a_static_preferred_rule_are_read_without_execution(self):
-        rec = fixture()
-        rec["files"][f"{HOME}/.config/hypr/hyprland.lua"] = {
-            "text": 'dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/bootstrap.lua")\nrequire("hypr.monitors")\n'}
+        rec = lua(fixture(), {}, BOOTSTRAP_LUA + 'require("hypr.monitors")\n')
         rec["files"][f"{HOME}/.config/hypr/monitors.lua"] = {
             "text": '-- hl.monitor { output="USB-1", mode="2560x1440" }\nhl.monitor { output="", mode="preferred", scale=omarchy_monitor_scale }\n'}
         result, _ = run(rec)
@@ -315,9 +324,12 @@ class MonitorIntentTest(unittest.TestCase):
             self.assertIn("mode intent unknown", result["evidence"][1])
 
     def test_monitorv2_fields_expand_variables(self):
-        config = DEFAULT + '$display = USB-1\nmonitorv2 {\n output = $display\n mode = 2560x1440@60\n}\n'
+        config = '$display = USB-1\nmonitorv2 {\n output = $display\n mode = 2560x1440@60\n}\n'
         result, _ = run(fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config))
         self.assertIn("explicit monitor mode", result["evidence"][1])
+        # with a preferred fallback too, which of the two wins isn't modelled: unknown, never a fail
+        result, _ = run(fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, DEFAULT + config))
+        self.assertIn("mode intent unknown", result["evidence"][1])
         config = DEFAULT + 'monitorv2 {\n output = $unset\n mode = 2560x1440@60\n}\n'
         result, _ = run(fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config))
         self.assertIn("mode intent unknown", result["evidence"][1])
@@ -706,13 +718,13 @@ class LiteralLuaRulesTest(unittest.TestCase):
                 self.assert_unknown(rec)
         for binding in ('local ra = require "default.hypr.require_all"\n', 'local ra = require("default.hypr.require_all");\n'):
             with self.subTest(binding=binding):
-                rec["files"][LUA] = {"text": DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
+                rec["files"][LUA] = {"text": BOOTSTRAP_LUA + DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
                 self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])  # these bind too
         for binding in ('local ra = require("default.hypr.require_all")\n  and { files = function() end }\n',
                         'local ra = require("default.hypr.require_all")\n  .files\n', 'local ra = require(\n"default.hypr.require_all")\n',
                         'local ra = require("default.hypr.require_all")\n("x")\n'):
             with self.subTest(binding=binding):
-                rec["files"][LUA] = {"text": DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
+                rec["files"][LUA] = {"text": BOOTSTRAP_LUA + DEFAULT_LUA + binding + f'ra.files("{hypr}/new", "hypr.new")\n'}
                 self.assert_unknown(rec)
 
     def test_a_directory_load_lists_regular_files_only(self):
@@ -758,24 +770,77 @@ class LiteralLuaRulesTest(unittest.TestCase):
             self.assertIn("explicit monitor mode", result["evidence"][1])  # "link/" is followed, as find follows it
 
     def test_a_module_is_loaded_once(self):
-        rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},
+        rec = lua(self.lower(), {".config/hypr/keys.lua": 'hl.bind("SUPER", "Q", "killactive")\n'},
+                  DEFAULT_LUA + 'require("hypr.keys")\nrequire("hypr.keys")\n')
+        self.assertEqual(run(rec)[0]["status"], "fail")
+        # requiring a module with rules again (cached, or reloaded when it returned false) isn't modelled
+        rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\nreturn false\n'},
                   'require("hypr.modes")\nhl.monitor { output="USB-1", mode="preferred" }\nrequire("hypr.modes")\n')
-        self.assertEqual(run(rec)[0]["status"], "fail")  # the second require is cached: preferred is the last rule
+        self.assert_unknown(rec)
+
+    def test_control_flow_cache_and_order_effects_are_unknown(self):
+        modes = {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n',
+                 ".config/hypr/pref.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'}
+        for main in ('goto skip\nhl.monitor { output="USB-1", mode="2560x1440" }\n::skip::\n',
+                     'if ready then return end\nrequire("hypr.modes")\n',
+                     BOOTSTRAP_LUA + BOOTSTRAP_LUA,
+                     'if x then package.path = "/x" .. "/?.lua;" .. package.path end\n',
+                     'hl.monitor { output="USB-1", mode="2560x1440", scale=require("hypr.pref") }\n',
+                     'hl.monitor { output="USB-1", mode="2560x1440", scale=f"x" }\n',
+                     ALL + 'require_all.files("/x", "y", { exclude = { a = true }, exclude = { b = true } })\n',
+                     ALL + 'require_all.files("/x", "y", { reload = true, reload = false })\n',
+                     'local ra = require("default.hypr.require_all")\nlocal ra = require("default.hypr.require_all")\nra.files("/x", "y")\n'):
+            with self.subTest(main=main):
+                rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
+                self.assert_unknown(rec)
+        rec = lua(self.lower(), {}, 'require("missing")\n')
+        rec["files"][LUA] = {"text": 'hl.monitor { output="USB-1", mode="preferred" }\nrequire("hypr.modes")\n'}
+        self.assert_unknown(rec)  # no bootstrap: where modules are found isn't known
+        rec = lua(self.lower(), {}, DEFAULT_LUA)
+        rec["files"][f"{OMARCHY}/default/hypr/bootstrap.lua"] = {"text": stock("bootstrap") + "\npackage.path = '/x/?.lua'\n"}
+        self.assert_unknown(rec)  # a changed bootstrap
+
+    def test_hyprlang_constructs_this_reader_cant_follow_are_unknown(self):
+        for config in (DEFAULT + "# hyprlang if WIDE\nmonitor=USB-1,2560x1440,auto,1\n# hyprlang endif\n",
+                       DEFAULT + "monitor=USB-1,2560x1440,auto,{{1+1}}\n",
+                       DEFAULT + "monitor=USB-1,\\\n2560x1440,auto,1\n",
+                       DEFAULT + "$m = monitor\n${m} = USB-1,2560x1440,auto,1\n",
+                       DEFAULT + "general {\n  monitor = USB-1,2560x1440,auto,1\n}\n",
+                       DEFAULT + "exec = echo ## monitor=USB-1,2560x1440\n",
+                       DEFAULT + "monitorv2[x] {\n output = USB-1\n}\n",
+                       DEFAULT + "general {\n"):
+            with self.subTest(config=config):
+                result, _ = run(self.lower_conf(config))
+                self.assertEqual(result["status"], "skip")
+        # Omarchy's own: a noerror directive, ## in a comment line, a glob over a missing directory
+        rec = self.lower_conf("# hyprlang noerror true\n# type # as ## here\n" + DEFAULT
+                              + f"source = {HOME}/.local/state/omarchy/toggles/hypr/*.conf\n# hyprlang noerror false\n")
+        rec["dirs"][f"{HOME}/.local/state/omarchy/toggles/hypr"] = None
+        self.assertEqual(run(rec)[0]["status"], "fail")
+        # quoted text naming monitorv2 in another key is just text
+        result, _ = run(self.lower_conf(DEFAULT + 'exec = echo "monitorv2 { output = USB-1 mode = 2560x1440 }"\n'))
+        self.assertEqual(result["status"], "fail")
+
+    def test_hyprlang_variables_carry_into_sources_and_globs_skip_hidden_files(self):
+        hypr = f"{HOME}/.config/hypr"
+        rec = self.lower_conf(f"$screen = USB-1\nsource = {hypr}/conf.d/*.conf\n")
+        rec["dirs"][f"{hypr}/conf.d"] = [".hidden.conf", "a.conf"]
+        rec["files"][f"{hypr}/conf.d/a.conf"] = {"text": DEFAULT + "monitor=$screen,2560x1440,auto,1\n"}
+        rec["files"][f"{hypr}/conf.d/.hidden.conf"] = {"text": "monitor=$screen,preferred,auto,1\n"}
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def test_a_description_selector_may_have_a_space_after_desc(self):
+        rec = fixture([monitor(width=2560, description="Generic Ultrawide")], {"USB-1": (3440, 1440)},
+                      DEFAULT + "monitor=desc: Generic Ultrawide,2560x1440,auto,1\n")
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def lower_conf(self, config):
+        return fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config)
 
 
-STOCK = os.path.join(os.path.dirname(__file__), "fixtures", "omarchy-hypr")  # Omarchy's current helpers, as shipped
-
-
-def stock(name: str) -> str:
-    with open(os.path.join(STOCK, f"{name}.lua"), encoding="utf-8") as f:
-        return f.read()
-
-
-HELPER_OPTIONAL, HELPER_ALL, HELPER_PATHS = stock("require_optional"), stock("require_all"), stock("paths")
 OPTIONAL = 'local require_optional = require("default.hypr.require_optional")\n'
 ALL = 'local require_all = require("default.hypr.require_all")\n'
 DEFAULT_LUA = 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })\n'
-BOOTSTRAP_LUA = 'dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/bootstrap.lua")\n'
 
 
 class BoundedReadTest(unittest.TestCase):
