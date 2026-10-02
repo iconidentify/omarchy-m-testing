@@ -12,6 +12,8 @@ Operations:
                              e.g. omarchy-mac's mac-check; recorded as bundled_argv()
   read_file(path)            read a file's bytes; FileNotFoundError if absent
   list_dir(path)             list a directory's entry names, sorted
+  monitor_intent(outputs)   read monitor rules locally; only policy flags leave the host,
+                             never user configuration text or monitor description selectors
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
   show(text)                 show text to the human
   write_file(path, text, private=False)
@@ -111,6 +113,7 @@ HTTP_TIMEOUT_SECONDS = 30
 # GETs only look up the latest release; a slow or absent network must not hold up a run.
 GET_TIMEOUT_SECONDS = 5
 BUNDLED_PREFIX = "bundled:"
+MONITOR_INTENT = ["read:monitor-intent"]  # the derived policy flags in a recording
 
 
 def bundled_argv(name: str, args: Sequence[str] = ()) -> list[str]:
@@ -189,6 +192,8 @@ class Host(Protocol):
     def read_file(self, path: str) -> bytes: ...
 
     def list_dir(self, path: str) -> list[str]: ...
+
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]: ...
 
     def prompt(self, message: str) -> str: ...
 
@@ -365,6 +370,11 @@ class RealHost:
 
     def list_dir(self, path: str) -> list[str]:
         return sorted(os.listdir(path))
+
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
+        from .monitor_rules import intent
+
+        return intent(self, outputs)
 
     def prompt(self, message: str) -> str:
         return input(message)

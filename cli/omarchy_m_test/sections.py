@@ -55,8 +55,8 @@ APPLE: tuple[Section, ...] = (
     _section("graphics", "Graphics", "The GPU driver, Vulkan and OpenGL.", ("gpu.driver", "gpu.vulkan", "gpu.opengl"), checks.graphics),
     _section("video", "Video", "Plays a test card full screen on the built-in screen with hardware decode (H.264, HEVC) and checks its colours in a screenshot.",
              video.CHECK_IDS, video.run),
-    _section("display", "Display", "Outputs, the display controller, the backlight and the notch strip; then you look: the bar and the notch, brightness steps, the cursor.", (
-        "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
+    _section("display", "Display", "Outputs and external native resolutions, the display controller, the backlight and the notch strip; then you look: the bar and the notch, brightness steps, the cursor.", (
+        "display.outputs", "display.external-native-mode", "display.controller", "display.backlight", "display.notch-strip",
         "display.notch-bar", "display.brightness-steps", "display.cursor",
     ), checks.display, ("display.notch-bar", "display.brightness-steps", "display.cursor")),
     _section("audio", "Audio", "Sound cards, the default sink, speaker DSP and protection, the microphone mapping; then the microphone, a short tone at 30% volume (only once speaker protection is confirmed) and the headphone jack.", (

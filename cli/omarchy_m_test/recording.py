@@ -23,6 +23,10 @@ A bundled script's run (Host.run_bundled) is a command whose argv starts with
 "bundled:<name>", e.g. ["bundled:mac-check"]. A command the host stopped at its
 time limit carries "timed_out": the limit in seconds (CommandResult.timed_out).
 
+Monitor intent is recorded as ["read:monitor-intent"] with per-output policy
+flags. User configuration stays local. EDIDs retain only an anonymous
+preferred timing block; their identity fields and other descriptors are zeroed.
+
 A file or directory mapped to null is recorded as absent (FileNotFoundError).
 A binary file the recorder could not scrub is kept only as its size and
 replays as that many zero bytes. An environment variable the recording
@@ -68,7 +72,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
-from .host import CommandResult, Host, HttpResponse, MachineSignature, NetworkError, SigningError, Terminal, bundled_argv
+from .host import MONITOR_INTENT, CommandResult, Host, HttpResponse, MachineSignature, NetworkError, SigningError, Terminal, bundled_argv
 from .privacy import HOME_DIR, HOSTNAME_PATH, SERIAL_FILES, Scrubber
 
 RECORDING_VERSION = 1
@@ -180,6 +184,9 @@ class RecordedHost:
 
     def run_bundled(self, name: str, args: Sequence[str] = ()) -> CommandResult:
         return self.run(bundled_argv(name, args))
+
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
+        return json.loads(self.run(MONITOR_INTENT).stdout)
 
     def read_file(self, path: str) -> bytes:
         if path in self.written:
@@ -337,6 +344,11 @@ class RecordingHost:
         self._keep(argv, result)
         return result
 
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
+        result = self.inner.monitor_intent(outputs)
+        self._keep(MONITOR_INTENT, CommandResult(0, json.dumps(result), ""))
+        return result
+
     def _keep(self, argv: list[str], result: CommandResult) -> None:
         if not any(entry["argv"] == argv for entry in self.commands):
             entry = {"argv": argv, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}
@@ -473,6 +485,11 @@ def _file_entry(path: str, data: bytes | None, scrubber: Scrubber) -> dict[str, 
         return {"text": "<hostname>\n"}
     if path.endswith(SERIAL_FILES):  # a sysfs serial (/sys/bus/usb/devices/1-1/serial), however it looks
         return {"text": "<serial>\n"}
+    if path.startswith("/sys/class/drm/") and path.endswith("/edid"):
+        from .external_display import anonymous_edid
+
+        timing = anonymous_edid(data)
+        return {"base64": base64.b64encode(timing).decode("ascii")} if timing else {"redacted_bytes": len(data)}
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:

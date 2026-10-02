@@ -675,6 +675,18 @@
       "stdout": "mesa-utils\n",
       "stderr": "",
       "note": "as the M2 Max answered on 2026-09-27: mesa-utils alone, nothing installed it needs upgraded"
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "-j",
+        "monitors",
+        "all"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "",
+      "note": "stand-in: this corpus predates the native-mode probe and has no Hyprland monitor JSON for it. Leave the session unavailable instead of inventing a native-mode pass; the next dogfood run records it."
     }
   ],
   "files": {
