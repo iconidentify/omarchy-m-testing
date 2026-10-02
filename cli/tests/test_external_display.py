@@ -794,7 +794,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'local hl = { monitor = function(t) end }\nhl.monitor { output="USB-1", mode="preferred" }\n',
                      'function hl.monitor(t) end\nhl.monitor { output="USB-1", mode="preferred" }\n',
                      'hl.monitor = print\nhl.monitor { output="USB-1", mode="preferred" }\n',
-                     'local require = print\n'):
+                     'local require = print\n', 'local os = { getenv = function() return "/other" end }\n',
+                     'os.getenv = function() return "/other" end\n'):
             with self.subTest(main=main):
                 rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
                 self.assert_unknown(rec)
@@ -813,7 +814,8 @@ class LiteralLuaRulesTest(unittest.TestCase):
                        DEFAULT + "general {\n  monitor = USB-1,2560x1440,auto,1\n}\n",
                        DEFAULT + "exec = echo ## monitor=USB-1,2560x1440\n",
                        DEFAULT + "monitorv2[x] {\n output = USB-1\n}\n",
-                       DEFAULT + "general {\n"):
+                       DEFAULT + "general {\n",
+                       DEFAULT + "$tail = tor\ngeneral {\n  moni$tail = USB-1,2560x1440,auto,1\n}\n"):
             with self.subTest(config=config):
                 result, _ = run(self.lower_conf(config))
                 self.assertEqual(result["status"], "skip")
@@ -832,11 +834,15 @@ class LiteralLuaRulesTest(unittest.TestCase):
                 result, _ = run(self.lower_conf("monitorv2 {\n output = USB-2\n" + inner + "}\n"))
                 self.assertIn("mode intent unknown", result["evidence"][1])
 
-    def test_a_relative_source_resolves_its_parent_in_the_text(self):
-        hypr = f"{HOME}/.config/hypr"
-        rec = self.lower_conf(DEFAULT + "source = sub/../modes.conf\n")
-        rec["files"][f"{hypr}/modes.conf"] = {"text": "monitor=USB-1,2560x1440,auto,1\n"}
-        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+    def test_sources_resolve_as_hyprland_does(self):
+        # a leading ../ or ./ in the text; anything else, absolute paths included, as written (links followed)
+        for value, path in (("../modes.conf", f"{HOME}/.config/modes.conf"), ("./modes.conf", f"{HOME}/.config/hypr/modes.conf"),
+                            ("sub/../modes.conf", f"{HOME}/.config/hypr/sub/../modes.conf"),
+                            ("/a/link/../modes.conf", "/a/link/../modes.conf"), ("~/modes.conf", f"{HOME}/modes.conf")):
+            with self.subTest(value=value):
+                rec = self.lower_conf(DEFAULT + f"source = {value}\n")
+                rec["files"][path] = {"text": "monitor=USB-1,2560x1440,auto,1\n"}
+                self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
 
     def test_a_module_that_changes_package_path_is_not_loaded_twice(self):
         rec = lua(self.lower(), {".config/hypr/paths2.lua": 'package.path = "/a" .. "/?.lua;" .. package.path\nreturn false\n'},
@@ -899,6 +905,16 @@ class BoundedReadTest(unittest.TestCase):
             bounded_read(path, limit=99)
         with self.assertRaises(FileNotFoundError):
             bounded_read(os.path.join(self.dir.name, "absent"))
+
+    def test_a_directory_listing_that_never_answers_times_out(self):
+        release = threading.Event()
+        self.addCleanup(release.set)
+        with mock.patch.object(host_module.os, "listdir", lambda path: release.wait(10) and []), \
+                mock.patch.object(host_module, "READ_TIMEOUT_SECONDS", 0.2):
+            started = time.monotonic()
+            with self.assertRaises(TimeoutError):
+                host_module.RealHost().list_dir("/x")
+            self.assertLess(time.monotonic() - started, 2)
 
     def test_a_read_that_never_answers_times_out(self):
         release = threading.Event()

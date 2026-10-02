@@ -14,7 +14,7 @@ Operations:
                              anything but a regular file (a FIFO, a device, a directory) is
                              refused, more than READ_LIMIT_BYTES is EFBIG, and a read that
                              takes longer than READ_TIMEOUT_SECONDS is TimeoutError (all OSError)
-  list_dir(path)             list a directory's entry names, sorted
+  list_dir(path)             list a directory's entry names, sorted (within READ_TIMEOUT_SECONDS too)
   regular_files(path)        the names of a directory's regular files, sorted, symlinks not followed
                              (what `find PATH -maxdepth 1 -type f` lists: nothing when PATH itself is a
                              symlink); FileNotFoundError if absent
@@ -384,13 +384,10 @@ class RealHost:
         return bounded_read(path)
 
     def list_dir(self, path: str) -> list[str]:
-        return sorted(os.listdir(path))
+        return bounded(lambda: sorted(os.listdir(path)), path)
 
     def regular_files(self, path: str) -> list[str]:
-        if os.path.islink(path):
-            return []  # find without -L doesn't descend into a symlinked starting point
-        with os.scandir(path) as entries:
-            return sorted(entry.name for entry in entries if entry.is_file(follow_symlinks=False))
+        return bounded(lambda: _regular_files(path), path)
 
     def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
         from .monitor_rules import intent
@@ -578,29 +575,43 @@ def _read_regular(path: str, limit: int) -> bytes:
         os.close(fd)
 
 
-def bounded_read(path: str, timeout: float = READ_TIMEOUT_SECONDS, limit: int = READ_LIMIT_BYTES) -> bytes:
-    """A regular file's bytes within a deadline; the worker owns its descriptor and a late answer is dropped."""
+def bounded(work, path: str, timeout: float | None = None):
+    """work() within a deadline, in a worker thread: TimeoutError when it doesn't answer (the stuck worker is
+    dropped; past READ_STUCK_LIMIT of them, everything is refused at once)."""
     if not _stuck.acquire(blocking=False):
         raise TimeoutError(errno.ETIMEDOUT, "too many file reads still stuck", path)
     outcome: list = []
 
-    def work() -> None:
+    def run() -> None:
         try:
-            outcome.append((True, _read_regular(path, limit)))
+            outcome.append((True, work()))
         except BaseException as problem:  # handed to the caller
             outcome.append((False, problem))
         finally:
             _stuck.release()
 
-    worker = threading.Thread(target=work, name="omarchy-m-test-read", daemon=True)
+    worker = threading.Thread(target=run, name="omarchy-m-test-read", daemon=True)
     worker.start()
+    timeout = READ_TIMEOUT_SECONDS if timeout is None else timeout
     worker.join(timeout)
     if not outcome:
-        raise TimeoutError(errno.ETIMEDOUT, f"read timed out after {timeout:g}s", path)
+        raise TimeoutError(errno.ETIMEDOUT, f"timed out after {timeout:g}s", path)
     ok, value = outcome[0]
     if ok:
         return value
     raise value
+
+
+def bounded_read(path: str, timeout: float | None = None, limit: int = READ_LIMIT_BYTES) -> bytes:
+    """A regular file's bytes within a deadline; the worker owns its descriptor and a late answer is dropped."""
+    return bounded(lambda: _read_regular(path, limit), path, timeout)
+
+
+def _regular_files(path: str) -> list[str]:
+    if os.path.islink(path):
+        return []  # find without -L doesn't descend into a symlinked starting point
+    with os.scandir(path) as entries:
+        return sorted(entry.name for entry in entries if entry.is_file(follow_symlinks=False))
 
 
 def _kill_group(process: subprocess.Popen) -> None:

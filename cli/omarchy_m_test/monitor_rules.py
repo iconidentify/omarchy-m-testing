@@ -206,7 +206,6 @@ class Reader:
         blocks are read; other keys and categories are skipped. Anything this can't read for certain (a
         hyprlang directive other than noerror, an escaped #, a line continuation, {{math}}, a monitor or source key inside a
         category, a $ left after expansion) leaves intent unknown."""
-        path = posixpath.normpath(path)
         if path in self.active:
             raise _Unknown
         self.active.add(path)
@@ -244,6 +243,8 @@ class Reader:
             if not assignment:
                 raise _Unknown  # not a line this reader knows
             key, value = assignment[1].strip(), assignment[2].strip()
+            if "$" in key and not (depth == 0 and re.fullmatch(r"\$\w+", key)):
+                raise _Unknown  # a key spelt through a variable, or a variable set inside a category
             if block is not None and depth == 1:
                 if key in ("monitor", "source", "monitorv2") or "$" in key:
                     raise _Unknown  # a statement with effects inside the block
@@ -277,13 +278,25 @@ class Reader:
         value = re.sub(r"\$(?:\{(\w+)\}|(\w+))", lambda m: self.variables.get(m[1] or m[2], m[0]), value)
         return self.home + value[1:] if value.startswith("~/") else value
 
+    def absolute(self, raw: str, current: str) -> str:
+        """Hyprland's absolutePath(): ~ is $HOME; a relative path joins the current file's directory, with only a
+        leading ../ or ./ resolved in the text (the rest, and every absolute path, is left to the filesystem)."""
+        if raw.startswith("~"):
+            return self.home + raw[1:]
+        if raw.startswith("/"):
+            return raw
+        directory = current[:current.rfind("/")]
+        if raw.startswith("../"):
+            return directory[:directory.rfind("/")] + raw[2:]
+        if raw.startswith("./"):
+            return directory + raw[1:]
+        return f"{directory}/{raw}"
+
     def source(self, path: str, value: str) -> None:
-        if "$" in value:
+        if "$" in value or len(value) < 2:
             raise _Unknown
-        if not value.startswith("/"):
-            value = posixpath.join(posixpath.dirname(path), value)
-        for source in self.sources(value):
-            source = posixpath.normpath(source)  # Hyprland resolves a/../b in the text, not through links
+        for source in self.sources(self.absolute(value, path)):
+            source = self.absolute(source, path)
             found = self.text(source)
             if found is None:
                 raise _Unknown
@@ -454,6 +467,9 @@ STATEMENT = {"local", "if", "then", "else", "elseif", "end", "do", "while", "for
              "function", "goto", "break", ";"}
 EFFECTS = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV",
            "require_all", "require_optional"}
+# The real API and what Omarchy's bootstrap relies on: rebinding or replacing any of them isn't modelled.
+SHADOWED = {"hl", "require", "dofile", "loadfile", "load", "loadstring", "package", "_G", "_ENV", "os", "debug",
+            "setmetatable", "getmetatable", "rawset", "string", "table", "pairs", "ipairs"}
 HELPERS = {"default.hypr.paths": "paths", "default.hypr.require_all": "require_all",
            "default.hypr.require_optional": "require_optional"}
 # The helper implementations this reader interprets, by digest of their tokens (comments and spacing don't count):
@@ -565,7 +581,7 @@ class _LuaFile:
         self.helper_bindings: set[int] = set()  # the name tokens of those bindings
         if any(t.kind == "op" and t.value == "::" for t in tokens):
             raise _Unknown  # labels (goto): not read
-        if any(name in self.bound for name in EFFECTS - set(HELPERS.values())):
+        if any(name in self.bound for name in SHADOWED):
             raise _Unknown  # hl, require, package... rebound here: what they do isn't the real API
 
     def conditional(self, i: int) -> bool:
@@ -623,7 +639,7 @@ class _LuaFile:
                 raise _Unknown  # a helper call this reader can't attribute
             if name == "goto":
                 raise _Unknown
-            if "." in name and name.split(".")[0] in EFFECTS - set(HELPERS.values()) and name != "package.path" and j < len(tokens) \
+            if "." in name and name.split(".")[0] in SHADOWED and name != "package.path" and j < len(tokens) \
                     and tokens[j].kind == "op" and tokens[j].value in ("=", ","):
                 raise _Unknown  # hl.monitor = ..., require_all.files = ...: the API itself replaced
             if name == "return" and tok.functions == 0:
