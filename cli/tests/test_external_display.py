@@ -314,6 +314,14 @@ class MonitorIntentTest(unittest.TestCase):
             self.assertEqual(result["status"], "skip")
             self.assertIn("mode intent unknown", result["evidence"][1])
 
+    def test_monitorv2_fields_expand_variables(self):
+        config = DEFAULT + '$display = USB-1\nmonitorv2 {\n output = $display\n mode = 2560x1440@60\n}\n'
+        result, _ = run(fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config))
+        self.assertIn("explicit monitor mode", result["evidence"][1])
+        config = DEFAULT + 'monitorv2 {\n output = $unset\n mode = 2560x1440@60\n}\n'
+        result, _ = run(fixture([monitor(width=2560)], {"USB-1": (3440, 1440)}, config))
+        self.assertIn("mode intent unknown", result["evidence"][1])
+
     def test_monitorv2_explicit_mode_skip(self):
         config = 'monitorv2 {\n output = USB-1\n mode = 2560x1440@60\n position = auto\n scale = 1\n}\n'
         result, _ = run(fixture(config=config))
@@ -722,6 +730,32 @@ class LiteralLuaRulesTest(unittest.TestCase):
             self.assertEqual(host_module.RealHost().regular_files(directory), ["file.lua"])
             os.symlink(directory, os.path.join(directory, "linked"))
             self.assertEqual(host_module.RealHost().regular_files(os.path.join(directory, "linked")), [])
+
+    def test_a_package_path_change_that_goes_on_is_unknown(self):
+        rec = lua(self.lower(), {"/lower/wide.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n',
+                                 "/pref/wide.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'},
+                  DEFAULT_LUA + 'package.path = "/pref" .. "/?.lua;" .. package.path\n  and "/lower/?.lua"\nrequire("wide")\n')
+        self.assert_unknown(rec)
+
+    def test_a_directory_is_used_as_written(self):
+        with tempfile.TemporaryDirectory() as directory:
+            real = os.path.join(directory, "real")
+            os.mkdir(real)
+            with open(os.path.join(real, "wide.lua"), "w") as f:
+                f.write('hl.monitor { output="USB-1", mode="2560x1440" }\n')
+            os.symlink(real, os.path.join(directory, "link"))
+            main = DEFAULT_LUA + ALL + f'package.path = "{directory}/link/" .. "/?.lua;" .. package.path\nrequire_all.files("{directory}/link/")\n'
+
+            class Host(NativeHost):
+                def regular_files(self, path):
+                    return host_module.RealHost().regular_files(path)
+
+                def read_file(self, path):
+                    return bounded_read(path) if path.startswith(directory) else super().read_file(path)
+
+            rec = lua(self.lower(), {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, main)
+            result, _ = run(rec, Host)
+            self.assertIn("explicit monitor mode", result["evidence"][1])  # "link/" is followed, as find follows it
 
     def test_a_module_is_loaded_once(self):
         rec = lua(self.lower(), {".config/hypr/modes.lua": 'hl.monitor { output="USB-1", mode="2560x1440" }\n'},

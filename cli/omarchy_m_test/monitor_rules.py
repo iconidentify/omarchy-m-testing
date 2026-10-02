@@ -122,7 +122,7 @@ class Reader:
     def find_module(self, module: str) -> tuple[str, str] | None:
         relative = module.replace(".", "/") + ".lua"
         for root in self.lua_roots:
-            path = posixpath.normpath(f"{root}/{relative}")
+            path = f"{root}/{relative}"  # as Lua's searcher builds it: no normalising (a/../b and a/ follow links)
             text = self.text(path)
             if text is not None:
                 return path, text
@@ -178,7 +178,7 @@ class Reader:
         text = re.sub(r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|#[^\n]*''', lambda m: m[1] or "", text)
         for match in re.finditer(r"monitorv2\s*\{([^{}]*)\}|^\s*(monitor|source|\$\w+)\s*=\s*([^\n]+)", text, re.M):
             if match[1] is not None:
-                self.rules.entries.append(_conf_table(match[1]))
+                self.rules.entries.append(_conf_table(match[1], expand))
                 continue
             key, value = match[2], expand(match[3].strip())
             if key.startswith("$"):
@@ -240,11 +240,14 @@ def read(host: Host) -> Rules:
     return reader.rules
 
 
-def _conf_table(text: str) -> Rule:
+def _conf_table(text: str, expand) -> Rule:
     fields = {}
     for statement in re.split(r"\n|;", text):
         if "=" in statement:
             key, value = map(str.strip, statement.split("=", 1))
+            value = expand(value)
+            if key in KEY_FIELDS and "$" in value:
+                raise _Unknown  # a variable this reader can't resolve
             fields[key] = value[1:-1] if re.fullmatch(r"(['\"]).*\1", value) else value
     return Rule(fields.get("output", ""), fields.get("mode", fields.get("resolution", "preferred")),
                 fields.get("disabled", "false") in ("true", "1", "yes"), fields.get("mirror", fields.get("mirror_of", "")))
@@ -640,7 +643,8 @@ class _LuaFile:
         expr = tokens[j + 1:end]
         # package.path = <directory> .. "/?.lua;" .. package.path
         if (len(expr) >= 7 and [t.value for t in expr[-4:]] == ["..", "package", ".", "path"]
-                and expr[-5].literal() == "/?.lua;" and expr[-6].value == ".." and not self.conditional(i)):
+                and expr[-5].literal() == "/?.lua;" and expr[-6].value == ".." and not self.conditional(i)
+                and not self.goes_on(end)):
             directory = self.directory(expr[:-6])
             if directory is not None:
                 self.reader.lua_roots.insert(0, directory)
@@ -674,7 +678,7 @@ class _LuaFile:
                 i += 1
                 if i == len(expr):
                     return None
-        return posixpath.normpath("".join(parts))
+        return "".join(parts)  # as written: find and package.path see it unnormalised
 
 
 def _options(item: list[Tok]) -> tuple[set[str], bool]:
