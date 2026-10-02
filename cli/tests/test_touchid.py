@@ -144,7 +144,8 @@ class PassiveDiagnosticsTest(unittest.TestCase):
                 self.assertEqual(found["diag"]["profile"], profile)
 
     def test_lab_m1_air_abi1_reading_passes_with_later_advertised_endpoints(self):
-        # J313, unreleased linux-aurora 11.25 candidate at 821603affb27, already activated.
+        # J313, already activated on the 11.25 candidate at 821603affb27;
+        # confirmed on released 11.25 at 1fa2e36e8bf1.
         diag = {
             "abi": "1", "profile": "T8103/J313", "boot": "cold", "protocol": "sepos13",
             "xart": "enabled", "attach": "attached", "endpoints": 12, "keystore": "open",
