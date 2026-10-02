@@ -789,7 +789,12 @@ class LiteralLuaRulesTest(unittest.TestCase):
                      'hl.monitor { output="USB-1", mode="2560x1440", scale=f"x" }\n',
                      ALL + 'require_all.files("/x", "y", { exclude = { a = true }, exclude = { b = true } })\n',
                      ALL + 'require_all.files("/x", "y", { reload = true, reload = false })\n',
-                     'local ra = require("default.hypr.require_all")\nlocal ra = require("default.hypr.require_all")\nra.files("/x", "y")\n'):
+                     'local ra = require("default.hypr.require_all")\nlocal ra = require("default.hypr.require_all")\nra.files("/x", "y")\n',
+                     'hl.monitor { output="USB-1", mode="2560x1440", scale=handlers[1] "x" }\n',
+                     'local hl = { monitor = function(t) end }\nhl.monitor { output="USB-1", mode="preferred" }\n',
+                     'function hl.monitor(t) end\nhl.monitor { output="USB-1", mode="preferred" }\n',
+                     'hl.monitor = print\nhl.monitor { output="USB-1", mode="preferred" }\n',
+                     'local require = print\n'):
             with self.subTest(main=main):
                 rec = lua(self.lower(), {**modes, f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL}, DEFAULT_LUA + main)
                 self.assert_unknown(rec)
@@ -820,6 +825,31 @@ class LiteralLuaRulesTest(unittest.TestCase):
         # quoted text naming monitorv2 in another key is just text
         result, _ = run(self.lower_conf(DEFAULT + 'exec = echo "monitorv2 { output = USB-1 mode = 2560x1440 }"\n'))
         self.assertEqual(result["status"], "fail")
+
+    def test_effects_inside_a_monitorv2_block_are_unknown(self):
+        for inner in (" monitor = USB-1,2560x1440,auto,1\n", " source = /x.conf\n", " $screen = USB-1\n"):
+            with self.subTest(inner=inner):
+                result, _ = run(self.lower_conf("monitorv2 {\n output = USB-2\n" + inner + "}\n"))
+                self.assertIn("mode intent unknown", result["evidence"][1])
+
+    def test_a_relative_source_resolves_its_parent_in_the_text(self):
+        hypr = f"{HOME}/.config/hypr"
+        rec = self.lower_conf(DEFAULT + "source = sub/../modes.conf\n")
+        rec["files"][f"{hypr}/modes.conf"] = {"text": "monitor=USB-1,2560x1440,auto,1\n"}
+        self.assertIn("explicit monitor mode", run(rec)[0]["evidence"][1])
+
+    def test_a_module_that_changes_package_path_is_not_loaded_twice(self):
+        rec = lua(self.lower(), {".config/hypr/paths2.lua": 'package.path = "/a" .. "/?.lua;" .. package.path\nreturn false\n'},
+                  DEFAULT_LUA + 'require("hypr.paths2")\nrequire("hypr.paths2")\n')
+        self.assert_unknown(rec)
+
+    def test_an_empty_prefix_is_a_prefix(self):
+        # require(".wide") searches ~/.config//wide.lua (an empty prefix is still a prefix in Lua), not "wide"
+        files = {f"{OMARCHY}/default/hypr/require_all.lua": HELPER_ALL,
+                 ".config//wide.lua": 'hl.monitor { output="USB-1", mode="preferred" }\n'}
+        rec = lua(self.lower(), files, 'hl.monitor { output="USB-1", mode="2560x1440" }\n' + ALL + 'require_all.files("/listed", "")\n')
+        rec["dirs"]["/listed"] = ["wide.lua"]
+        self.assertEqual(run(rec)[0]["status"], "fail")
 
     def test_hyprlang_variables_carry_into_sources_and_globs_skip_hidden_files(self):
         hypr = f"{HOME}/.config/hypr"

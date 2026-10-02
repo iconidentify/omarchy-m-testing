@@ -167,10 +167,10 @@ class Reader:
             if helper_digest(_tokens(text)) != KNOWN_HELPERS[HELPERS[module]]:
                 raise _Unknown  # not the helper this reader knows how to read
             return  # read for what it does where it's called (below), not as configuration
-        before = len(sink.entries)
+        before, roots = len(sink.entries), list(self.lua_roots)
         self.lua(path, text, sink)
-        if len(sink.entries) != before:
-            self.ruled.add(module)
+        if len(sink.entries) != before or self.lua_roots != roots:
+            self.ruled.add(module)  # it has effects: loading it again isn't modelled
 
     def bootstrap(self) -> None:
         if self.bootstrapped:
@@ -245,6 +245,8 @@ class Reader:
                 raise _Unknown  # not a line this reader knows
             key, value = assignment[1].strip(), assignment[2].strip()
             if block is not None and depth == 1:
+                if key in ("monitor", "source", "monitorv2") or "$" in key:
+                    raise _Unknown  # a statement with effects inside the block
                 block[key] = value
             elif depth > 0:
                 if key in ("monitor", "source", "monitorv2") or key.startswith("$"):
@@ -281,6 +283,7 @@ class Reader:
         if not value.startswith("/"):
             value = posixpath.join(posixpath.dirname(path), value)
         for source in self.sources(value):
+            source = posixpath.normpath(source)  # Hyprland resolves a/../b in the text, not through links
             found = self.text(source)
             if found is None:
                 raise _Unknown
@@ -562,6 +565,8 @@ class _LuaFile:
         self.helper_bindings: set[int] = set()  # the name tokens of those bindings
         if any(t.kind == "op" and t.value == "::" for t in tokens):
             raise _Unknown  # labels (goto): not read
+        if any(name in self.bound for name in EFFECTS - set(HELPERS.values())):
+            raise _Unknown  # hl, require, package... rebound here: what they do isn't the real API
 
     def conditional(self, i: int) -> bool:
         """Inside a block, or in a statement that branches (and/or): it may not run."""
@@ -618,6 +623,9 @@ class _LuaFile:
                 raise _Unknown  # a helper call this reader can't attribute
             if name == "goto":
                 raise _Unknown
+            if "." in name and name.split(".")[0] in EFFECTS - set(HELPERS.values()) and name != "package.path" and j < len(tokens) \
+                    and tokens[j].kind == "op" and tokens[j].value in ("=", ","):
+                raise _Unknown  # hl.monitor = ..., require_all.files = ...: the API itself replaced
             if name == "return" and tok.functions == 0:
                 self.returns(i)
             head = name.split(".")[0]
@@ -738,7 +746,7 @@ class _LuaFile:
                 if not filename.endswith(".lua") or filename[:-4] in exclude:
                     continue
                 # the helper require()s each name through package.path, as this does
-                self.reader.require(f"{prefix}.{filename[:-4]}" if prefix else filename[:-4], sink, reload=reload)
+                self.reader.require(f"{prefix}.{filename[:-4]}" if prefix is not None else filename[:-4], sink, reload=reload)
 
         self.load(i, action)
         return after
@@ -829,8 +837,10 @@ def _inert(value: list[Tok]) -> bool:
             return False
         if tok.kind == "name" and tok.value == "function":
             return False
-        if tok.kind in ("str", "long") and k and value[k - 1].kind == "name" and value[k - 1].value not in ("and", "or", "not"):
-            return False  # f"x": a call
+        if tok.kind in ("str", "long") and k and (
+                (value[k - 1].kind == "name" and value[k - 1].value not in ("and", "or", "not"))
+                or value[k - 1].value in ("]", ")")):
+            return False  # f"x", t[1]"x": a call
     return True
 
 
