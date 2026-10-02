@@ -5,7 +5,7 @@
     "version": "0.1.10"
   },
   "consent_version": 6,
-  "catalogue_version": 11,
+  "catalogue_version": 12,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1091,6 +1091,23 @@
       "classification": {
         "outcome": "works",
         "feature": "main-display",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.external-native-mode",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: Hyprland session or monitor list unavailable"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "dcp",
         "layer": "asahi",
         "expected": {
           "asahi": "linux-asahi",

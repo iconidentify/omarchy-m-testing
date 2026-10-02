@@ -187,6 +187,16 @@
     },
     {
       "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card1-eDP-1 connected enabled 3024x1964\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "bundled:apple-display-check",
         "--read-only"
       ],
@@ -411,16 +421,6 @@
       ],
       "returncode": 0,
       "stdout": "thunderbolt 0-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 1-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt 2-0 thunderbolt_device generation=4 rx_speed=10.0Gb/s rx_lanes=1 authorized=1\nthunderbolt domain0 thunderbolt_domain\nthunderbolt domain1 thunderbolt_domain\nthunderbolt domain2 thunderbolt_domain\n",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "sh",
-        "-c",
-        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
-      ],
-      "returncode": 0,
-      "stdout": "connector card1-eDP-1 connected enabled 3024x1964\nconnector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \n",
       "stderr": ""
     },
     {

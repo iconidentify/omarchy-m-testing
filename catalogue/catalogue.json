@@ -1,5 +1,5 @@
 {
-  "catalogue_version": 11,
+  "catalogue_version": 12,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
@@ -57,6 +57,7 @@
     "video.h264-on-screen": "video-decoder",
     "video.hevc-on-screen": "video-decoder",
     "display.outputs": "main-display",
+    "display.external-native-mode": "dcp",
     "display.controller": "dcp",
     "display.backlight": "brightness",
     "display.notch-strip": "notch-bar",
