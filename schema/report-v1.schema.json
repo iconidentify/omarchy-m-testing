@@ -39,7 +39,7 @@
         "model": { "description": "Device-tree model string, e.g. \"Apple MacBook Pro (16-inch, M2 Max, 2023)\".", "type": "string", "pattern": "^Apple ", "maxLength": 120 },
         "board": { "description": "Board id from the device-tree compatible list, e.g. \"j416c\".", "type": "string", "pattern": "^j[0-9]{3}[a-z]{0,2}$" },
         "soc": { "description": "SoC id from the device-tree compatible list, e.g. \"t6021\".", "type": "string", "pattern": "^t[0-9]{4}$" },
-        "chip": { "description": "Marketing chip name for the SoC, e.g. \"M2 Max\"; \"unknown\" when the SoC isn't known yet.", "type": "string", "pattern": "^(M[0-9]+( Pro| Max| Ultra)?|unknown)$" },
+        "chip": { "description": "Marketing chip name for the SoC, e.g. \"M2 Max\" or \"A18 Pro\"; \"unknown\" when the SoC isn't known yet.", "type": "string", "pattern": "^((M|A)[0-9]+( Pro| Max| Ultra)?|unknown)$" },
         "arch": { "const": "aarch64" },
         "kernel": { "description": "Kernel release (uname -r).", "type": "string", "minLength": 1, "maxLength": 100 }
       }

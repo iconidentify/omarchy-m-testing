@@ -53,6 +53,7 @@ COLUMNS = {
     "M3 Pro (T6030)": {"chips": ["m3-pro"]},
     "M3 Max (T603{1,4})": {"chips": ["m3-max"]},
     "M3 Ultra (T6032)": {"chips": ["m3-ultra"]},
+    "A18 Pro (t8140)": {"chips": ["a18-pro"]},
     "M4 (T8132)": {"chips": ["m4"]},
     "M4 Pro/Max (T604x)": {"chips": ["m4-pro-max"]},
 }
@@ -76,14 +77,16 @@ MODEL_COLUMNS = {
     ("m3", "MacBook Air (13/15-inch 2024)"): {"m3": ["j613", "j615"]},
     ("m3", "MacBook Pro (14/16-inch, late 2023)"): {"m3-pro": ["j514s", "j516s"], "m3-max": ["j514c", "j516c", "j514m", "j516m"]},
     ("m3", "Mac Studio (2025)"): {"m3-ultra": []},
+    ("m4", "Macbook Neo (2026)"): {"a18-pro": ["j700"]},
     # M4 boards aren't admitted by any Omarchy image yet; their columns count
     # toward the generation only.
-    ("m4", "MacBook Pro (14-inch, Nov 2024)", 0): {"m4": []},
-    ("m4", "MacBook Pro (16-inch, Nov 2024)", 0): {"m4": []},
-    ("m4", "MacBook Air (13\" and 15\" 2025)"): {"m4": []},
-    ("m4", "Mac mini (2024)"): {"m4-pro-max": []},
-    ("m4", "MacBook Pro (14-inch, Nov 2024)", 1): {"m4-pro-max": []},
-    ("m4", "MacBook Pro (16-inch, Nov 2024)", 1): {"m4-pro-max": []},
+    ("m4", "iMac (2024)"): {"m4": []},
+    ("m4", "Mac mini (2024)", 0): {"m4": []},
+    ("m4", "MacBook Pro (14-inch, Nov 2024)"): {"m4": []},
+    ("m4", "MacBook Air (13\" and 15\", 2025)"): {"m4": []},
+    ("m4", "Mac mini (2024)", 1): {"m4-pro-max": []},
+    ("m4", "Mac Studio (2025)"): {"m4-pro-max": []},
+    ("m4", "MacBook Pro (14\" and 16\", 2024)"): {"m4-pro-max": []},
 }
 
 # Asahi row label (lower-cased, markup stripped) -> catalogue feature id and name.
@@ -160,6 +163,13 @@ def _clean(text: str) -> str:
 
 def parse_cell(raw: str) -> dict:
     """One table cell -> {status, version?, note?, cell}. Raises Drift if unreadable."""
+    if m := re.fullmatch(r"Boot framebuffer - (.+), full support - (.+)", _clean(raw)):
+        # Two stages in one cell: the full-support stage decides, the framebuffer stage is kept as a note.
+        state = parse_cell(m.group(2))
+        boot = parse_cell(m.group(1))["cell"]
+        state["note"] = (state["note"] + "; " if state.get("note") else "") + f"boot framebuffer: {boot}"
+        state["cell"] = _clean(raw)
+        return state
     has_notes = bool(re.search(r"\[notes\]\(#[^)]*\)", raw))
     text = _clean(re.sub(r"\(?\[notes\]\(#[^)]*\)\)?", "", raw))
     state: dict = {}
