@@ -431,7 +431,7 @@ class TouchIdRunTest(unittest.TestCase):
         self.assertEqual(touchid.run(context(mac))[1]["status"], "skip")
         self.assertEqual(mac.slept, [2])
 
-    def test_recording_retains_final_settled_snapshot(self):
+    def test_recording_replays_each_snapshot_in_order(self):
         lazy = copy.deepcopy(GOOD)
         lazy["diag"].update({"attach": "pending", "touchid": "unknown"})
         class Settling(PassiveHost):
@@ -442,6 +442,7 @@ class TouchIdRunTest(unittest.TestCase):
         recorder = RecordingHost(mac)
         self.assertEqual(recorder.touchid_snapshot(), lazy)
         self.assertEqual(recorder.touchid_snapshot(), GOOD)
-        self.assertEqual(len(recorder.commands), 1)
         replay = RecordedHost(recorder.recording(Scrubber()))
+        self.assertEqual(replay.touchid_snapshot(), lazy)
+        self.assertEqual(replay.touchid_snapshot(), GOOD)
         self.assertEqual(replay.touchid_snapshot(), GOOD)

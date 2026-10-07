@@ -684,6 +684,18 @@
       "stdout": "{\"apple\": true, \"diag\": {}, \"firmware\": {}, \"sep\": null}",
       "stderr": "",
       "note": "SEP diagnostics were not captured in this historical run; explicitly unavailable, never a reconstructed readiness pass."
+    },
+    {
+      "argv": [
+        "hyprctl",
+        "-j",
+        "monitors",
+        "all"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "",
+      "note": "stand-in: this corpus predates the native-mode probe and has no Hyprland monitor JSON for it. Leave the session unavailable instead of inventing a native-mode pass; the next dogfood run records it."
     }
   ],
   "files": {

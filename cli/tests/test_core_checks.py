@@ -517,5 +517,34 @@ class PowerAndCpuTest(unittest.TestCase):
         self.assertEqual(results(on_mini)["power.battery"]["classification"]["outcome"], "not-applicable")
 
 
+class EveryVariantTest(unittest.TestCase):
+    """Every SoC the catalogue lists is named, explained against its own chip and reported within the schema."""
+
+    MACS = [
+        ("j313", "t8103", "Apple MacBook Air (M1, 2020)", "M1"),
+        ("j375d", "t6002", "Apple Mac Studio (M1 Ultra, 2022)", "M1 Ultra"),
+        ("j473", "t8112", "Apple Mac mini (M2, 2023)", "M2"),
+        ("j180d", "t6022", "Apple Mac Pro (M2 Ultra, 2023)", "M2 Ultra"),
+        ("j613", "t8122", "Apple MacBook Air (13-inch, M3, 2024)", "M3"),
+        ("j514s", "t6030", "Apple MacBook Pro (14-inch, M3 Pro, Nov 2023)", "M3 Pro"),
+        ("j516m", "t6034", "Apple MacBook Pro (16-inch, M3 Max, Nov 2023)", "M3 Max"),
+        ("j700", "t8140", "Apple MacBook Neo (2026)", "A18 Pro"),
+    ]
+
+    def test_each_mac_is_identified_and_its_report_is_valid(self):
+        for board, soc, model, chip in self.MACS:
+            with self.subTest(board=board):
+                rec = copy.deepcopy(M2_MAX)
+                rec["files"]["/proc/device-tree/compatible"] = {"text": f"apple,{board}\0apple,{soc}\0apple,arm-platform\0"}
+                rec["files"]["/proc/device-tree/model"] = {"text": f"{model}\0"}
+
+                _, _, report = run(rec)
+
+                self.assertEqual((report["machine"]["board"], report["machine"]["chip"]), (board, chip))
+                self.assertEqual(errors(SCHEMA, report), [])
+                outcomes = {c["classification"]["outcome"] for c in report["checks"]}
+                self.assertNotIn("unknown-hardware", outcomes)
+
+
 if __name__ == "__main__":
     unittest.main()

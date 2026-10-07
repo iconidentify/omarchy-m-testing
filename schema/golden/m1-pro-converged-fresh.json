@@ -2,10 +2,10 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.10"
+    "version": "0.1.12"
   },
   "consent_version": 6,
-  "catalogue_version": 12,
+  "catalogue_version": 14,
   "machine": {
     "model": "Apple MacBook Pro (14-inch, M1 Pro, 2021)",
     "board": "j314s",
@@ -1080,6 +1080,23 @@
         "layer": "asahi",
         "expected": {
           "asahi": "upstream",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
+      "id": "display.external-native-mode",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: no external display connected"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "dcp",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
           "aurora": "asahi"
         }
       }

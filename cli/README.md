@@ -18,6 +18,76 @@ The scripts are vendored, unmodified, in `omarchy_m_test/vendor/omarchy-mac/` (c
 
 ## Look and listen
 
+### External native modes (automatic)
+
+`display.external-native-mode` joins connected external DRM connectors to
+`hyprctl -j monitors all` by output name. It decodes the first detailed
+timing of the EDID base block in Python (header, checksum and preferred
+timing flag checked). No extra package is needed. It compares physical
+resolution, ignoring scale and applying the same transform to current and
+preferred pixels. Refresh rates are reported but not compared: a different
+refresh may be intentional or a link limit. When a resolution is below its
+own EDID preference, it waits two seconds and reads the connectors, session,
+rules and EDID again before failing. Two monitors sharing a mode is fine
+when each is at its own preferred resolution.
+
+There is no prompt or mode change. The internal panel is excluded; USB-C,
+DisplayPort and HDMI are included. Missing external displays, unavailable
+Hyprland state, unreadable or invalid EDIDs (including a missing first
+preferred detailed timing), intentional disables and mirroring are skipped.
+An explicit monitor mode also skips that output. The check reads static
+hyprlang rules, `monitorv2` blocks and Omarchy's Lua `hl.monitor` tables
+without executing them, following static `source` and `require` references
+the way Omarchy's bootstrap resolves modules (`~/.local/state`, `~/.config`,
+`$OMARCHY_PATH`, each module once), and `source` paths the way Hyprland
+resolves them. Omarchy's bootstrap and its `require_optional.module` and
+`require_all.files` helpers are read for what they do, only while they are
+Omarchy's current versions; hyprlang is read line by line. Named and `desc:`
+rules win over the fallback; the last matching rule wins, and mirroring
+comes only from the rules that win. Only fully literal rules count: a
+computed output or mode (a concatenation, a variable, a call), a rule inside
+a block, an unresolvable load, or a conditional load of a file that sets
+monitor rules leaves intent unknown and skips, never fails. A conditional
+load of a file with no monitor rules doesn't matter. Unreadable
+configuration also skips: the host reads only regular files, at most 16 MiB
+within five seconds each, so a `source` naming a FIFO or device can't hold
+the run. A command the configuration runs that names a monitor-changing
+tool (`hyprctl keyword monitor`, `kanshi`, `wlr-randr`...) also leaves intent
+unknown. Live overrides not saved to these files, and commands built at
+runtime, cannot be identified. A
+mode larger than the EDID preference is skipped rather than called a
+downgrade. Any confirmed downgrade fails the check; otherwise an untested
+output leaves the aggregate skipped.
+
+Evidence also records each connector's CRTC from readable debugfs state,
+falling back to `drm_info` when available, and up to ten apple-dcp kernel
+findings from this boot: fixed categories (`atomic-check-failed`,
+`mode-set-failed`, `mode-set-timeout`, `mode-parse-failed`,
+`mode-not-found`, `swap-failed`, `link-failed`, `edid-failed`,
+`power-timeout`, `mode-failed`) with validated numbers only (errno, status,
+port, mode), never message text. The optional commands have three-second
+limits; diagnostics never decide pass/fail. EDID identity fields and
+monitor descriptions are not put in the evidence.
+
+Recordings keep allowlisted projections only: an anonymous EDID timing
+block; from `hyprctl -j monitors` the output names, current and available
+modes, transform, scale, the disabled/DPMS/mirror flags and ids (never
+make, model, description or serial); numeric connector and CRTC ids from
+debugfs state and `drm_info`; and the canonical apple-dcp findings, also
+in place of those lines in any other recorded kernel log. Monitor
+configuration is inspected inside the host boundary; recordings receive
+only per-output policy flags, without the user's config text. When the
+settle re-read sees a different answer, record mode keeps each answer in
+order, so a run that passed after settling replays as a pass.
+
+This catches boot-time display routing regressions without depending on a
+particular Mac model or fixed CRTC numbers. A monitorless lab run skips.
+Reproducing the dual-output case needs an M2 Pro/Max Mac with two displays
+or working EDID emulators on separate USB-C ports, attached before boot,
+with different preferred resolutions and a shared fallback mode.
+
+### Human checks
+
 The Display, Audio, Network, Input, Camera and Ports sections end with checks the human sees, hears or does (`omarchy_m_test/display.py`, `audio.py`, `network.py`, `inputs.py`, `camera.py`, `ports.py`), answered yes, no or skip; in the Sleep section the human closes and opens the lid and the tool watches:
 
 - **Display.** Is the bar clear of the camera notch (only asked on Macs with one), did the built-in screen step its brightness three times and go back (brightnessctl; put back before the question, and by a restorer if the run stops), is the cursor visible everywhere?

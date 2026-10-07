@@ -246,6 +246,16 @@
     },
     {
       "argv": [
+        "sh",
+        "-c",
+        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
+      ],
+      "returncode": 0,
+      "stdout": "connector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \nconnector card2-eDP-1 connected disabled 3024x1964\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
         "bundled:apple-display-check",
         "--read-only"
       ],
@@ -468,16 +478,6 @@
       ],
       "returncode": 0,
       "stdout": "",
-      "stderr": ""
-    },
-    {
-      "argv": [
-        "sh",
-        "-c",
-        "for c in /sys/class/drm/card*-*; do\n  [ -r \"$c/status\" ] || continue\n  echo \"connector ${c##*/} $(cat \"$c/status\") $(cat \"$c/enabled\" 2>/dev/null) $(head -n 1 \"$c/modes\" 2>/dev/null)\"\ndone"
-      ],
-      "returncode": 0,
-      "stdout": "connector card2-HDMI-A-1 disconnected disabled \nconnector card2-USB-1 disconnected disabled \nconnector card2-USB-2 disconnected disabled \nconnector card2-USB-3 disconnected disabled \nconnector card2-eDP-1 connected disabled 3024x1964\n",
       "stderr": ""
     },
     {

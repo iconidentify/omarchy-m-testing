@@ -10,8 +10,16 @@ Operations:
   run(argv)                  run a command (no shell), capture its output
   run_bundled(name, args)    run one of the tool's own bundled scripts (bundled.py),
                              e.g. omarchy-mac's mac-check; recorded as bundled_argv()
-  read_file(path)            read a file's bytes; FileNotFoundError if absent
-  list_dir(path)             list a directory's entry names, sorted
+  read_file(path)            read a regular file's bytes; FileNotFoundError if absent. Bounded:
+                             anything but a regular file (a FIFO, a device, a directory) is
+                             refused, more than READ_LIMIT_BYTES is EFBIG, and a read that
+                             takes longer than READ_TIMEOUT_SECONDS is TimeoutError (all OSError)
+  list_dir(path)             list a directory's entry names, sorted (within READ_TIMEOUT_SECONDS too)
+  regular_files(path)        the names of a directory's regular files, sorted, symlinks not followed
+                             (what `find PATH -maxdepth 1 -type f` lists: nothing when PATH itself is a
+                             symlink); FileNotFoundError if absent
+  monitor_intent(outputs)   read monitor rules locally; only policy flags leave the host,
+                             never user configuration text or monitor description selectors
   touchid_snapshot()         passive SEP state and firmware provenance, with only
                              allowlisted facts and kernel event categories retained
   prompt(message)            ask the human; returns the typed line; EOFError on end of input
@@ -62,6 +70,7 @@ script's output (SHIM_MARKER), so the result it was for is skipped
 from __future__ import annotations
 
 import atexit
+import errno
 import http.client
 import os
 import shutil
@@ -69,8 +78,10 @@ import signal
 import subprocess
 import sys
 import select
+import stat
 import tempfile
 import termios
+import threading
 import time
 import tty
 import urllib.error
@@ -112,7 +123,13 @@ PACKAGE_TIMEOUT_SECONDS = 1800
 HTTP_TIMEOUT_SECONDS = 30
 # GETs only look up the latest release; a slow or absent network must not hold up a run.
 GET_TIMEOUT_SECONDS = 5
+# File reads (sysfs, debugfs, configuration): a driver that never answers or a FIFO a config names must not hold the run.
+READ_TIMEOUT_SECONDS = 5
+READ_LIMIT_BYTES = 16 * 1024 * 1024
+# Reads still stuck past their deadline (their threads can't be cancelled); past this many, reads are refused.
+READ_STUCK_LIMIT = 8
 BUNDLED_PREFIX = "bundled:"
+MONITOR_INTENT = ["read:monitor-intent"]  # the derived policy flags in a recording
 TOUCHID_SNAPSHOT = ["read:touch-id"]
 
 
@@ -192,6 +209,10 @@ class Host(Protocol):
     def read_file(self, path: str) -> bytes: ...
 
     def list_dir(self, path: str) -> list[str]: ...
+
+    def regular_files(self, path: str) -> list[str]: ...
+
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]: ...
 
     def touchid_snapshot(self) -> dict: ...
 
@@ -369,11 +390,18 @@ class RealHost:
         return CommandResult(process.returncode, _text(stdout), _text(stderr))
 
     def read_file(self, path: str) -> bytes:
-        with open(path, "rb") as f:
-            return f.read()
+        return bounded_read(path)
 
     def list_dir(self, path: str) -> list[str]:
-        return sorted(os.listdir(path))
+        return bounded(lambda: sorted(os.listdir(path)), path)
+
+    def regular_files(self, path: str) -> list[str]:
+        return bounded(lambda: _regular_files(path), path)
+
+    def monitor_intent(self, outputs: list[dict]) -> dict[str, dict]:
+        from .monitor_rules import intent
+
+        return intent(self, outputs)
 
     def prompt(self, message: str) -> str:
         return input(message)
@@ -533,6 +561,66 @@ class RealHost:
             return HttpResponse(error.code, "")
         except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
             raise NetworkError(str(getattr(error, "reason", error))) from error
+
+
+_stuck = threading.BoundedSemaphore(READ_STUCK_LIMIT)
+
+
+def _read_regular(path: str, limit: int) -> bytes:
+    """Open without blocking (a FIFO with no writer, a tty), refuse anything but a regular file, read at most limit."""
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise OSError(errno.EINVAL, "not a regular file", path)
+        chunks, size = [], 0
+        while size <= limit:  # pseudo-files report st_size 0 or 4096: read to the end, never trust it
+            chunk = os.read(fd, min(65536, limit + 1 - size))
+            if not chunk:
+                return b"".join(chunks)
+            chunks.append(chunk)
+            size += len(chunk)
+        raise OSError(errno.EFBIG, f"larger than {limit} bytes", path)
+    finally:
+        os.close(fd)
+
+
+def bounded(work, path: str, timeout: float | None = None):
+    """work() within a deadline, in a worker thread: TimeoutError when it doesn't answer (the stuck worker is
+    dropped; past READ_STUCK_LIMIT of them, everything is refused at once)."""
+    if not _stuck.acquire(blocking=False):
+        raise TimeoutError(errno.ETIMEDOUT, "too many file reads still stuck", path)
+    outcome: list = []
+
+    def run() -> None:
+        try:
+            outcome.append((True, work()))
+        except BaseException as problem:  # handed to the caller
+            outcome.append((False, problem))
+        finally:
+            _stuck.release()
+
+    worker = threading.Thread(target=run, name="omarchy-m-test-read", daemon=True)
+    worker.start()
+    timeout = READ_TIMEOUT_SECONDS if timeout is None else timeout
+    worker.join(timeout)
+    if not outcome:
+        raise TimeoutError(errno.ETIMEDOUT, f"timed out after {timeout:g}s", path)
+    ok, value = outcome[0]
+    if ok:
+        return value
+    raise value
+
+
+def bounded_read(path: str, timeout: float | None = None, limit: int = READ_LIMIT_BYTES) -> bytes:
+    """A regular file's bytes within a deadline; the worker owns its descriptor and a late answer is dropped."""
+    return bounded(lambda: _read_regular(path, limit), path, timeout)
+
+
+def _regular_files(path: str) -> list[str]:
+    if os.path.islink(path):
+        return []  # find without -L doesn't descend into a symlinked starting point
+    with os.scandir(path) as entries:
+        return sorted(entry.name for entry in entries if entry.is_file(follow_symlinks=False))
 
 
 def _kill_group(process: subprocess.Popen) -> None:

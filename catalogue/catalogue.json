@@ -1,11 +1,11 @@
 {
-  "catalogue_version": 12,
+  "catalogue_version": 14,
   "description": "What omarchy-m-test expects of each feature, per chip generation, in three layers: Asahi hardware features, Aurora additions and Omarchy integration. Results are classified against Aurora's expected state first, then Asahi's. Edited by pull request; bump catalogue_version on every change.",
   "sources": {
     "asahi": {
       "title": "Asahi Linux feature support",
       "url": "https://github.com/AsahiLinux/docs/tree/main/docs/platform/feature-support",
-      "commit": "715664a269937fe83293f46bbbeaae6094cb504e",
+      "commit": "0d1f8917fa88745d62a4c05d802c4a7298c8616b",
       "license": "CC-BY-3.0",
       "credit": "Asahi-layer states are from the Asahi Linux documentation's feature-support tables (m1.md, m2.md, m3.md, m4.md), (c) the Asahi Linux contributors, licensed under CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Converted from table cells to per-chip states; unmodified cell text is kept in each state's \"cell\"."
     },
@@ -26,7 +26,8 @@
     "m3-max": {"name": "M3 Max", "socs": ["t6031", "t6034"]},
     "m3-ultra": {"name": "M3 Ultra", "socs": ["t6032"]},
     "m4": {"name": "M4", "socs": ["t8132"]},
-    "m4-pro-max": {"name": "M4 Pro/Max", "socs": ["t6040", "t6041"]}
+    "m4-pro-max": {"name": "M4 Pro/Max", "socs": ["t6040", "t6041"]},
+    "a18-pro": {"name": "A18 Pro", "socs": ["t8140"]}
   },
   "outcomes": {
     "works": "works",
@@ -57,6 +58,7 @@
     "video.h264-on-screen": "video-decoder",
     "video.hevc-on-screen": "video-decoder",
     "display.outputs": "main-display",
+    "display.external-native-mode": "dcp",
     "display.controller": "dcp",
     "display.backlight": "brightness",
     "display.notch-strip": "notch-bar",
@@ -183,7 +185,8 @@
         "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -195,12 +198,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -212,12 +216,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "7.0", "cell": "7.0"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -225,16 +230,29 @@
       "name": "Thunderbolt",
       "layer": "asahi",
       "chips": {
-        "m1": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown", "evidence": "Not yet seen working on a real M1. M1 Pro, fresh converged image on linux-aurora 7.1.12, 2026-09-27, nothing but a charger attached: thunderbolt-apple-acio binds the three ports and every cold boot logs 'thunderbolt-apple-acio 701ac0000.cio: PCIe-C tunnel disabled: m1n1 handoff is not initialized' (and for b01ac0000.cio, f01ac0000.cio); no Thunderbolt domain registers, as expected with no USB4/Thunderbolt partner (tests/corpus/m1-pro-converged-fresh). The earlier M1 corpus domains are reconstructed stand-ins."}},
-        "m1-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown", "evidence": "Not yet seen working on a real M1. M1 Pro, fresh converged image on linux-aurora 7.1.12, 2026-09-27, nothing but a charger attached: thunderbolt-apple-acio binds the three ports and every cold boot logs 'thunderbolt-apple-acio 701ac0000.cio: PCIe-C tunnel disabled: m1n1 handoff is not initialized' (and for b01ac0000.cio, f01ac0000.cio); no Thunderbolt domain registers, as expected with no USB4/Thunderbolt partner (tests/corpus/m1-pro-converged-fresh). The earlier M1 corpus domains are reconstructed stand-ins."}},
+        "m1": {
+          "asahi": {"status": "wip", "cell": "WIP"},
+          "aurora": {
+            "status": "unknown",
+            "evidence": "Not yet seen working on a real M1. M1 Pro, fresh converged image on linux-aurora 7.1.12, 2026-09-27, nothing but a charger attached: thunderbolt-apple-acio binds the three ports and every cold boot logs 'thunderbolt-apple-acio 701ac0000.cio: PCIe-C tunnel disabled: m1n1 handoff is not initialized' (and for b01ac0000.cio, f01ac0000.cio); no Thunderbolt domain registers, as expected with no USB4/Thunderbolt partner (tests/corpus/m1-pro-converged-fresh). The earlier M1 corpus domains are reconstructed stand-ins."
+          }
+        },
+        "m1-pro-max-ultra": {
+          "asahi": {"status": "wip", "cell": "WIP"},
+          "aurora": {
+            "status": "unknown",
+            "evidence": "Not yet seen working on a real M1. M1 Pro, fresh converged image on linux-aurora 7.1.12, 2026-09-27, nothing but a charger attached: thunderbolt-apple-acio binds the three ports and every cold boot logs 'thunderbolt-apple-acio 701ac0000.cio: PCIe-C tunnel disabled: m1n1 handoff is not initialized' (and for b01ac0000.cio, f01ac0000.cio); no Thunderbolt domain registers, as expected with no USB4/Thunderbolt partner (tests/corpus/m1-pro-converged-fresh). The earlier M1 corpus domains are reconstructed stand-ins."
+          }
+        },
         "m2": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
         "m2-pro-max-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "supported", "version": "7.1.12"}},
-        "m3": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "note": "Partial in Aurora. thunderbolt-apple-acio and thunderbolt-apple-nhi bring the USB4/Thunderbolt host up once the Type-C PHY is in USB4/Thunderbolt mode, so a domain only exists while a USB4 or Thunderbolt partner is attached (ports.thunderbolt skips an idle Mac). On M2 that host works: domains, links to devices and to other computers over thunderbolt-net, which is what ports.thunderbolt checks. PCIe tunnels (docks' PCIe devices, eGPUs) aren't there on M1 or M2: every cold boot logs 'thunderbolt-apple-acio 701ac0000.cio: PCIe-C tunnel disabled: m1n1 handoff is not initialized' (drivers/thunderbolt/apple.c in omacom/linux), a known limit until m1n1 hands the tunnels over. On M1 the host hasn't been seen working yet (see the aurora evidence), so a failure there is an expected gap."
     },
@@ -252,7 +270,8 @@
         "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "note": "Aurora adds DP alt mode on M1 and M2; see usb4-displays."
     },
@@ -270,7 +289,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -282,24 +302,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
-        "m3": {
-          "asahi": {"status": "linux-asahi", "note": "no AV1", "cell": "linux-asahi (no AV1)"},
-          "aurora": {"status": "unknown"}
-        },
-        "m3-pro": {
-          "asahi": {"status": "linux-asahi", "note": "no AV1", "cell": "linux-asahi (no AV1)"},
-          "aurora": {"status": "unknown"}
-        },
-        "m3-max": {
-          "asahi": {"status": "linux-asahi", "note": "no AV1", "cell": "linux-asahi (no AV1)"},
-          "aurora": {"status": "unknown"}
-        },
-        "m3-ultra": {
-          "asahi": {"status": "linux-asahi", "note": "no AV1", "cell": "linux-asahi (no AV1)"},
-          "aurora": {"status": "unknown"}
-        },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m3": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m4": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m4-pro-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -315,8 +324,9 @@
         "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m4-pro-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -336,7 +346,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -349,7 +360,8 @@
         "m2": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "asahi"}},
         "m4": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -366,7 +378,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -395,7 +408,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -412,7 +426,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -429,7 +444,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -446,7 +462,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -474,8 +491,15 @@
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
         },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        }
       }
     },
     {
@@ -492,7 +516,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -504,12 +529,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "5.18", "cell": "5.18"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "6.4", "cell": "6.4"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.4", "cell": "6.4"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -538,7 +564,8 @@
           "aurora": {"status": "unknown"}
         },
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -566,8 +593,15 @@
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
         },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        }
       }
     },
     {
@@ -595,8 +629,15 @@
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
         },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        }
       }
     },
     {
@@ -624,8 +665,15 @@
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
         },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        }
       }
     },
     {
@@ -637,12 +685,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "5.16", "cell": "5.16"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "5.16", "cell": "5.16"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "5.16", "cell": "5.16"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
+        "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -662,7 +711,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -679,7 +729,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -696,7 +747,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -713,7 +765,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -730,7 +783,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -747,7 +801,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -764,7 +819,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -793,7 +849,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -805,12 +862,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "unknown"}},
+        "m3-pro": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "unknown"}},
+        "m3-max": {"asahi": {"status": "yes", "cell": "yes"}, "aurora": {"status": "unknown"}},
+        "m3-ultra": {"asahi": {"status": "no", "cell": "no"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "no", "cell": "no"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "no", "cell": "no"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "no", "cell": "no"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "no", "cell": "no"}, "aurora": {"status": "unknown"}}
       },
       "models": {"j180d": {"asahi": {"status": "wip", "cell": "WIP"}}}
     },
@@ -823,10 +881,7 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.2", "cell": "6.2"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "6.4", "cell": "6.4"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.18", "cell": "6.18"}, "aurora": {"status": "asahi"}},
-        "m3": {
-          "asahi": {"status": "linux-asahi", "version": "7.2", "cell": "linux-asahi (7.2)"},
-          "aurora": {"status": "unknown"}
-        },
+        "m3": {"asahi": {"status": "upstream", "version": "7.2", "cell": "7.2"}, "aurora": {"status": "unknown"}},
         "m3-pro": {
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
@@ -839,8 +894,15 @@
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
         },
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        }
       },
       "models": {
         "j274": {"asahi": {"status": "upstream", "version": "5.13", "cell": "5.13"}},
@@ -856,12 +918,48 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "5.17", "cell": "5.17"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-pro": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3": {
+          "asahi": {
+            "status": "wip",
+            "cell": "Boot framebuffer - linux-asahi, full support - WIP",
+            "note": "boot framebuffer: linux-asahi"
+          },
+          "aurora": {"status": "unknown"}
+        },
+        "m3-pro": {
+          "asahi": {
+            "status": "wip",
+            "cell": "Boot framebuffer - linux-asahi, full support - WIP",
+            "note": "boot framebuffer: linux-asahi"
+          },
+          "aurora": {"status": "unknown"}
+        },
+        "m3-max": {
+          "asahi": {
+            "status": "wip",
+            "cell": "Boot framebuffer - linux-asahi, full support - WIP",
+            "note": "boot framebuffer: linux-asahi"
+          },
+          "aurora": {"status": "unknown"}
+        },
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {
+            "status": "tba",
+            "cell": "Boot framebuffer - linux-asahi, full support - TBA",
+            "note": "boot framebuffer: linux-asahi"
+          },
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {
+          "asahi": {
+            "status": "tba",
+            "cell": "Boot framebuffer - linux-asahi, full support - TBA",
+            "note": "boot framebuffer: linux-asahi"
+          },
+          "aurora": {"status": "unknown"}
+        }
       },
       "models": {
         "j473": {"asahi": {"status": "absent", "cell": "-"}},
@@ -885,7 +983,8 @@
         "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -915,7 +1014,8 @@
         "m3-max": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j293": {"asahi": {"status": "absent", "cell": "-"}},
@@ -980,7 +1080,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1006,10 +1107,7 @@
         "m1-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.4", "cell": "6.4"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "upstream", "version": "6.4", "cell": "6.4"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.18", "cell": "6.18"}, "aurora": {"status": "asahi"}},
-        "m3": {
-          "asahi": {"status": "linux-asahi", "version": "7.2", "cell": "linux-asahi (7.2)"},
-          "aurora": {"status": "unknown"}
-        },
+        "m3": {"asahi": {"status": "upstream", "version": "7.2", "cell": "7.2"}, "aurora": {"status": "unknown"}},
         "m3-pro": {
           "asahi": {"status": "linux-asahi", "version": "7.3", "cell": "linux-asahi (7.3)"},
           "aurora": {"status": "unknown"}
@@ -1019,8 +1117,12 @@
           "aurora": {"status": "unknown"}
         },
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
-        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {
+          "asahi": {"status": "linux-asahi", "version": "7.4", "cell": "linux-asahi (7.4)"},
+          "aurora": {"status": "unknown"}
+        },
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1051,7 +1153,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1082,7 +1185,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1132,7 +1236,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {"j473": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}}}
     },
@@ -1150,7 +1255,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {"j473": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}}}
     },
@@ -1168,9 +1274,9 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
-      },
-      "models": {"j433": {"asahi": {"status": "tba", "cell": "TBA"}}, "j434": {"asahi": {"status": "tba", "cell": "TBA"}}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+      }
     },
     {
       "id": "speakers",
@@ -1192,7 +1298,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j456": {"asahi": {"status": "tba", "cell": "TBA"}},
@@ -1216,7 +1323,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j474s": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1236,7 +1344,9 @@
         "m2": {"asahi": {"status": "upstream", "version": "6.4 (dts)", "cell": "6.4 (dts)"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "upstream", "version": "6.18", "cell": "6.18"}, "aurora": {"status": "asahi"}},
         "m3": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j293": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1270,7 +1380,9 @@
         "m3-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m3-max": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
+        "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j293": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1305,7 +1417,8 @@
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1331,12 +1444,13 @@
         "m1-pro-max-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
         "m2": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
         "m2-pro-max-ultra": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "asahi"}},
-        "m3": {"asahi": {"status": "wip", "cell": "WIP"}, "aurora": {"status": "unknown"}},
+        "m3": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-pro": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-max": {"asahi": {"status": "linux-asahi", "cell": "linux-asahi"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j274": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1346,9 +1460,7 @@
         "j474s": {"asahi": {"status": "absent", "cell": "-"}},
         "j475c": {"asahi": {"status": "absent", "cell": "-"}},
         "j475d": {"asahi": {"status": "absent", "cell": "-"}},
-        "j180d": {"asahi": {"status": "absent", "cell": "-"}},
-        "j433": {"asahi": {"status": "tba", "cell": "TBA"}},
-        "j434": {"asahi": {"status": "tba", "cell": "TBA"}}
+        "j180d": {"asahi": {"status": "absent", "cell": "-"}}
       }
     },
     {
@@ -1385,7 +1497,8 @@
         "m3-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "absent", "cell": "-"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "tba", "cell": "TBA"}, "aurora": {"status": "unknown"}}
       },
       "models": {
         "j473": {"asahi": {"status": "absent", "cell": "-"}},
@@ -1410,7 +1523,8 @@
         "m3-max": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
         "m3-ultra": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
         "m4": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
-        "m4-pro-max": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}}
+        "m4-pro-max": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}},
+        "a18-pro": {"asahi": {"status": "no"}, "aurora": {"status": "unknown"}}
       }
     },
     {
@@ -1429,7 +1543,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       },
       "models": {"j180d": {"aurora": {"status": "unknown"}}}
     },
@@ -1448,7 +1563,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       },
       "models": {
         "j375c": {"aurora": {"status": "absent"}},
@@ -1474,7 +1590,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       }
     },
     {
@@ -1491,7 +1608,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       },
       "note": "Not confirmed on the base M1 (t8103)."
     },
@@ -1509,7 +1627,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       },
       "note": "From the hardware inventory: every enabled device-tree node with a device of its own should have a driver bound, and none should fail its probe. Aurora doesn't claim that on any chip yet; each report lists what's unclaimed."
     },
@@ -1527,7 +1646,8 @@
         "m3-max": {"aurora": {"status": "unknown"}},
         "m3-ultra": {"aurora": {"status": "unknown"}},
         "m4": {"aurora": {"status": "unknown"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}},
+        "a18-pro": {"aurora": {"status": "unknown"}}
       },
       "note": "The running kernel's /proc/config.gz compared with Asahi's reference configuration (catalogue/asahi-kernel/). Differences are reported, not judged: Aurora builds more than Asahi on purpose."
     },
@@ -1547,14 +1667,20 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       },
       "models": {
         "j493": {"omarchy": {"status": "absent"}},
         "j375c": {"omarchy": {"status": "absent"}},
         "j375d": {"omarchy": {"status": "absent"}},
         "j433": {"omarchy": {"status": "absent"}},
-        "j434": {"omarchy": {"status": "absent"}}
+        "j434": {"omarchy": {"status": "absent"}},
+        "j473": {"omarchy": {"status": "absent"}},
+        "j474s": {"omarchy": {"status": "absent"}},
+        "j475c": {"omarchy": {"status": "absent"}},
+        "j475d": {"omarchy": {"status": "absent"}},
+        "j180d": {"omarchy": {"status": "absent"}}
       }
     },
     {
@@ -1573,7 +1699,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       },
       "models": {
         "j274": {"omarchy": {"status": "absent"}},
@@ -1606,7 +1733,22 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+      },
+      "models": {
+        "j274": {"omarchy": {"status": "absent"}},
+        "j456": {"omarchy": {"status": "absent"}},
+        "j457": {"omarchy": {"status": "absent"}},
+        "j375c": {"omarchy": {"status": "absent"}},
+        "j375d": {"omarchy": {"status": "absent"}},
+        "j473": {"omarchy": {"status": "absent"}},
+        "j474s": {"omarchy": {"status": "absent"}},
+        "j475c": {"omarchy": {"status": "absent"}},
+        "j475d": {"omarchy": {"status": "absent"}},
+        "j180d": {"omarchy": {"status": "absent"}},
+        "j433": {"omarchy": {"status": "absent"}},
+        "j434": {"omarchy": {"status": "absent"}}
       }
     },
     {
@@ -1625,7 +1767,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1644,7 +1787,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1662,7 +1806,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1680,7 +1825,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1698,7 +1844,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1716,7 +1863,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1734,7 +1882,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1752,7 +1901,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1770,7 +1920,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1789,7 +1940,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1808,7 +1960,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       }
     },
     {
@@ -1825,7 +1978,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       },
       "note": "No firmware-load failure in this boot's kernel log: the firmware drivers ask for is installed (vendor firmware from macOS, linux-firmware and Asahi's firmware packages such as avd-fw)."
     },
@@ -1845,7 +1999,8 @@
         "m3-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m3-ultra": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
         "m4": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
-        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
+        "m4-pro-max": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}},
+        "a18-pro": {"aurora": {"status": "unknown"}, "omarchy": {"status": "unsupported"}}
       },
       "models": {
         "j274": {"omarchy": {"status": "absent"}},

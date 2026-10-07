@@ -2,10 +2,10 @@
   "schema_version": 1,
   "tool": {
     "name": "omarchy-m-test",
-    "version": "0.1.10"
+    "version": "0.1.12"
   },
   "consent_version": 6,
-  "catalogue_version": 12,
+  "catalogue_version": 14,
   "machine": {
     "model": "Apple MacBook Pro (16-inch, M2 Max, 2023)",
     "board": "j416c",
@@ -1091,6 +1091,23 @@
       }
     },
     {
+      "id": "display.external-native-mode",
+      "kind": "automatic",
+      "status": "skip",
+      "evidence": [
+        "skipped: Hyprland session or monitor list unavailable"
+      ],
+      "classification": {
+        "outcome": "not-tested",
+        "feature": "dcp",
+        "layer": "asahi",
+        "expected": {
+          "asahi": "linux-asahi",
+          "aurora": "asahi"
+        }
+      }
+    },
+    {
       "id": "display.controller",
       "kind": "automatic",
       "status": "pass",
@@ -2052,6 +2069,6 @@
   ],
   "signature": {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHWZLEbyxAyRBj1yRyeHbRhQvVhcrUqpMaNH7ivMU1DW",
-    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQEZRUEp99TZcq6JGK0ROowH6vns9cSW1plUige9I1U\n1tit9joNFWHSJtgNsKyTFrMKoSSVOKQcJDrTIedCxpkg8=\n-----END SSH SIGNATURE-----"
+    "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdZksRvLEDJEGPXJHJ4dtGFC9WF\nytSqkxo0fuK8xTUNYAAAAVb21hcmNoeS1tLXRlc3QtcmVwb3J0AAAAAAAAAAZzaGE1MTIA\nAABTAAAAC3NzaC1lZDI1NTE5AAAAQPOIeTKPdUgonEhYP1t6Cwsg46NLX0TXQOtl/iDCnP\nS9mdYeFuUO0svoadbJyc8dWMB4R/RybbQZBW+ZgJZBQA8=\n-----END SSH SIGNATURE-----"
   }
 }

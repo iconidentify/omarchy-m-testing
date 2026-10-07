@@ -9,7 +9,7 @@ only the hardware is compared with Omarchy.
 
 from __future__ import annotations
 
-from . import audio as live_audio, display as live_display, hardware, inputs, inventory, network as live_network, packages, scripts
+from . import audio as live_audio, display as live_display, external_display, hardware, inputs, inventory, network as live_network, packages, scripts
 from .catalogue import Catalogue
 from .machine import Machine
 from .session import Context
@@ -31,7 +31,7 @@ ORDER = (
     "hardware.drivers", "hardware.firmware", "hardware.probe-errors", "hardware.kernel-config",
     "gpu.driver", "gpu.vulkan", "gpu.opengl",
     "video.h264-on-screen", "video.hevc-on-screen",
-    "display.outputs", "display.controller", "display.backlight", "display.notch-strip",
+    "display.outputs", "display.external-native-mode", "display.controller", "display.backlight", "display.notch-strip",
     "display.notch-bar", "display.brightness-steps", "display.cursor",
     "audio.sound-cards", "audio.default-sink", "audio.speaker-dsp", "audio.speaker-protection",
     "audio.speaker-amps-unlocked", "audio.microphone-mapping",
@@ -121,7 +121,7 @@ def opengl(ctx: Context) -> dict:
 
 
 def display(ctx: Context) -> list[dict]:
-    return [*mac_check(ctx), *display_check(ctx), *live_display.display(ctx)]
+    return [*mac_check(ctx), external_display.check(ctx), *display_check(ctx), *live_display.display(ctx)]
 
 
 def audio(ctx: Context) -> list[dict]:
