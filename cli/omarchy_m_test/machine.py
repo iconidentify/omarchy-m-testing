@@ -16,7 +16,7 @@ MODEL_PATH = "/proc/device-tree/model"
 COMPATIBLE_PATH = "/proc/device-tree/compatible"
 APPLE_PLATFORM = "apple,arm-platform"
 
-# SoC id -> chip name. Asahi-supported generations plus M3 (identified, not yet supported).
+# SoC id -> chip name, for every SoC in the catalogue.
 CHIPS = {
     "t8103": "M1",
     "t6000": "M1 Pro",
@@ -30,6 +30,11 @@ CHIPS = {
     "t6030": "M3 Pro",
     "t6031": "M3 Max",
     "t6034": "M3 Max",
+    "t6032": "M3 Ultra",
+    "t8132": "M4",
+    "t6040": "M4 Pro",
+    "t6041": "M4 Max",
+    "t8140": "A18 Pro",
 }
 
 _BOARD = re.compile(r"^apple,(j[0-9]{3}[a-z]{0,2})$")
