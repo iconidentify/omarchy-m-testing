@@ -42,11 +42,12 @@ UNLOCK_QUESTION = (
 )
 _VERSION = re.compile(r"(?:v?[0-9]|(?:mBoot|iBoot|m1n1)[- v])[A-Za-z0-9._+:/() -]{0,127}")
 _PROFILE = re.compile(r"T[0-9]{4}/J[0-9]{3}[A-Za-z]{0,2}")
-_SEP_LINE = re.compile(r"(?i)\b(?:apple[-_]sep|apple-mesa)\b|\b[0-9a-f]+\.sep:|\bSEP platform profile:|\bTouch ID:")
+_SEP_LINE = re.compile(r"(?i)\b(?:apple[-_]sep|apple[-_]mesa)\b|\b[0-9a-f]+\.sep:|\bSEP platform profile:|\bTouch ID:")
 _ERROR = re.compile(r"\b(?:error|status|errno)[ :=]+(-?[0-9]{1,4})\b", re.I)
 LOG_EVENTS = (
     ("reloading the driver is not supported", "driver reload refused"),
     ("no endpoint advertised", "no endpoints advertised"),
+    ("no endpoints advertised", "no endpoints advertised"),
     ("endpoints advertised", "endpoints advertised"),
     ("SEP platform profile:", "platform profile selected"),
     ("TZ0 accepted", "cold boot TZ0 accepted"),
@@ -61,6 +62,7 @@ LOG_EVENTS = (
     ("bringup:", "bring-up outcome"),
     ("xART:", "anti-replay store event"),
     ("apple-mesa", "sensor driver event"),
+    ("apple_mesa", "sensor driver event"),
 )
 
 
@@ -95,7 +97,7 @@ def _dirs(host: Host, path: str) -> list[str] | None:
 
 
 def _run(host: Host, argv: list[str]):
-    return host.run(["timeout", "3", *argv])
+    return host.run(["timeout", "-k", "2", "3", *argv])
 
 
 def _boolean(value: str | None) -> bool | None:
@@ -153,8 +155,9 @@ def collect(host: Host) -> dict:
         words = line.split()
         if len(words) == 2 and words[0] in PACKAGES and _VERSION.fullmatch(words[1]):
             found["packages"][words[0]] = words[1]
-    sensor = False
-    for name in _dirs(host, SPI) or []:
+    spi = _dirs(host, SPI)
+    sensor = None if spi is None else False
+    for name in spi or []:
         if not re.fullmatch(r"spi[0-9]+\.[0-9]+", name):
             continue
         node = f"{SPI}/{name}/of_node"
@@ -221,7 +224,8 @@ def details(found: dict) -> list[str]:
         lines.append(f"{label}: {'yes' if value is True else 'no' if value is False else 'unavailable'}")
     size = found.get("calibration_bytes")
     lines.append(f"default sensor calibration file: {str(size) + ' bytes (contents not read)' if size is not None else 'unavailable'}")
-    lines.append(f"sensor device-tree node: {'present' if found.get('sensor_node') else 'unavailable'}")
+    node = found.get("sensor_node")
+    lines.append(f"sensor device-tree node: {'present' if node is True else 'absent' if node is False else 'unavailable'}")
     enabled = found.get("sensor_enabled")
     lines.append(f"sensor node enabled: {'yes' if enabled is True else 'no' if enabled is False else 'unavailable'}")
     lines += [f"{name}: {version}" for name, version in found.get("packages", {}).items()]
@@ -256,7 +260,7 @@ def ready(found: dict) -> dict:
     elif diag.get("sensor") == "unbound":
         reason = "no bound Touch ID sensor; this board or kernel may not describe one"
     elif diag.get("attach") == "pending" or diag.get("touchid") == "unknown" or diag.get("sensor") == "bound":
-        reason = "SEP or Touch ID initialization is still pending"
+        reason = PENDING
     else:
         reason = "incomplete or unknown passive state; fingerprint readiness is unconfirmed"
     version = found.get("firmware", {}).get("asahi,system-fw-version") or ""
@@ -284,22 +288,37 @@ def unlock(ctx: Context, found: dict) -> dict:
     ])
 
 
+PENDING = "SEP or Touch ID initialization is still pending"
+
+
+def _pending(found: dict, state: dict) -> bool:
+    """Attachment still pending settles too, even when an unbound sensor decided the reason."""
+    return state["status"] == "skip" and (state["evidence"][0] == PENDING or found.get("diag", {}).get("attach") == "pending")
+
+
+def _reread(ctx: Context, found: dict) -> dict:
+    """A later snapshot replaces an earlier one only when it still reads the SEP; one failed read keeps what was seen."""
+    again = ctx.host.touchid_snapshot()
+    return again if again.get("apple") is True and again.get("sep") is True else found
+
+
 def run(ctx: Context) -> list[dict]:
     found = ctx.host.touchid_snapshot()
     if found.get("apple") is not True:
         why = "not an Apple Mac" if found.get("apple") is False else "Apple device tree unavailable"
         return [_automatic(ATTACH, "skip", [why]), _automatic(READY, "skip", [why]), human.skip(UNLOCK, why)]
-    if human.absent(ctx, READY):
+    # Only MacBooks have a built-in sensor; Asahi lists several desktops as TBA rather than absent.
+    if human.absent(ctx, READY) or not ctx.machine.model.startswith("Apple MacBook"):
         why = "this Mac has no built-in Touch ID sensor"
         return [attachment(found), _automatic(READY, "skip", [why]), human.skip(UNLOCK, why)]
     state = ready(found)
-    if state["status"] == "skip" and state["evidence"][0] == "SEP or Touch ID initialization is still pending":
+    if _pending(found, state):
         ctx.host.sleep(2)
-        found = ctx.host.touchid_snapshot()
+        found = _reread(ctx, found)
         state = ready(found)
     observed = unlock(ctx, found)
     if observed["status"] in ("pass", "fail") and not observed.get("answered_by_default"):
-        found = ctx.host.touchid_snapshot()
+        found = _reread(ctx, found)
         state = ready(found)
     if observed["status"] == "pass" and state["status"] != "pass":
         human.not_backed(observed, "passive SEP diagnostics did not confirm readiness")

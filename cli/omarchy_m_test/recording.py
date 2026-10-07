@@ -609,12 +609,12 @@ def _is_sequence(names: Any) -> bool:
 
 def _projected(entry: dict[str, Any]) -> dict[str, Any]:
     from .external_display import recorded_output, recorded_text
+    from .safety import _unwrap
     from .touchid import redact_log
 
     kept = recorded_output(entry["argv"], entry["stdout"], entry["stderr"])
     stdout, stderr = kept if kept is not None else (recorded_text(entry["stdout"]), recorded_text(entry["stderr"]))
-    command = entry["argv"][2:] if entry["argv"][:1] == ["timeout"] else entry["argv"]
-    if command[:1] in (["journalctl"], ["dmesg"]):
+    if _unwrap(entry["argv"])[:1] in (["journalctl"], ["dmesg"]):
         stdout, stderr = redact_log(stdout), redact_log(stderr)
     return {**entry, "stdout": stdout, "stderr": stderr}
 

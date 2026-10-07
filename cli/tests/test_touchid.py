@@ -71,9 +71,12 @@ class PassiveHost(RealHost):
 
     def run(self, argv):
         self.commands.append(list(argv))
-        if argv[:2] != ["timeout", "3"]:
+        if argv[:4] == ["timeout", "-k", "2", "3"]:
+            command = argv[4:]
+        elif argv[:2] == ["timeout", "3"] and argv[2] in ("journalctl", "dmesg"):  # another section's kernel log
+            command = argv[2:]
+        else:
             raise AssertionError("unbounded command: " + str(argv))
-        command = argv[2:]
         if command == ["sh", "-c", "test -c /dev/sep-bio"]:
             return CommandResult(0, "", "")
         if command[0] == "systemctl" and command[1] == "show":
@@ -113,7 +116,7 @@ class PassiveDiagnosticsTest(unittest.TestCase):
         self.assertEqual(touchid.ready(found)["status"], "pass")
         self.assertNotIn("other-user", json.dumps(found))
         self.assertNotIn("private error", json.dumps(found))
-        self.assertTrue(all(command[2] not in ("modprobe", "fprintd-verify", "fprintd-enroll", "fprintd-list") for command in mac.commands))
+        self.assertTrue(all(command[4] not in ("modprobe", "fprintd-verify", "fprintd-enroll", "fprintd-list") for command in mac.commands))
 
     def test_actual_sepos_is_not_inferred_from_stub_or_profile(self):
         found = copy.deepcopy(GOOD)
@@ -167,7 +170,7 @@ class PassiveDiagnosticsTest(unittest.TestCase):
         self.assertEqual(result["status"], "pass")
         self.assertIn("SEP endpoints: 12", result["evidence"])
         self.assertIn("a fingerprint match was not tested", result["evidence"][0])
-        self.assertTrue(all(command[2] not in ("fprintd-list", "fprintd-verify", "fprintd-enroll") for command in mac.commands))
+        self.assertTrue(all(command[4] not in ("fprintd-list", "fprintd-verify", "fprintd-enroll") for command in mac.commands))
 
     def test_discovers_sep_by_compatible_not_mmio_address(self):
         mac = PassiveHost()
@@ -323,6 +326,7 @@ class PassiveDiagnosticsTest(unittest.TestCase):
         recorder = RecordingHost(mac)
         result = recorder.touchid_snapshot()
         recorder.run(["timeout", "3", "journalctl", "-k", "-b"])
+        recorder.run(["timeout", "-k", "2", "3", "dmesg"])
         # Extra source capture, outside the derived snapshot, is also sanitized.
         recorder._keep(["journalctl", "--dmesg"], CommandResult(0, mac.log, ""))
         saved = recorder.recording(Scrubber())
@@ -333,6 +337,24 @@ class PassiveDiagnosticsTest(unittest.TestCase):
         self.assertEqual(replay.touchid_snapshot(), result)
         self.assertEqual(saved["files"], {})
         self.assertEqual(saved["dirs"], {})
+
+
+class KernelEventTest(unittest.TestCase):
+    def test_underscored_sensor_driver_lines_are_redacted(self):
+        line = "apple_mesa spi1.0: enrolled right-index-finger for private-user\n"
+        self.assertEqual(touchid.redact_log(line), "SEP: sensor driver event\n")
+
+    def test_no_endpoints_is_not_reported_as_endpoints(self):
+        self.assertEqual(touchid.log_event("apple-sep 1.sep: attach: no endpoints advertised"), "SEP: no endpoints advertised")
+        self.assertEqual(touchid.log_event("apple-sep 1.sep: attach: 7 endpoints advertised"), "SEP: endpoints advertised")
+
+    def test_an_unlistable_spi_bus_is_unavailable_not_absent(self):
+        mac = PassiveHost()
+        mac.dirs[touchid.SPI] = PermissionError(touchid.SPI)
+        self.assertIsNone(mac.touchid_snapshot()["sensor_node"])
+        del mac.dirs[touchid.SPI]
+        mac.dirs[touchid.SPI] = []
+        self.assertIs(mac.touchid_snapshot()["sensor_node"], False)
 
 
 class TouchIdRunTest(unittest.TestCase):
@@ -409,6 +431,44 @@ class TouchIdRunTest(unittest.TestCase):
         ctx = replace(ctx, machine=replace(ctx.machine, board="j473", soc="t8112", chip="M2"))
         result = touchid.run(ctx)
         self.assertEqual([r["status"] for r in result], ["pass", "skip", "skip"])
+
+    def test_a_desktop_the_catalogue_leaves_tba_still_skips(self):
+        from dataclasses import replace
+        failed = copy.deepcopy(GOOD)
+        failed["diag"].update({"sensor": "unbound", "touchid": "failed"})
+        mac = host(failed, answers=[""], terminal=True)
+        ctx = context(mac)
+        ctx = replace(ctx, machine=replace(ctx.machine, model="Apple Mac mini (M1, 2020)", board="j274", soc="t8103", chip="M1"))
+        result = touchid.run(ctx)
+        self.assertEqual([r["status"] for r in result], ["pass", "skip", "skip"])
+        self.assertEqual(mac.transcript, [])
+
+    def test_pending_attachment_settles_even_with_an_unbound_sensor(self):
+        pending = copy.deepcopy(GOOD)
+        pending["diag"].update({"attach": "pending", "sensor": "unbound", "touchid": "unknown"})
+        failed = copy.deepcopy(GOOD)
+        failed["diag"].update({"attach": "failed", "sensor": "unbound", "touchid": "not-ready"})
+        class Settling(RecordedHost):
+            def touchid_snapshot(self):
+                self.reads += 1
+                return pending if self.reads == 1 else failed
+        mac = Settling({"recording_version": 1})
+        mac.reads = 0
+        checks = touchid.run(context(mac))
+        self.assertEqual(mac.slept, [2])
+        self.assertEqual([c["status"] for c in checks[:2]], ["fail", "fail"])
+
+    def test_an_unreadable_follow_up_snapshot_keeps_the_earlier_one(self):
+        class Flaky(RecordedHost):
+            def touchid_snapshot(self):
+                self.reads += 1
+                return GOOD if self.reads == 1 else {"apple": None}
+        mac = Flaky({"recording_version": 1}, answers=["y"], terminal_size=Terminal(80, 24))
+        mac.reads = 0
+        result = touchid.run(context(mac))
+        self.assertEqual(mac.reads, 2)
+        self.assertEqual([r["status"] for r in result], ["pass", "pass", "pass"])
+        self.assertFalse(any("not backed" in line for line in result[2]["evidence"]))
 
     def test_pending_state_settles_once_and_is_reread(self):
         class Settling(RecordedHost):
